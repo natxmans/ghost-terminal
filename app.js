@@ -1231,7 +1231,10 @@
     $("btn-install").hidden = true;
     toast("Ghost Terminal est installé !", "install");
   });
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  // Mode hors ligne : seulement sur le site lui-même (pas quand le jeu est intégré dans
+  // une autre page, comme sur itch.io ou Game Jolt)
+  const embedded = window.top !== window.self;
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !embedded) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 
