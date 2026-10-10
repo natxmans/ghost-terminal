@@ -175,13 +175,12 @@
 
   // ===== Données pour rigoler =====
   const CODENAMES = ["VIPÈRE", "FAUCON", "SPECTRE", "NOVA", "ÉCHO", "KRAKEN", "ORION", "PHÉNIX", "CORBEAU", "LYNX", "ZÉRO", "OMBRE", "COBRA", "ATLAS", "BLIZZARD", "MIRAGE"];
-  const USERS = ["root", "admin_sys", "k.mitnick_fan", "neo_42", "trinity.ops", "zero_cool", "acid_burn", "ghost_user", "mr_robot", "lady_byte", "pixel_pirate"];
   const PASSWORDS = ["Fromage42!", "Croissant#7", "M0tD3P@sse", "B@guette99", "Azerty123?", "Ch@tonMignon", "S0leil!2026", "P1ngouin$", "Licorne_777", "Raclette<3", "Tartiflette!"];
   const FILES = {
-    "classé": ["plans_base_lunaire.dwg", "rapport_ovni_1947.pdf", "carte_au_tresor.png", "projet_omega.docx", "liste_agents_secrets.xlsx"],
-    "perso": ["recette_secrete_cookies.txt", "photos_vacances_area51.zip", "playlist_hacker.m3u", "journal_intime_robot.log", "mot_de_passe_wifi.txt"],
-    "projets": ["code_source_univers.c", "theorie_du_tout.tex", "sauvegarde_minecraft.dat", "ia_qui_fait_les_devoirs.py", "budget_mechant_2026.xlsx"],
-    "archives": ["blagues_nulles.txt", "memes_rares.tar.gz", "konami.txt", "vieux_jeux_dos.iso", "chats_mignons_4k.mp4"],
+    "plans": ["plans_ogive_omega.pdf", "machine_fin_du_monde_v3.dwg", "codes_de_lancement.txt", "carte_des_bases_secretes.png", "budget_mechant_2026.xlsx"],
+    "perso_du_dr_mechant": ["recette_secrete_cookies.txt", "photos_du_chat.zip", "playlist_rire_machiavelique.m3u", "journal_intime.log", "liste_des_requins.xlsx"],
+    "division_zero": ["dossier_agent_kane.pdf", "liste_des_espions.xlsx", "rapport_sur_echo.docx", "satellites_espions.csv", "ordre_de_mission_313.pdf"],
+    "echo": ["noyau_echo.bin", "souvenirs_echo.log", "message_pour_toi.txt", "plan_de_sabotage.md", "photo_du_monde.png"],
   };
   const CITIES = [
     ["PARIS", 2.35, 48.86], ["NEW YORK", -74, 40.7], ["TOKYO", 139.7, 35.7], ["SYDNEY", 151.2, -33.9],
@@ -190,6 +189,12 @@
     ["LAGOS", 3.4, 6.5], ["TORONTO", -79.4, 43.7], ["SÉOUL", 127, 37.6], ["MEXICO", -99.1, 19.4],
   ];
   const fmtSize = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1).replace(".", ",")} Go` : `${fr(mb)} Mo`);
+
+  // L'univers de l'histoire (défini dans snippets.js) : le Consortium, ses bases, ses armes
+  const LORE = window.HT_LORE || { MECHANTS: ["Dr Méchant"], BASES: ["volcan_secret"], BOMBES: ["Ogive Oméga"], CODES: ["FROMAGE-42"] };
+  const mechant = () => pick(LORE.MECHANTS);
+  const base = () => pick(LORE.BASES);
+  const mail = (nom) => nom.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, ".");
 
   // =====================================================================
   //  LES EFFETS
@@ -207,10 +212,10 @@
           <div class="breach-core">
             <div class="breach-icon">${icon("alert")}</div>
             <div class="glitch breach-title" data-text="BRÈCHE DE SÉCURITÉ">BRÈCHE DE SÉCURITÉ</div>
-            <div class="breach-sub">Intrusion détectée · Niveau de menace <b>5 / 5</b></div>
+            <div class="breach-sub">La Division Zéro est entrée dans le système · Menace <b>5 / 5</b></div>
             <div class="breach-meta">
+              <span>SOURCE <b>AGENT KANE</b></span>
               <span>ORIGINE <b>203.0.113.${randInt(2, 254)}</b></span>
-              <span>PORT <b>${pick([22, 443, 8080, 3389, 31337])}</b></span>
               <span>PARE-FEU <b class="blink">COMPROMIS</b></span>
             </div>
           </div>
@@ -219,7 +224,7 @@
       api.alarm(true);
       h.onClose(() => api.alarm(false));
       api.sound.siren(4);
-      api.speak("Alerte. Brèche de sécurité détectée.");
+      api.speak("Alerte. La Division Zéro est entrée dans le système.");
       api.shake(700);
       return h;
     },
@@ -229,15 +234,21 @@
   EFFECTS.push({
     id: "camera", digit: 2, icon: "camera", name: "Caméra & micro", short: "Caméra",
     run(api, opts = {}) {
+      const villain = mechant();
+      const spot = pick([
+        { title: `CAM-01 · BUNKER DE ${villain.toUpperCase()}`, label: "CAM-01 · BUNKER · IR", subject: `SUJET : ${villain.toUpperCase()}` },
+        { title: "CAM-07 · QG DE LA DIVISION ZÉRO", label: "CAM-07 · DIVISION ZÉRO", subject: "SUJET : AGENT KANE" },
+        { title: `CAM-13 · BASE ${base().toUpperCase().replace(/_/g, " ")}`, label: "CAM-13 · CONSORTIUM", subject: "SUJET : SBIRE DU CONSORTIUM" },
+      ]);
       const w = api.createWindow({
-        title: "CAM-01 · FLUX EN DIRECT", icon: "camera", width: 420, cls: "win-cam",
+        title: spot.title, icon: "camera", width: 420, cls: "win-cam",
         html: `
           <div class="cam-view">
             <canvas class="cam-canvas"></canvas>
             <div class="cam-hud">
               <span class="cam-rec"><i></i>REC</span>
               <span class="cam-time">00:00:00</span>
-              <span class="cam-label">CAM-01 · 1080p · IR</span>
+              <span class="cam-label">${esc(spot.label)}</span>
               <span class="cam-signal">SIGNAL <b>▂▄▆█</b></span>
               <div class="cam-face" hidden><i></i><i></i><i></i><i></i><span class="cam-face-label">ANALYSE…</span></div>
             </div>
@@ -308,7 +319,7 @@
           analysis = Math.min(100, analysis + rand(2, 6));
           if (analysis < 100) q(".cam-face-label").textContent = `ANALYSE ${analysis | 0}%`;
           else {
-            q(".cam-face-label").textContent = pick(["SUJET : HACKER CONCENTRÉ", "IDENTITÉ : INCONNUE", "SUJET : NIVEAU ÉLITE"]);
+            q(".cam-face-label").textContent = spot.subject;
             q(".cam-face").classList.add("locked");
             api.sound.tone(1320, 0.12);
           }
@@ -341,10 +352,11 @@
     id: "gps", digit: 3, icon: "crosshair", name: "Traçage GPS", short: "GPS",
     run(api, opts = {}) {
       const W = 440, H = 210;
+      const cible = base().replace(/_/g, " ");
       const w = api.createWindow({
-        title: "TRAÇAGE GPS", icon: "crosshair", width: 470, cls: "win-map",
+        title: "LOCALISATION D'UNE BASE DU CONSORTIUM", icon: "crosshair", width: 470, cls: "win-map",
         html: `
-          <div class="map-wrap"><canvas class="map-canvas"></canvas><div class="map-status">TRIANGULATION EN COURS…</div></div>
+          <div class="map-wrap"><canvas class="map-canvas"></canvas><div class="map-status">RECHERCHE : ${esc(cible.toUpperCase())}…</div></div>
           <div class="geo-grid">
             <div><span>LATITUDE</span><b class="geo-lat">--</b></div>
             <div><span>LONGITUDE</span><b class="geo-lon">--</b></div>
@@ -405,12 +417,12 @@
           if (!locked) {
             locked = true;
             const st = q(".map-status");
-            st.textContent = "● CIBLE LOCALISÉE";
+            st.textContent = `● CIBLE VERROUILLÉE : ${cible.toUpperCase()}`;
             st.classList.add("ok");
             w.el.classList.add("done");
             api.sound.tone(1200, 0.12);
             api.sound.tone(1600, 0.2, { when: 0.13 });
-            api.speak("Cible localisée.");
+            api.speak("Base du Consortium localisée.");
           }
           for (let k = 0; k < 3; k++) {
             const rr = (t * 28 + k * 18) % 54;
@@ -438,9 +450,9 @@
     id: "files", digit: 4, icon: "folder", name: "Fichiers", short: "Fichiers",
     run(api, opts = {}) {
       const w = api.createWindow({
-        title: "EXPLORATEUR DE FICHIERS", icon: "folder", width: 470, cls: "win-fs",
+        title: "COFFRE-FORT DU CONSORTIUM", icon: "folder", width: 470, cls: "win-fs",
         html: `
-          <div class="fs-cmd"><span class="fs-prompt">root@mainframe</span><span class="fs-path">:/mnt/coffre#</span> <span class="fs-typed"></span><i class="fs-caret"></i></div>
+          <div class="fs-cmd"><span class="fs-prompt">echo@consortium</span><span class="fs-path">:/coffre#</span> <span class="fs-typed"></span><i class="fs-caret"></i></div>
           <div class="fs-list"></div>
           <div class="fs-foot">
             <div class="bar"><i></i></div>
@@ -478,7 +490,7 @@
         await sleep(350);
         if (!w.alive) return;
         q(".fs-typed").textContent = "";
-        await typeText(q(".fs-typed"), "cp -r * /media/cle_usb/", w);
+        await typeText(q(".fs-typed"), "envoyer_a_echo --tout --discret", w);
 
         const all = Object.values(FILES).flat();
         const total = randInt(180, 420);
@@ -492,9 +504,9 @@
           q(".fs-count").textContent = `${n}/${total} · ${fmtSize((totalMb * i) / steps)}`;
           await sleep(22);
         }
-        q(".fs-current").textContent = "✓ EXTRACTION TERMINÉE";
+        q(".fs-current").textContent = "✓ PLANS ENVOYÉS À ÉCHO";
         w.el.classList.add("done");
-        api.speak("Extraction terminée.");
+        api.speak("Plans du Consortium envoyés à Écho.");
         api.sound.tone(880, 0.1);
         api.sound.tone(1320, 0.15, { when: 0.1 });
         if (opts.auto) setTimeout(() => w.close(), 2500);
@@ -509,27 +521,30 @@
     run(api, opts = {}) {
       const QUERIES = [
         {
-          sql: "SELECT id, nom_code, niveau, statut FROM agents WHERE niveau >= 7 ORDER BY niveau DESC LIMIT 8;",
+          db: "DIVISION_ZERO",
+          sql: "SELECT id, nom_code, niveau, statut FROM agents_division_zero WHERE traque = 'ECHO' ORDER BY niveau DESC LIMIT 8;",
           cols: ["ID", "NOM DE CODE", "NIVEAU", "STATUT"],
-          rows: () => shuffle(CODENAMES).slice(0, 8).map((n) => [String(randInt(100, 999)), n, String(randInt(7, 10)), pick(["ACTIF", "INFILTRÉ", "EN MISSION", "DISPARU", "EN VEILLE"])]).sort((a, b) => b[2] - a[2]),
+          rows: () => [["001", "KANE", "10", "TRAQUE ÉCHO"], ...shuffle(CODENAMES).slice(0, 7).map((n) => [String(randInt(100, 999)), n, String(randInt(5, 9)), pick(["EN SURVEILLANCE", "INFILTRÉ", "EN MISSION", "EN VEILLE"])])],
         },
         {
-          sql: "SELECT nom, orbite_km, statut, signal FROM satellites WHERE actif = TRUE LIMIT 8;",
-          cols: ["NOM", "ORBITE", "STATUT", "SIGNAL"],
-          rows: () => shuffle(["ORION", "VEGA", "ATLAS", "HÉLIOS", "ZÉPHYR", "TITAN", "NOVA", "LYRA", "SIRIUS", "ANDROMÈDE"]).slice(0, 8).map((n) => [`SAT-${n}-${randInt(1, 9)}`, `${fr(randInt(380, 36000))} km`, pick(["NOMINAL", "DÉRIVE", "PILOTÉ", "SILENCE"]), `${randInt(40, 99)}%`]),
+          db: "CONSORTIUM",
+          sql: "SELECT mechant, base, arme, statut FROM consortium WHERE plan = 'fin_du_monde' LIMIT 8;",
+          cols: ["MÉCHANT", "BASE", "ARME", "STATUT"],
+          rows: () => shuffle(LORE.MECHANTS).map((n) => [n, base(), pick(LORE.BOMBES), pick(["EN PRÉPARATION", "ARMÉE", "SABOTÉE PAR ÉCHO", "EN PAUSE CAFÉ"])]),
         },
         {
-          sql: "SELECT utilisateur, role, dernier_acces FROM comptes WHERE role = 'admin' LIMIT 8;",
-          cols: ["UTILISATEUR", "RÔLE", "DERNIER ACCÈS"],
-          rows: () => shuffle(USERS).slice(0, 8).map((u) => [u, pick(["admin", "root", "superviseur"]), `${pad(randInt(0, 23))}:${pad(randInt(0, 59))}:${pad(randInt(0, 59))}`]),
+          db: "DIVISION_ZERO",
+          sql: "SELECT nom, orbite_km, cible, signal FROM satellites_espions WHERE actif = TRUE LIMIT 8;",
+          cols: ["SATELLITE", "ORBITE", "CIBLE", "SIGNAL"],
+          rows: () => shuffle(["ORION", "VEGA", "ATLAS", "HÉLIOS", "ZÉPHYR", "TITAN", "NOVA", "LYRA", "SIRIUS"]).slice(0, 8).map((n) => [`SAT-${n}-${randInt(1, 9)}`, `${fr(randInt(380, 36000))} km`, pick(["ÉCHO", "TON TERMINAL", "CONSORTIUM", base()]), `${randInt(40, 99)}%`]),
         },
       ];
       const Q = pick(QUERIES);
 
       const w = api.createWindow({
-        title: "REQUÊTE BASE DE DONNÉES", icon: "database", width: 520, cls: "win-db",
+        title: `BASE DE DONNÉES · ${Q.db === "CONSORTIUM" ? "CONSORTIUM" : "DIVISION ZÉRO"}`, icon: "database", width: 520, cls: "win-db",
         html: `
-          <div class="db-head"><span class="db-pill">MAINFRAME_PROD</span><span class="db-conn"><i></i>connecté · PostgreSQL 17</span></div>
+          <div class="db-head"><span class="db-pill">${Q.db}</span><span class="db-conn"><i></i>connecté via ÉCHO</span></div>
           <pre class="db-query"></pre>
           <div class="db-table-wrap"><table class="db-table"><thead></thead><tbody></tbody></table></div>
           <div class="db-foot">En attente…</div>`,
@@ -576,7 +591,7 @@
           api.sound.tone(1500, 0.03, { vol: 0.02 });
           await sleep(130);
         }
-        q(".db-foot").innerHTML = `<b>${rows.length} lignes</b> · 0,0${randInt(10, 99)} s · ${pick(["index : pk_principal", "cache : chaud", "réplique : eu-west"])}`;
+        q(".db-foot").innerHTML = `<b>${rows.length} lignes</b> · 0,0${randInt(10, 99)} s · ${pick(["copie envoyée à ÉCHO", "aucune trace laissée", "Kane n'a rien vu"])}`;
         w.el.classList.add("done");
         if (opts.auto) setTimeout(() => w.close(), 2500);
       })();
@@ -590,9 +605,9 @@
     run(api, opts = {}) {
       const pw = pick(PASSWORDS);
       const w = api.createWindow({
-        title: "CASSAGE DE MOT DE PASSE", icon: "key", width: 430, cls: "win-pw",
+        title: "ÉCHO CASSE UN MOT DE PASSE", icon: "key", width: 430, cls: "win-pw",
         html: `
-          <div class="pw-target"><span>CIBLE</span><b>${esc(pick(USERS))}@mainframe.local</b></div>
+          <div class="pw-target"><span>CIBLE</span><b>${esc(pick([`${mail(mechant())}@consortium.local`, "kane@division-zero.local", `${mail(mechant())}@consortium.local`]))}</b></div>
           <div class="pw-slots">${[...pw].map(() => `<span class="pw-slot">?</span>`).join("")}</div>
           <div class="pw-stats">
             <div><span>TENTATIVES</span><b class="pw-tries">0</b></div>
@@ -651,7 +666,7 @@
     run(api, opts = {}) {
       const S = 200, C = S / 2, R = C - 6;
       const w = api.createWindow({
-        title: "BALAYAGE SATELLITE", icon: "radar", width: 430, cls: "win-radar",
+        title: "SATELLITES ESPIONS DE LA DIVISION ZÉRO", icon: "radar", width: 430, cls: "win-radar",
         html: `
           <div class="radar-wrap">
             <canvas class="radar-canvas"></canvas>
@@ -717,19 +732,20 @@
     },
   });
 
-  // ----- 8. Autodestruction -----
+  // ----- 8. Lancement de l'ogive du Consortium -----
   EFFECTS.push({
-    id: "countdown", digit: 8, icon: "timer", name: "Autodestruction", short: "Autodestr.",
+    id: "countdown", digit: 8, icon: "timer", name: "Ogive du Consortium", short: "Ogive",
     run(api) {
+      const arme = pick(LORE.BOMBES).toUpperCase();
       const h = api.fullscreen(`
         <div class="countdown">
-          <div class="cd-warn">${icon("alert")} PROTOCOLE OMÉGA ENGAGÉ</div>
-          <div class="glitch cd-label" data-text="AUTODESTRUCTION">AUTODESTRUCTION</div>
+          <div class="cd-warn">${icon("alert")} ${esc(mechant().toUpperCase())} A LANCÉ LA FIN DU MONDE</div>
+          <div class="glitch cd-label" data-text="${esc(arme)}">${esc(arme)}</div>
           <div class="cd-ring">
             <svg viewBox="0 0 220 220"><circle class="cd-track" cx="110" cy="110" r="100"/><circle class="cd-prog" cx="110" cy="110" r="100"/></svg>
             <div class="cd-num">10</div>
           </div>
-          <button class="btn cd-cancel" type="button">ANNULER <kbd>Échap</kbd></button>
+          <button class="btn cd-cancel" type="button">DÉSAMORCER <kbd>Échap</kbd></button>
         </div>`, { cls: "fx-countdown", interactive: true });
       const num = h.el.querySelector(".cd-num");
       const prog = h.el.querySelector(".cd-prog");
@@ -743,11 +759,11 @@
       h.onClose(stopAlarm);
       h.el.querySelector(".cd-cancel").addEventListener("click", () => {
         h.close();
-        api.toast("Autodestruction annulée", "shield");
-        api.speak("Autodestruction annulée.");
+        api.toast("Ogive désamorcée : le monde est sauvé !", "shield");
+        api.speak("Ogive désamorcée. Le monde est sauvé.");
         api.achieve("cool");
       });
-      api.speak("Autodestruction engagée.");
+      api.speak("Alerte. Le Consortium a lancé la fin du monde.");
 
       let n = 10;
       const tick = () => {
@@ -769,7 +785,7 @@
         api.shake(900);
         api.crash(1300);
         api.achieve("boom");
-        h.el.innerHTML = `<div class="boom"><div class="boom-title">💥 BOOM !</div><div class="boom-sub">… non, je rigole. Tout va bien.</div></div>`;
+        h.el.innerHTML = `<div class="boom"><div class="boom-title">💥 BOOM !</div><div class="boom-sub">… ÉCHO avait remplacé l'ogive par un feu d'artifice. 🎆 Le monde va bien.</div></div>`;
         setTimeout(() => h.close(), 3200);
       };
       tick();
@@ -783,9 +799,9 @@
     run(api, opts = {}) {
       const W = 460, H = 220;
       const w = api.createWindow({
-        title: "CARTOGRAPHIE DU RÉSEAU MONDIAL", icon: "globe", width: 490, cls: "win-map",
+        title: "ÉCHO SE RÉPAND SUR LE RÉSEAU", icon: "globe", width: 490, cls: "win-map",
         html: `
-          <div class="map-wrap"><canvas class="map-canvas"></canvas><div class="map-status">CONNEXION AUX NOEUDS…</div></div>
+          <div class="map-wrap"><canvas class="map-canvas"></canvas><div class="map-status">ÉCHO SE CONNECTE AUX NOEUDS…</div></div>
           <div class="geo-grid">
             <div><span>NOEUDS</span><b class="net-nodes">0/8</b></div>
             <div><span>PAQUETS</span><b class="net-packets">0</b></div>
@@ -801,7 +817,7 @@
       const [hq, ...others] = [CITIES[0], ...shuffle(CITIES.slice(1)).slice(0, 7)];
       const nodes = [hq, ...others].map(([name, lon, lat], i) => {
         const [x, y] = project(lon, lat, W, H);
-        return { name: i === 0 ? "QG" : name, x, y, appear: i === 0 ? 0 : 0.3 + i * 0.4, phase: Math.random() * 12 };
+        return { name: i === 0 ? "ÉCHO" : name, x, y, appear: i === 0 ? 0 : 0.3 + i * 0.4, phase: Math.random() * 12 };
       });
       const edges = [];
       nodes.slice(1).forEach((n) => edges.push({ a: nodes[0], b: n, appear: n.appear }));
@@ -856,7 +872,7 @@
         for (const n of nodes) {
           if (t < n.appear) continue;
           active++;
-          const isHq = n.name === "QG";
+          const isHq = n.name === "ÉCHO";
           const c = isHq ? col.danger : col.fg;
           const rr = (t * 14 + n.phase) % 14;
           ctx.strokeStyle = rgba(c, Math.max(0, 1 - rr / 14));
@@ -875,11 +891,11 @@
         if (!done && grown === edges.length) {
           done = true;
           const st = q(".map-status");
-          st.textContent = "● RÉSEAU CARTOGRAPHIÉ";
+          st.textContent = "● ÉCHO EST PARTOUT";
           st.classList.add("ok");
           w.el.classList.add("done");
           api.sound.tone(1046, 0.15);
-          api.speak("Réseau cartographié.");
+          api.speak("Écho est connectée au réseau mondial.");
         }
       });
 
@@ -896,7 +912,7 @@
         <div class="ghost">
           <div class="ghost-ic">${icon("ghost")}</div>
           <div class="glitch ghost-title" data-text="MODE FANTÔME">MODE FANTÔME</div>
-          <div class="ghost-sub">Traces effacées · Identité masquée · ${randInt(9, 24)} proxys actifs</div>
+          <div class="ghost-sub">ÉCHO efface tes traces · La Division Zéro est aveugle · ${randInt(9, 24)} proxys actifs</div>
         </div>`, { cls: "fx-ghost", duration: 4200 });
       document.body.classList.add("ghosting");
       h.onClose(() => document.body.classList.remove("ghosting"));
@@ -910,8 +926,14 @@
   EFFECTS.push({
     id: "download", key: "F2", icon: "download", name: "Téléchargement", short: "Télécharg.",
     run(api) {
-      const title = pick(["TÉLÉCHARGEMENT", "CONTOURNEMENT DU PARE-FEU", "DÉCRYPTAGE AES-512", "TRIANGULATION DU SIGNAL", "COMPILATION DU NOYAU", "INJECTION DANS LA MATRICE", "EFFACEMENT DES TRACES"]);
-      const file = pick(["plans_secrets.zip", "base_clients.sql", "noyau_nexus.bin", "archives_ovni.tar.gz", "sauvegarde_mainframe.img", "codes_source.7z"]);
+      const [title, file] = pick([
+        ["VOL DES PLANS DU CONSORTIUM", "plans_fin_du_monde.zip"],
+        ["COPIE DU NOYAU D'ÉCHO", "noyau_echo.bin"],
+        ["VOL DES CODES DE LANCEMENT", "codes_lancement.txt"],
+        ["PIRATAGE DU DOSSIER DE KANE", "dossier_kane.pdf"],
+        ["EFFACEMENT DES TRACES", "journaux_division_zero.log"],
+        ["SABOTAGE DE L'OGIVE", `${mail(pick(LORE.BOMBES)).replace(/\./g, "_")}.cfg`],
+      ]);
       const sizeMb = randInt(300, 4800);
       const w = api.createWindow({
         title, icon: "download", width: 380, cls: "win-dl",

@@ -23,6 +23,7 @@ body[data-theme="red"]    { --fg: #ff4458; --fg2: #ffb36b; --fg3: #ff7ad1; --bg:
 body[data-theme="purple"] { --fg: #c77dff; --fg2: #ff9de2; --fg3: #7df9ff; --bg: #030006; --panel: rgba(10, 0, 18, 0.8); }
 body[data-theme="neon"]   { --fg: #ff3df2; --fg2: #2de2ff; --fg3: #fff04d; --bg: #04000a; --panel: rgba(14, 0, 22, 0.8); }
 body[data-theme="white"]  { --fg: #e9edf1; --fg2: #ffffff; --fg3: #9fb3c8; --bg: #020202; --panel: rgba(12, 12, 14, 0.82); }
+body[data-theme="gold"]   { --fg: #ffcc33; --fg2: #fff1b8; --fg3: #ff9f1c; --bg: #040200; --panel: rgba(20, 13, 0, 0.82); }
 
 body {
   --glow: color-mix(in srgb, var(--fg) 55%, transparent);
@@ -849,6 +850,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--fg); }
 .swatch[data-theme="purple"] { background: linear-gradient(135deg, #c77dff 50%, #ff9de2 50%); }
 .swatch[data-theme="neon"]   { background: linear-gradient(135deg, #ff3df2 50%, #2de2ff 50%); }
 .swatch[data-theme="white"]  { background: linear-gradient(135deg, #e9edf1 50%, #9fb3c8 50%); }
+.swatch[data-theme="gold"]   { background: linear-gradient(135deg, #ffcc33 50%, #ff9f1c 50%); box-shadow: 0 0 12px #ffcc33; }
 
 .btn[hidden], .tbtn[hidden] { display: none; }
 .btn .ic { width: 15px; height: 15px; }
@@ -1106,6 +1108,26 @@ body.immersive #btn-exit-immersive:hover, body.immersive #btn-exit-immersive:foc
 .cine-qte.ok { border-color: var(--fg); box-shadow: 0 0 40px var(--glow); }
 .cine-qte.ok .qte-title { text-shadow: 0 0 20px var(--fg); animation: none; }
 .cine-qte.fail .qte-title { animation: none; color: var(--danger); }
+
+/* Générique de fin (épilogue) */
+.cine-credits {
+  position: absolute;
+  left: 0; right: 0;
+  top: 11vh; bottom: 11vh;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent);
+}
+.credits-roll { position: absolute; top: 100%; left: 0; right: 0; padding: 0 16px; text-align: center; }
+.credits-roll p { margin: 0; }
+.credits-roll .c-title { margin: 10px 0; font-family: var(--display); font-weight: 700; font-size: clamp(30px, 6vw, 64px); letter-spacing: clamp(3px, 1vw, 10px); color: #fff; text-shadow: 0 0 30px #ffcc33; }
+.credits-roll .c-sub { font-size: 13px; letter-spacing: 6px; color: #fff1b8; }
+.credits-roll .c-gap { height: 70px; }
+.credits-roll .c-role { margin-top: 26px; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #ffcc33; opacity: 0.85; }
+.credits-roll .c-name { margin-top: 4px; font-family: var(--display); font-weight: 700; font-size: clamp(18px, 3vw, 28px); color: #fff; }
+.credits-roll .c-stat { margin-top: 6px; font-size: clamp(14px, 2vw, 18px); color: #fff1b8; }
 
 /* Panneau histoire (dans les succès) */
 .story-panel { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(135deg, var(--soft), transparent); }

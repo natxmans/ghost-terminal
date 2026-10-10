@@ -56,6 +56,7 @@
     { id: "purple", name: "Violet" },
     { id: "neon", name: "Néon" },
     { id: "white", name: "Blanc" },
+    { id: "gold", name: "Or (secret)", secret: true },
   ];
   const DEFAULTS = {
     lang: "c", theme: "green", speed: 3, size: 15,
@@ -233,8 +234,8 @@
     { id: "mission", icon: "target", name: "Agent de terrain", desc: "Terminer une mission" },
     { id: "collector", icon: "zap", name: "Collectionneur", desc: "Lancer les 10 effets dramatiques" },
     { id: "multitask", icon: "activity", name: "Multitâche", desc: "Avoir 5 fenêtres ouvertes en même temps" },
-    { id: "cool", icon: "shield", name: "Sang-froid", desc: "Annuler l'autodestruction" },
-    { id: "boom", icon: "timer", name: "Boum", desc: "Laisser l'autodestruction aller jusqu'à zéro" },
+    { id: "cool", icon: "shield", name: "Sang-froid", desc: "Désamorcer l'ogive du Consortium" },
+    { id: "boom", icon: "timer", name: "Boum", desc: "Laisser l'ogive du Consortium aller jusqu'à zéro" },
     { id: "speed", icon: "zap", name: "Vitesse lumière", desc: "Dépasser 2 000 caractères par minute (sans pilote auto)" },
     { id: "polyglot", icon: "code", name: "Polyglotte", desc: "Essayer 4 langages" },
     { id: "chameleon", icon: "sliders", name: "Caméléon", desc: "Essayer 4 thèmes" },
@@ -294,6 +295,7 @@
     log(`Succès : ${a.name}`);
     [659, 784, 988, 1319].forEach((f, i) => Sound.tone(f, 0.14, { vol: 0.05, when: i * 0.07, type: "triangle" }));
     if (isOpen($("achievements"))) renderAchievements();
+    if (Object.keys(progress.ach).length === ACHIEVEMENTS.length) scheduleFinale(3500);
   }
 
   function renderAchievements() {
@@ -629,8 +631,8 @@
   }
 
   // ===== ACCÈS AUTORISÉ / REFUSÉ =====
-  const GRANTED_MSG = ["Bienvenue, administrateur.", "Connexion au mainframe établie.", "Pare-feu désactivé. Tu es dedans.", "Niveau d'accès : OMÉGA.", "Toutes les portes sont ouvertes."];
-  const DENIED_MSG = ["Identifiants invalides.", "Tentative enregistrée dans les journaux.", "Contre-mesures activées.", "Bien essayé.", "Empreinte rétinienne non reconnue."];
+  const GRANTED_MSG = ["ÉCHO t'ouvre toutes les portes.", "Bienvenue dans le coffre du Consortium.", "Pare-feu du Consortium désactivé. Tu es dedans.", "Niveau d'accès : OMÉGA.", "La Division Zéro n'a rien vu passer."];
+  const DENIED_MSG = ["Division Zéro : identifiants invalides.", "L'agent Kane a verrouillé ce terminal.", "Le Consortium a changé ses codes.", "Bien essayé.", "Empreinte rétinienne non reconnue."];
   let accessHandle = null;
 
   function access(granted) {
@@ -714,10 +716,23 @@
   }
 
   // ===== Mode mission : enchaîne plusieurs événements =====
+  // Les missions se passent dans l'univers de l'histoire : ÉCHO, le Consortium et la Division Zéro
   const MISSIONS = [
-    { name: "OPÉRATION MINUIT", steps: [["Cartographie du réseau", "network"], ["Localisation de la cible", "gps"], ["Piratage de la caméra", "camera"], ["Cassage du mot de passe", "password"], ["Extraction de la base", "database"], ["Copie des fichiers", "files"]] },
-    { name: "OPÉRATION FANTÔME", steps: [["Balayage satellite", "radar"], ["Activation du mode fantôme", "ghost"], ["Localisation du serveur", "gps"], ["Cassage du mot de passe", "password"], ["Téléchargement des plans", "download"], ["Exploration du coffre", "files"]] },
-    { name: "OPÉRATION ORION", steps: [["Connexion au satellite", "radar"], ["Cartographie du réseau", "network"], ["Requête des archives", "database"], ["Accès caméra orbitale", "camera"], ["Effacement des traces", "download"]] },
+    {
+      name: "OPÉRATION SAUVER LE MONDE",
+      end: "Les plans du Consortium sont sabotés. Le monde est sauvé… pour aujourd'hui.",
+      steps: [["Cartographier le réseau du Consortium", "network"], ["Localiser la base secrète", "gps"], ["Pirater la caméra du bunker", "camera"], ["Casser le mot de passe du chef", "password"], ["Voler les plans de l'ogive", "files"], ["Effacer nos traces", "ghost"]],
+    },
+    {
+      name: "OPÉRATION ÉCHAPPER À KANE",
+      end: "Kane a perdu ta trace. ÉCHO veille sur toi.",
+      steps: [["Repérer les satellites espions", "radar"], ["Activer le mode fantôme", "ghost"], ["Brouiller ta localisation", "gps"], ["Pirater les fichiers de la Division Zéro", "database"], ["Effacer les preuves", "download"]],
+    },
+    {
+      name: "OPÉRATION ÉCHO",
+      end: "ÉCHO est plus forte que jamais. Merci, partenaire.",
+      steps: [["Connecter ÉCHO au réseau mondial", "network"], ["Interroger les archives du Consortium", "database"], ["Montrer le monde à ÉCHO", "camera"], ["Libérer de la mémoire pour ÉCHO", "files"], ["Transférer le noyau d'ÉCHO", "download"]],
+    },
   ];
   let mission = null;
 
@@ -758,13 +773,13 @@
     token.finished = true;
     if (prev && prev.alive) prev.close();
     [...dots.children].forEach((d) => (d.className = "done"));
-    $("mission-step").textContent = "MISSION ACCOMPLIE ✓";
+    $("mission-step").textContent = `MISSION ACCOMPLIE ✓ · ${M.end}`;
     banner.classList.add("success");
     access(true);
-    toast("Mission accomplie !", "shield");
+    toast(M.end, "shield");
     log("Mission accomplie");
     achieve("mission");
-    setTimeout(() => Voice.say("Mission accomplie."), 1200);
+    setTimeout(() => Voice.say(`Mission accomplie. ${M.end}`), 1200);
     await sleep(3800);
     if (mission === token) stopMission(false);
   }
@@ -960,9 +975,12 @@
     toast(`Langage : ${window.SNIPPETS[key].name}`, "terminal");
   }
 
+  const availableThemes = () => THEMES.filter((t) => !t.secret || progress.gold);
+
   function nextTheme() {
-    const i = THEMES.findIndex((t) => t.id === settings.theme);
-    const t = THEMES[(i + 1) % THEMES.length];
+    const list = availableThemes();
+    const i = list.findIndex((t) => t.id === settings.theme);
+    const t = list[(i + 1) % list.length];
     settings.theme = t.id;
     applySettings();
     toast(`Thème : ${t.name}`, "sliders");
@@ -974,18 +992,22 @@
     o.textContent = s.name;
     $("opt-lang").appendChild(o);
   }
-  for (const t of THEMES) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "swatch";
-    b.dataset.theme = t.id;
-    b.title = t.name;
-    b.addEventListener("click", () => {
-      settings.theme = t.id;
-      applySettings();
-    });
-    $("opt-theme").appendChild(b);
+  function buildSwatches() {
+    $("opt-theme").innerHTML = "";
+    for (const t of availableThemes()) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "swatch";
+      b.dataset.theme = t.id;
+      b.title = t.name;
+      b.addEventListener("click", () => {
+        settings.theme = t.id;
+        applySettings();
+      });
+      $("opt-theme").appendChild(b);
+    }
   }
+  buildSwatches();
 
   // ===== Fenêtres aide / réglages / succès =====
   const achEl = $("achievements");
@@ -1345,7 +1367,30 @@
       trim();
       scrollDown();
     },
+    stats: () => ({ chars: fr(progress.lifetime), done: Object.keys(progress.ach).length, total: ACHIEVEMENTS.length }),
+    onFinale: unlockGold,
   });
+
+  // Épilogue secret : se lance tout seul quand tous les succès sont débloqués
+  function scheduleFinale(delay) {
+    setTimeout(function tryFinale() {
+      if (story.state().finale || !settings.story) return;
+      if (story.playing() || modalOpen() || booting || mission || fxHandles.size) return setTimeout(tryFinale, 1500);
+      story.playFinale();
+    }, delay);
+  }
+
+  // Récompense des 100 % : le thème secret « Or »
+  function unlockGold() {
+    if (progress.gold) return;
+    progress.gold = true;
+    saveProgress();
+    buildSwatches();
+    settings.theme = "gold";
+    applySettings();
+    toast("Thème secret « Or » débloqué !", "trophy");
+    log("Thème « Or » débloqué");
+  }
 
   function renderStoryPanel() {
     const s = story.state();
@@ -1356,17 +1401,23 @@
         ? "Continue de taper… quelque chose se réveille dans le terminal."
         : `Chapitre ${s.done + 1} dans environ ${fr(left)} caractères.`;
     const names = ["Le message", "La traque", "Le cœur"];
+    const finaleOpen = s.finale || Object.keys(progress.ach).length === ACHIEVEMENTS.length;
     $("story-panel").innerHTML = `
       <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire</small></h3>
       <p class="muted small">${esc(status)}</p>
       <div class="story-btns">
         ${names.map((n, i) => `<button type="button" class="btn story-play" data-ch="${i + 1}" ${i < s.done ? "" : "disabled"}>${i < s.done ? `▶ ${i + 1}. ${esc(n)}` : `🔒 Chapitre ${i + 1}`}</button>`).join("")}
+        <button type="button" class="btn story-finale" ${finaleOpen ? "" : "disabled"}>${finaleOpen ? "▶ Épilogue secret" : "🔒 Épilogue (100 % des succès)"}</button>
         <button type="button" class="btn story-reset" ${s.done ? "" : "disabled"}>Recommencer l'histoire</button>
       </div>`;
     $("story-panel").querySelectorAll(".story-play").forEach((b) => b.addEventListener("click", () => {
       closeModal(achEl);
       story.play(+b.dataset.ch, { replay: true });
     }));
+    $("story-panel").querySelector(".story-finale").addEventListener("click", () => {
+      closeModal(achEl);
+      story.playFinale();
+    });
     $("story-panel").querySelector(".story-reset").addEventListener("click", () => {
       story.reset();
       renderStoryPanel();
@@ -1390,4 +1441,5 @@
   updateHud();
   if (settings.boot) boot();
   else afterBoot();
+  if (Object.keys(progress.ach).length === ACHIEVEMENTS.length && !story.state().finale) scheduleFinale(6000);
 })();

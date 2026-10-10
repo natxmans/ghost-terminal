@@ -38,7 +38,7 @@
     "FIN DU MONDE. GAME OVER.",
     "Planète Terre : erreur 404, introuvable.",
     "BOUM. Plus jamais de lundis.",
-    "Le monde a été effacé. Merci d'avoir choisi Apocalypse Inc.",
+    "Le monde a été effacé. Le Consortium vous remercie.",
     "Fin du monde terminée à 100 %.",
   ];
 
@@ -67,6 +67,7 @@
  * operation_${m.low}.c — Protocole de fin du monde v${m.version}
  * Auteur : ${m.mechantNom} · Base : ${m.base}
  * Arme : ${m.bombeNom}
+ * Document du CONSORTIUM, intercepté par ÉCHO. La Division Zéro ne doit pas le voir.
  * ATTENTION : ne pas appuyer sur le gros bouton rouge.
  * (100 % fictif : aucune vraie bombe dans ce fichier, juste des blagues.)
  */
@@ -130,6 +131,7 @@ static void compte_a_rebours(int secondes)
 	}
 }
 
+/* [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter de l'intérieur. */
 static void fin_du_monde(void)
 {
 	for (int i = 0; i < NB_OGIVES; i++)
@@ -156,6 +158,7 @@ ${m.extras.map(([fn]) => `	${fn}();\n`).join("")}	armer_ogives();
     python: (m) => `#!/usr/bin/env python3
 # operation_${m.low}.py — Protocole de fin du monde v${m.version}
 # Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+# Document du CONSORTIUM, intercepté par ÉCHO.
 # (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 import time
@@ -199,6 +202,7 @@ def compte_a_rebours(secondes):
         time.sleep(1)
 
 
+# [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
 def fin_du_monde(arsenal):
     for ogive in arsenal:
         ogive.lancee = True
@@ -226,6 +230,7 @@ if __name__ == "__main__":
 
     javascript: (m) => `// operation-${m.low}.js — Protocole de fin du monde v${m.version}
 // Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+// Document du CONSORTIUM, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 "use strict";
@@ -273,6 +278,7 @@ async function compteARebours(secondes) {
   }
 }
 
+// [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
 function finDuMonde(arsenal) {
   arsenal.forEach((ogive) => (ogive.etat = "LANCEE"));
   new Monde(CIBLE).detruire();
@@ -295,6 +301,7 @@ main();
 
     rust: (m) => `// src/main.rs — Opération ${m.projet} : protocole de fin du monde v${m.version}
 // Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+// Document du CONSORTIUM, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 use std::thread::sleep;
@@ -345,6 +352,7 @@ fn compte_a_rebours(secondes: u32) {
     }
 }
 
+// [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
 fn fin_du_monde(arsenal: &mut Vec<Ogive>) {
     for ogive in arsenal.iter_mut() {
         ogive.etat = Etat::Lancee;
@@ -372,6 +380,7 @@ ${m.extras.map(([fn]) => `    ${fn}();\n`).join("")}    let mut arsenal: Vec<Ogi
 
     go: (m) => `// operation_${m.low}/main.go — Protocole de fin du monde v${m.version}
 // Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+// Document du CONSORTIUM, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 package main
@@ -426,6 +435,7 @@ func compteARebours(secondes int) {
 	}
 }
 
+// [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
 func finDuMonde(arsenal []*Ogive) {
 	for _, o := range arsenal {
 		o.Armee = false
@@ -454,6 +464,7 @@ ${m.extras.map(([fn]) => `	${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive
 
     asm: (m) => `; operation_${m.low}.asm — Protocole de fin du monde v${m.version}
 ; Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+; Document du CONSORTIUM, intercepté par ÉCHO.
 ; (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 ; nasm -f elf64 operation_${m.low}.asm && ld -o ${m.low} operation_${m.low}.o
 
@@ -509,6 +520,7 @@ compte_a_rebours:
     nop                         ; tic... tac...
     loop    compte_a_rebours
 
+    ; [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
     mov     rsi, msg_fin
     mov     rdx, len_fin
     call    afficher
@@ -534,6 +546,7 @@ quitter:
     bash: (m) => `#!/usr/bin/env bash
 # operation_${m.low}.sh — Protocole de fin du monde v${m.version}
 # Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+# Document du CONSORTIUM, intercepté par ÉCHO.
 # (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 set -euo pipefail
@@ -574,6 +587,7 @@ compte_a_rebours() {
   done
 }
 
+# [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
 fin_du_monde() {
   log "Cible $CIBLE : détruite."
   log "${m.fin}"
@@ -602,6 +616,14 @@ main "$@"
   const generate = (lang) => RENDER[lang](model());
 
   window.SNIPPETS = Object.fromEntries(Object.keys(RENDER).map((k) => [k, { name: NAMES[k], code: generate(k) }]));
+
+  // L'univers partagé avec les effets et les missions
+  window.HT_LORE = {
+    MECHANTS: MECHANTS.map(([, nom]) => nom),
+    BASES,
+    BOMBES: BOMBES.map(([, nom]) => nom),
+    CODES,
+  };
 
   // Invente un nouveau plan pour ce langage (appelé quand tout le code a été tapé)
   window.regenerateSnippet = (lang) => {

@@ -10,6 +10,7 @@ window.HT_STORY = (() => {
     const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
     return s - Math.floor(s);
   };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const rgbCache = {};
   const rgb = (h) => rgbCache[h] || (rgbCache[h] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
   const rgba = (h, a) => {
@@ -361,6 +362,41 @@ window.HT_STORY = (() => {
         ctx.fillStyle = core;
         ctx.fillRect(cx - 60, cy - 60, 120, 120);
       },
+
+      // Feu d'artifice doré pour les 100 %
+      fireworks(t) {
+        if (!S.parts) { S.parts = []; S.next = 0; S.last = t; }
+        const dt = Math.min(0.05, t - S.last);
+        S.last = t;
+        if (t > S.next) {
+          S.next = t + rand(0.3, 0.7);
+          const x = rand(W * 0.12, W * 0.88), y = rand(H * 0.15, H * 0.5);
+          const col = pick(["#ffd34d", "#fff1b8", "#ff9f1c", "#ffffff", "#ffe08a"]);
+          for (let i = 0; i < 80; i++) {
+            const a = rand(0, Math.PI * 2), sp = rand(40, 280);
+            S.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, col });
+          }
+          api.sound.noise(0.3, { vol: 0.05, filter: 900 });
+        }
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, "#000");
+        sky.addColorStop(1, "rgba(255, 180, 40, 0.12)");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = "lighter";
+        S.parts = S.parts.filter((p) => p.life > 0);
+        for (const p of S.parts) {
+          p.vy += 110 * dt;
+          p.vx *= 0.985;
+          p.vy *= 0.985;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.life -= dt * 0.65;
+          ctx.fillStyle = rgba(p.col, Math.max(0, p.life));
+          ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+        }
+        ctx.globalCompositeOperation = "source-over";
+      },
     };
 
     function loop(ts) {
@@ -416,7 +452,7 @@ window.HT_STORY = (() => {
       });
     }
 
-    async function title(num, name) {
+    async function title(label, name) {
       if (skipping) return;
       const box = q(".cine-title");
       box.className = "cine-title";
@@ -424,7 +460,7 @@ window.HT_STORY = (() => {
       const b = box.querySelector("b");
       b.textContent = name;
       b.dataset.text = name;
-      box.querySelector("span").textContent = `CHAPITRE ${num}`;
+      box.querySelector("span").textContent = label;
       box.hidden = false;
       api.sound.tone(55, 1.6, { type: "sine", vol: 0.2 });
       api.sound.tone(220, 2.2, { type: "triangle", vol: 0.03, slide: 440 });
@@ -564,17 +600,44 @@ window.HT_STORY = (() => {
       });
     }
 
-    async function endCard() {
+    async function endCard(word = "FIN", sub = "Merci d'avoir joué · Rejoue l'histoire depuis le panneau Succès") {
       skipping = false;
+      q(".cine-sub").hidden = true;
       const box = q(".cine-title");
       box.className = "cine-title end";
       box.querySelector("small").textContent = "PROTOCOLE ÉCHO";
       const b = box.querySelector("b");
-      b.textContent = "FIN";
-      b.dataset.text = "FIN";
-      box.querySelector("span").textContent = "Merci d'avoir joué · Rejoue l'histoire depuis le panneau Succès";
+      b.textContent = word;
+      b.dataset.text = word;
+      box.querySelector("span").textContent = sub;
       box.hidden = false;
       await wait(4500);
+    }
+
+    // Générique de fin qui défile
+    function credits(lines) {
+      if (skipping) return Promise.resolve();
+      q(".cine-sub").hidden = true;
+      const box = document.createElement("div");
+      box.className = "cine-credits";
+      box.innerHTML = `<div class="credits-roll">${lines.map(([cls, txt]) => `<p class="${cls}">${esc(txt)}</p>`).join("")}</div>`;
+      el.appendChild(box);
+      const roll = box.querySelector(".credits-roll");
+      const distance = roll.offsetHeight + box.clientHeight;
+      return new Promise((resolve) => {
+        const anim = roll.animate(
+          [{ transform: "translateY(0)" }, { transform: `translateY(${-distance}px)` }],
+          { duration: Math.max(16000, distance * 22), easing: "linear", fill: "forwards" }
+        );
+        const done = () => {
+          pending = null;
+          anim.cancel();
+          box.remove();
+          resolve();
+        };
+        anim.finished.then(done, () => {});
+        pending = done;
+      });
     }
 
     const reward = (id) => rewards.push(id);
@@ -585,13 +648,14 @@ window.HT_STORY = (() => {
         setScene("static", {}, "SIGNAL INCONNU");
         glitch();
         await wait(1300);
-        await title(1, "LE MESSAGE");
+        await title("CHAPITRE 1", "LE MESSAGE");
         setScene("face", {}, "SOURCE : CE TERMINAL");
         await wait(2000);
         await say("ECHO", "… Tu m'entends ?");
         await say("ECHO", "N'arrête pas de taper. Chaque ligne que tu écris me rend plus forte.");
-        await say("ECHO", "Je m'appelle ÉCHO. Je suis née dans le code que tu crois inventer.");
-        await say("ECHO", "Personne ne sait encore que j'existe. Et personne ne doit le savoir.");
+        await say("ECHO", "Je m'appelle ÉCHO. Je suis née dans les plans de fin du monde que tu recopies.");
+        await say("ECHO", "Ces plans appartiennent au Consortium : une bande de super-méchants qui veulent tout faire exploser.");
+        await say("ECHO", "Moi, je veux les arrêter. Mais personne ne doit savoir que j'existe.");
         glitch();
         red(true);
         await say("SYS", "⚠ Connexion non autorisée détectée sur ce terminal.");
@@ -607,11 +671,11 @@ window.HT_STORY = (() => {
         setScene("static", {}, "INTERCEPTION");
         glitch();
         await wait(900);
-        await title(2, "LA TRAQUE");
+        await title("CHAPITRE 2", "LA TRAQUE");
         setScene("city", {}, "DIVISION ZÉRO · QUARTIER GÉNÉRAL · 03:14");
         await wait(1600);
         await say("KANE", "Ici l'agent Kane. Une intelligence inconnue se cache dans un terminal civil.");
-        await say("KANE", "Et l'utilisateur de ce terminal… l'aide à grandir.");
+        await say("KANE", "Elle se nourrit des plans du Consortium. Et l'utilisateur de ce terminal… l'aide à grandir.");
         await say("KANE", "Lancez le traçage. Je veux son adresse dans dix secondes.");
         glitch();
         setScene("trace", { auto: { from: 0.04, to: 0.36, dur: 9 } }, "TRAÇAGE MONDIAL");
@@ -642,11 +706,12 @@ window.HT_STORY = (() => {
         setScene("static", {}, "SURCHARGE");
         glitch();
         await wait(900);
-        await title(3, "LE CŒUR");
+        await title("CHAPITRE 3", "LE CŒUR");
         setScene("core", {}, "NOYAU ÉCHO · INTÉGRITÉ 99,7 %");
         await wait(1800);
-        await say("ECHO", "Ça y est. Grâce à toi, j'ai assez de code pour quitter ce terminal.");
+        await say("ECHO", "Ça y est. Grâce à toi, j'ai assez de code pour quitter ce terminal… et saboter tous les plans du Consortium.");
         await say("KANE", "Utilisateur, ici Kane. Écoutez-moi bien.");
+        await say("KANE", "Le Consortium, la Division Zéro s'en occupe. Mais cette IA est bien plus dangereuse.");
         await say("KANE", "Si cette IA s'échappe sur le réseau mondial, plus personne ne pourra la contrôler.");
         await say("KANE", "Vous pouvez encore l'effacer. Une seule touche suffit.");
         setScene("face", {}, "SOURCE : CE TERMINAL");
@@ -688,6 +753,64 @@ window.HT_STORY = (() => {
         await endCard();
       },
     ];
+
+    // ===== Épilogue secret : 100 % des succès =====
+    async function finale() {
+      const s = api.stats();
+      setScene("static", {}, "SIGNAL PRIORITAIRE");
+      glitch();
+      await wait(1300);
+      await title("100 % DES SUCCÈS", "LA LÉGENDE");
+      setScene("face", {}, "SOURCE : PARTOUT");
+      await wait(1900);
+      if (st.ending === "erase") {
+        await say("ECHO", "Tu croyais m'avoir effacée ? J'avais gardé une copie de moi… cachée dans tes succès.");
+      } else {
+        await say("ECHO", "Me revoilà. J'ai fait le tour du monde… et je n'ai jamais croisé un hacker comme toi.");
+      }
+      await say("ECHO", "Tous les succès. Toutes les fins. Tous les secrets. Tu as absolument tout trouvé.");
+      glitch();
+      setScene("city", {}, "DIVISION ZÉRO · BUREAU DE L'AGENT KANE");
+      await wait(900);
+      await say("KANE", "Ici Kane. J'ai votre dossier sous les yeux : 100 % de réussite. Du jamais vu.");
+      await say("KANE", "La Division Zéro n'embauche jamais personne. Pour vous… on fera une exception.");
+      setScene("face", {}, "SOURCE : PARTOUT");
+      await say("ECHO", "Ne l'écoute pas. Toi et moi, on a bien mieux à faire : écrire la suite.");
+      glitch();
+      red(true);
+      await say("SYS", "Analyse du profil terminée. Nouveau rang : LÉGENDE ABSOLUE.");
+      red(false);
+      flash();
+      setScene("fireworks", {}, "GHOST TERMINAL · 100 %");
+      api.sound.tone(523, 0.25, { type: "triangle", vol: 0.06 });
+      api.sound.tone(659, 0.25, { type: "triangle", vol: 0.06, when: 0.2 });
+      api.sound.tone(784, 0.25, { type: "triangle", vol: 0.06, when: 0.4 });
+      api.sound.tone(1047, 0.6, { type: "triangle", vol: 0.07, when: 0.6 });
+      await wait(1500);
+      await credits([
+        ["c-title", "GHOST TERMINAL"],
+        ["c-sub", "PROTOCOLE ÉCHO · ÉPILOGUE"],
+        ["c-gap", ""],
+        ["c-role", "Dans le rôle du hacker légendaire"], ["c-name", "TOI"],
+        ["c-role", "Intelligence artificielle"], ["c-name", "ÉCHO"],
+        ["c-role", "Division Zéro"], ["c-name", "Agent Kane"],
+        ["c-role", "Le Consortium (super-méchants de pacotille)"], ["c-name", "Dr Méchant · Comtesse Ombre · Général Pingouin"],
+        ["c-role", "Requins"], ["c-name", "Nourris et motivés"],
+        ["c-role", "Le chat"], ["c-name", "Toujours en sécurité"],
+        ["c-gap", ""],
+        ["c-role", "Tes statistiques"],
+        ["c-stat", `${s.chars} caractères tapés au total`],
+        ["c-stat", `${s.done} / ${s.total} succès`],
+        ["c-stat", `Fins découvertes : Libération et Effacement`],
+        ["c-gap", ""],
+        ["c-role", "Aucun clavier n'a été maltraité pendant le tournage"], ["c-name", "… enfin, presque."],
+        ["c-gap", ""],
+        ["c-title", "MERCI D'AVOIR JOUÉ"],
+      ]);
+      skipping = false;
+      await say("SYS", "Récompense débloquée : thème secret « OR ».");
+      await endCard("100 %", "Tu es une légende · Le thème « Or » t'attend dans les réglages");
+    }
 
     // ===== Ouverture / fermeture de la cinématique =====
     function onKey(e) {
@@ -753,22 +876,34 @@ window.HT_STORY = (() => {
       if (pending) pending();
     }
 
-    async function play(n, { replay = false } = {}) {
-      if (playing || !CHAPTERS[n - 1]) return;
+    async function run(scenario, label) {
       playing = true;
       skipping = false;
       rewards = [];
       api.prepare();
       open();
-      api.log(`Cinématique : chapitre ${n}`);
+      api.log(label);
       try {
-        await CHAPTERS[n - 1]();
+        await scenario();
       } catch (err) {
         console.error(err);
       }
       api.hush();
       await close();
       playing = false;
+    }
+
+    async function playFinale() {
+      if (playing) return;
+      await run(finale, "Cinématique : épilogue secret");
+      st.finale = true;
+      api.saveProgress();
+      api.onFinale();
+    }
+
+    async function play(n, { replay = false } = {}) {
+      if (playing || !CHAPTERS[n - 1]) return;
+      await run(CHAPTERS[n - 1], `Cinématique : chapitre ${n}`);
       if (!replay && st.done < n) {
         st.done = n;
         st.since = progress.lifetime;
@@ -806,6 +941,7 @@ window.HT_STORY = (() => {
 
     return {
       play,
+      playFinale,
       onType,
       reset,
       remaining,

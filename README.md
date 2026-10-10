@@ -14,7 +14,8 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 
 - **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde. Méchant, base secrète, code de lancement, arme et étapes bonus sont **tirés au hasard** : à chaque fois que tout le code a été tapé, un nouveau plan est inventé.
 - **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran.
-- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. 3 chapitres en cinématiques, une course-poursuite et deux fins possibles.
+- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. 3 chapitres en cinématiques, une course-poursuite, deux fins possibles… et un épilogue secret pour ceux qui débloquent 100 % des succès.
+- **Un seul univers** : le faux code, les effets et les missions racontent tous la même histoire. Une IA nommée ÉCHO, les super-méchants du Consortium et l'agent Kane de la Division Zéro.
 - **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables.
 - **Mode mission** : une opération complète qui enchaîne plusieurs effets toute seule.
 - **Pilote automatique** : le code s'écrit sans toucher au clavier.
@@ -40,7 +41,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 | `Maj` + `5` | Requête base de données |
 | `Maj` + `6` | Cassage de mot de passe |
 | `Maj` + `7` | Balayage satellite |
-| `Maj` + `8` | Autodestruction |
+| `Maj` + `8` | Ogive du Consortium (à désamorcer !) |
 | `Maj` + `9` | Réseau mondial |
 | `Maj` + `0` | Mode fantôme |
 | `F1` | Aide |
