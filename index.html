@@ -73,11 +73,11 @@
   <!-- HUD à droite -->
   <aside id="hud" aria-label="Moniteur système">
     <section class="hud-card">
-      <h3>SYSTÈME</h3>
-      <div class="meter"><span>CPU</span><div class="meter-bar"><i id="m-cpu"></i></div><b id="v-cpu">0%</b></div>
-      <div class="meter"><span>RAM</span><div class="meter-bar"><i id="m-ram"></i></div><b id="v-ram">0%</b></div>
-      <div class="meter"><span>RÉSEAU</span><div class="meter-bar"><i id="m-net"></i></div><b id="v-net">0%</b></div>
-      <div class="meter"><span>CHIFFR.</span><div class="meter-bar"><i id="m-enc"></i></div><b id="v-enc">0%</b></div>
+      <h3>TON SYSTÈME <small class="live-tag"><i></i>EN DIRECT</small></h3>
+      <div class="meter" title="Occupation réelle de la page (retard de la boucle d'événements)"><span>CHARGE</span><div class="meter-bar"><i id="m-load"></i></div><b id="v-load">—</b></div>
+      <div class="meter" title="Mémoire utilisée par la page"><span>MÉMOIRE</span><div class="meter-bar"><i id="m-mem"></i></div><b id="v-mem">—</b></div>
+      <div class="meter" title="Niveau de ta batterie"><span>BATTERIE</span><div class="meter-bar"><i id="m-bat"></i></div><b id="v-bat">—</b></div>
+      <div class="meter" title="Images affichées par seconde"><span>IMAGES/S</span><div class="meter-bar"><i id="m-fps"></i></div><b id="v-fps">—</b></div>
     </section>
     <section class="hud-card">
       <h3>ACTIVITÉ <small id="hud-cpm">0 car/min</small></h3>
@@ -86,10 +86,12 @@
     <section class="hud-card hud-radar">
       <canvas id="radar"></canvas>
       <ul class="hud-info">
-        <li><span>NOEUD</span><b>GHOST-7</b></li>
-        <li><span>IP</span><b id="hud-ip">10.13.37.42</b></li>
-        <li><span>PROXY</span><b id="hud-proxy">7 rebonds</b></li>
-        <li><span>LATENCE</span><b id="hud-ping">13 ms</b></li>
+        <li><span>OS</span><b id="sys-os">—</b></li>
+        <li><span>NAVIG.</span><b id="sys-browser">—</b></li>
+        <li><span>CŒURS</span><b id="sys-cores">—</b></li>
+        <li><span>RAM</span><b id="sys-ram">—</b></li>
+        <li><span>ÉCRAN</span><b id="sys-screen">—</b></li>
+        <li><span>RÉSEAU</span><b id="sys-net">—</b></li>
       </ul>
     </section>
     <section class="hud-card hud-log-card">
@@ -176,6 +178,7 @@
             <li>Le mode immersion (F10) cache tout : idéal pour faire une blague à quelqu'un.</li>
             <li>Dans les réglages, colle ton propre code pour qu'il s'écrive à l'écran, et active la voix de l'ordinateur.</li>
             <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀</li>
+            <li>Le panneau « Ton système » affiche ton vrai appareil en direct (rien n'est envoyé nulle part).</li>
             <li>28 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
           </ul>
         </section>
@@ -218,6 +221,12 @@
       <label class="row check"><input type="checkbox" id="opt-popups"><span>Événements surprises pendant la frappe</span></label>
       <label class="row check"><input type="checkbox" id="opt-story"><span>Mode histoire (cinématiques)</span></label>
 
+      <h4 class="group danger-group">Zone dangereuse</h4>
+      <div class="row">
+        <span class="muted small">Efface tes succès, ta progression dans l'histoire, ton code perso et tous tes réglages.</span>
+        <button class="btn btn-danger" id="btn-wipe" type="button">Tout réinitialiser</button>
+      </div>
+
       <div class="panel-actions">
         <button class="btn" id="btn-install" data-icon="install" hidden>Installer l'appli</button>
         <button class="btn" id="btn-reset">Réinitialiser</button>
@@ -242,6 +251,24 @@
     </div>
   </div>
 
+  <!-- Confirmation : tout réinitialiser -->
+  <div class="overlay" id="wipe" role="alertdialog" aria-modal="true" aria-labelledby="wipe-title" hidden>
+    <div class="panel panel-danger">
+      <h2 id="wipe-title" class="panel-title">&gt; TOUT EFFACER ?</h2>
+      <p class="muted">Tu vas perdre définitivement :</p>
+      <ul class="tips">
+        <li>tous tes succès (<b id="wipe-ach">0</b>) et le thème secret « Or » ;</li>
+        <li>ta progression dans l'histoire et tes choix ;</li>
+        <li>ton code perso, tes réglages et ton compteur de caractères (<b id="wipe-chars">0</b>).</li>
+      </ul>
+      <p class="muted small">Cette action est irréversible. Ghost Terminal redémarrera comme au premier jour.</p>
+      <div class="panel-actions">
+        <button class="btn btn-primary" data-close type="button">Annuler</button>
+        <button class="btn btn-danger" id="btn-wipe-confirm" type="button">Oui, tout effacer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Démarrage -->
   <div id="boot" hidden>
     <pre id="boot-log"></pre>
@@ -257,6 +284,7 @@
   <script src="highlight.js"></script>
   <script src="effects.js"></script>
   <script src="story.js"></script>
+  <script src="survie.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

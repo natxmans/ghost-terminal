@@ -569,6 +569,78 @@ window.HT_STORY = (() => {
         ctx.fillRect(0, ground, W, H - ground);
       },
 
+      // Le gros bouton rouge (jeu secret)
+      redbutton(t, c) {
+        const cx = W / 2, cy = H * 0.5;
+        const spot = ctx.createRadialGradient(cx, cy, 10, cx, cy, Math.min(W, H) * 0.6);
+        spot.addColorStop(0, "rgba(255,255,255,0.12)");
+        spot.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = spot;
+        ctx.fillRect(0, 0, W, H);
+        const pw = Math.min(W * 0.24, 200), ph = H * 0.26;
+        ctx.fillStyle = "#15171b";
+        ctx.fillRect(cx - pw / 2, cy, pw, ph);
+        ctx.fillStyle = "#24272e";
+        ctx.fillRect(cx - pw * 0.6, cy - 8, pw * 1.2, 14);
+        ctx.fillStyle = "#ffd23d";
+        ctx.fillRect(cx - pw * 0.42, cy + ph * 0.35, pw * 0.84, 26);
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+        ctx.font = `700 ${Math.max(10, pw / 12)}px "Chakra Petch", sans-serif`;
+        ctx.fillText("NE PAS APPUYER", cx, cy + ph * 0.35 + 18);
+        const br = pw * 0.32 * (S.pressed ? 0.9 : 1);
+        ctx.shadowColor = c.danger;
+        ctx.shadowBlur = 22 + 10 * Math.sin(t * 3);
+        const dome = ctx.createRadialGradient(cx - br * 0.3, cy - 8 - br * 0.4, br * 0.1, cx, cy - 8, br);
+        dome.addColorStop(0, "#ff8a9a");
+        dome.addColorStop(1, "#c4001f");
+        ctx.fillStyle = dome;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 8, br, br * 0.6, 0, Math.PI, 0);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.textAlign = "left";
+      },
+
+      // L'explosion de l'ogive (jeu secret)
+      blast(t) {
+        const cx = W / 2, gy = H * 0.8;
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, "#1a0400");
+        sky.addColorStop(1, `rgba(255, 120, 30, ${Math.max(0.25, 0.85 - t * 0.12)})`);
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+        const grow = Math.min(1, t / 2.5);
+        const stemH = H * 0.42 * grow, stemW = Math.max(18, W * 0.05);
+        const stem = ctx.createLinearGradient(0, gy - stemH, 0, gy);
+        stem.addColorStop(0, "rgba(255, 170, 70, 0.9)");
+        stem.addColorStop(1, "rgba(90, 30, 10, 0.95)");
+        ctx.fillStyle = stem;
+        ctx.fillRect(cx - stemW / 2, gy - stemH, stemW, stemH);
+        const capX = W * 0.17 * grow + 12, capY = H * 0.1 * grow + 6;
+        const cap = ctx.createRadialGradient(cx, gy - stemH, 4, cx, gy - stemH, capX);
+        cap.addColorStop(0, "rgba(255, 245, 210, 0.95)");
+        cap.addColorStop(0.5, "rgba(255, 140, 40, 0.9)");
+        cap.addColorStop(1, "rgba(110, 35, 10, 0.85)");
+        ctx.fillStyle = cap;
+        ctx.beginPath();
+        ctx.ellipse(cx, gy - stemH, capX, capY, 0, 0, Math.PI * 2);
+        ctx.fill();
+        const r = t * Math.max(W, H) * 0.5;
+        ctx.strokeStyle = `rgba(255, 225, 190, ${Math.max(0, 1 - t / 2.5)})`;
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.ellipse(cx, gy, r, r * 0.22, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.fillStyle = "#100400";
+        ctx.fillRect(0, gy, W, H - gy);
+        if (t < 0.7) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${1 - t / 0.7})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+      },
+
       // L'ogive, ses fils et son compte à rebours
       bomb(t, c) {
         const vg = ctx.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H * 0.42, W * 0.6);
@@ -973,6 +1045,36 @@ window.HT_STORY = (() => {
         };
         pending = () => end(false);
         requestAnimationFrame(tick);
+      });
+    }
+
+    // Le gros bouton rouge : n'importe quelle touche (ou un clic) l'enfonce… par accident
+    function bigButton(seconds = 9) {
+      if (skipping) return Promise.resolve("pingouin");
+      return new Promise((resolve) => {
+        q(".cine-sub").hidden = true;
+        const box = q(".cine-choice");
+        box.innerHTML = `
+          <div class="choice-q">SURTOUT, NE TOUCHE À RIEN…</div>
+          <button type="button" class="big-red">NE PAS APPUYER</button>
+          <div class="qte-hint">Ne fais rien pendant ${seconds} secondes.</div>`;
+        box.hidden = false;
+        let over = false;
+        const done = (who) => {
+          if (over) return;
+          over = true;
+          clearTimeout(timer);
+          keyHandler = null;
+          pending = null;
+          box.hidden = true;
+          S.pressed = true;
+          api.sound.tone(180, 0.15, { vol: 0.08 });
+          resolve(who);
+        };
+        const timer = setTimeout(() => done("pingouin"), seconds * 1000);
+        box.querySelector(".big-red").addEventListener("click", () => done("toi"));
+        keyHandler = () => done("toi");
+        pending = () => done("pingouin");
       });
     }
 
@@ -1402,6 +1504,48 @@ window.HT_STORY = (() => {
       await endCard("100 %", "Tu es une légende · Le thème « Or » t'attend dans les réglages");
     }
 
+    // ===== Jeu secret : le bouton, l'explosion, puis la survie (voir survie.js) =====
+    async function secretIntro() {
+      setScene("static", {}, "SIGNAL RETROUVÉ");
+      glitch();
+      await wait(1000);
+      await title("JEU SECRET", "LE BOUTON");
+      setScene("volcano", {}, "VOLCAN SECRET · QUELQUES JOURS PLUS TARD");
+      await wait(1500);
+      await say("ECHO", "Le Consortium a abandonné sa base. Kane veut qu'on vérifie qu'il n'y reste rien de dangereux.");
+      await say("ECHO", "Je te guide à l'intérieur. Et surtout… ne touche à rien.");
+      setScene("redbutton", {}, "SALLE DE CONTRÔLE ABANDONNÉE");
+      await wait(1200);
+      await say("PINGOUIN", "Coin ! Message enregistré : si vous voyez ce bouton, NE PAS APPUYER. Jamais. Coin.");
+      await say("ECHO", "Tu as entendu le Pingouin. On ne touche pas au gros bouton rouge.");
+      const who = await bigButton(9);
+      skipping = false;
+      flash();
+      api.sound.tone(90, 0.6, { type: "sawtooth", vol: 0.08 });
+      if (who === "toi") await say("ECHO", "… Tu as appuyé sur le bouton ?! Mais POURQUOI ?!");
+      else await say("ECHO", "… Le Pingouin vient de glisser sur une sardine… et d'atterrir pile sur le bouton.");
+      red(true);
+      setScene("bomb", { timer: 5, name: "Ogive Oméga" }, "LANCEMENT CONFIRMÉ");
+      await say("SYS", "⚠ OGIVE OMÉGA ARMÉE. Ce n'est PAS un feu d'artifice.");
+      await say("ECHO", "Celle-là, je n'ai jamais réussi à la saboter ! Accroche-toi !");
+      for (let s = 5; s >= 0 && !skipping; s--) {
+        S.timer = s;
+        api.sound.tone(s ? 1200 : 300, 0.12, { vol: 0.05 });
+        await wait(450);
+      }
+      skipping = false;
+      red(false);
+      api.sound.boom();
+      setScene("blast", {}, "DÉTONATION");
+      await wait(3200);
+      setScene("black");
+      await say("SYS", "…");
+      await say("ECHO", "… Tu m'entends ? Tu es vivant ! J'ai protégé ton terminal, mais dehors, tout est en ruines.");
+      await say("ECHO", "Écoute-moi bien : trouve 5 pièces de radio dans les décombres. Avec la radio, je t'envoie un hélicoptère.");
+      await say("ECHO", "Évite les débris qui tombent, les nuages radioactifs… et les requins mutants. Oui, les requins ont muté.");
+      await say("ECHO", "Déplace-toi avec les flèches ou ZQSD, ou fais glisser ton doigt. Bonne chance !");
+    }
+
     // ===== Ouverture / fermeture de la cinématique =====
     function onKey(e) {
       if (!playing) return;
@@ -1537,9 +1681,16 @@ window.HT_STORY = (() => {
       return next < 0 ? 0 : Math.max(0, CHAPTERS[next].threshold - (progress.lifetime - st.since));
     };
 
+    async function playSecret() {
+      if (playing) return false;
+      await run(secretIntro, "Cinématique : jeu secret");
+      return true;
+    }
+
     return {
       play,
       playFinale,
+      playSecret,
       onType,
       reset,
       remaining,

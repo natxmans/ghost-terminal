@@ -64,6 +64,7 @@
     sound: false, voice: false, volume: 60, popups: true, story: true, customCode: "",
   };
   const STORE = "ghostterminal-v1";
+  let wiping = false; // « Tout réinitialiser » en cours : on n'enregistre plus rien
 
   function loadSettings() {
     try {
@@ -73,6 +74,7 @@
     }
   }
   function saveSettings() {
+    if (wiping) return;
     try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch { /* navigation privée */ }
   }
   function storeFlag(name, value) {
@@ -253,7 +255,12 @@
     { id: "bunker", icon: "alert", name: "Le bunker", desc: "Histoire : terminer le chapitre 5" },
     { id: "simon", icon: "zap", name: "Mémoire d'éléphant", desc: "Histoire : reproduire la séquence secrète" },
     { id: "demineur", icon: "timer", name: "Démineur", desc: "Histoire : couper le bon fil" },
+    { id: "survivor", icon: "shield", name: "Survivant", desc: "Jeu secret : survivre à l'explosion de l'ogive", secret: true },
   ];
+  // Les succès secrets ne comptent pas dans les 100 % (ils se débloquent après)
+  const MAIN_ACH = ACHIEVEMENTS.filter((a) => !a.secret);
+  const mainDone = () => MAIN_ACH.filter((a) => progress.ach[a.id]).length;
+  const allDone = () => mainDone() === MAIN_ACH.length;
   const PROGRESS_KEY = "ghostterminal-progress";
   const progress = (() => {
     const base = { ach: {}, lifetime: 0, effects: [], langs: [], themes: [] };
@@ -266,6 +273,7 @@
   let progressDirty = false;
   function saveProgress() {
     progressDirty = false;
+    if (wiping) return;
     try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch { /* tant pis */ }
   }
   function remember(list, value) {
@@ -277,8 +285,7 @@
   }
 
   function updateAchCount() {
-    const n = Object.keys(progress.ach).length;
-    $("ach-count").textContent = `${n}/${ACHIEVEMENTS.length}`;
+    $("ach-count").textContent = `${mainDone()}/${MAIN_ACH.length}`;
   }
 
   function achieve(id) {
@@ -300,18 +307,18 @@
     log(`Succès : ${a.name}`);
     [659, 784, 988, 1319].forEach((f, i) => Sound.tone(f, 0.14, { vol: 0.05, when: i * 0.07, type: "triangle" }));
     if (isOpen($("achievements"))) renderAchievements();
-    if (Object.keys(progress.ach).length === ACHIEVEMENTS.length) scheduleFinale(3500);
+    if (!a.secret && allDone()) scheduleFinale(3500);
   }
 
   function renderAchievements() {
-    const n = Object.keys(progress.ach).length;
-    $("ach-progress").style.width = (n / ACHIEVEMENTS.length) * 100 + "%";
-    $("ach-summary").textContent = `${n} / ${ACHIEVEMENTS.length} succès débloqués · ${fr(progress.lifetime)} caractères tapés au total`;
-    $("ach-grid").innerHTML = ACHIEVEMENTS.map((a) => {
+    const n = mainDone();
+    $("ach-progress").style.width = (n / MAIN_ACH.length) * 100 + "%";
+    $("ach-summary").textContent = `${n} / ${MAIN_ACH.length} succès débloqués · ${fr(progress.lifetime)} caractères tapés au total`;
+    $("ach-grid").innerHTML = ACHIEVEMENTS.filter((a) => !a.secret || progress.ach[a.id]).map((a) => {
       const got = progress.ach[a.id];
-      return `<div class="ach ${got ? "got" : ""}">
+      return `<div class="ach ${got ? "got" : ""} ${a.secret ? "secret" : ""}">
         <span class="ach-ic">${window.icon(got ? a.icon : "lock")}</span>
-        <div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div>
+        <div><b>${esc(a.name)}${a.secret ? " · SECRET" : ""}</b><span>${esc(a.desc)}</span></div>
       </div>`;
     }).join("");
   }
@@ -699,7 +706,7 @@
   }
 
   function maybeSurprise() {
-    if (!settings.popups || mission || story.playing()) return;
+    if (!settings.popups || mission || story.playing() || survie.playing()) return;
     if (charsSinceEvent > 1500 && Math.random() < 0.03) {
       charsSinceEvent = 0;
       runEffect(pick(["download", "download", "download", "radar", "password", "gps", "database", "files", "network"]), { auto: true });
@@ -729,7 +736,7 @@
   }
   function autoLoop() {
     if (!auto) return;
-    if (!story.playing()) typeChars(randInt(1, Math.max(2, settings.speed)));
+    if (!story.playing() && !survie.playing()) typeChars(randInt(1, Math.max(2, settings.speed)));
     autoTimer = setTimeout(autoLoop, Math.random() < 0.06 ? rand(250, 600) : rand(30, 85));
   }
 
@@ -820,28 +827,88 @@
   const sparkData = new Array(60).fill(0);
   const sparkCtx = setupCanvas($("spark"), 232, 46);
   const radarCtx = setupCanvas($("radar"), 96, 96);
-  const hudState = { cpu: 12, ram: 41, net: 8, enc: 92 };
   const radarBlips = Array.from({ length: 4 }, () => ({ a: rand(0, 6.28), d: rand(0.25, 0.9), g: 0 }));
 
-  function setMeter(name, value) {
-    const v = Math.round(value);
+  // ===== Ton vrai système, en direct (tout reste dans ton navigateur, rien n'est envoyé) =====
+  const sys = { load: 0, fps: 0, battery: null };
+
+  // Charge réelle : plus la page est occupée, plus ce minuteur prend du retard
+  let lagLast = now();
+  setInterval(() => {
+    const t = now();
+    const lag = Math.max(0, t - lagLast - 250);
+    lagLast = t;
+    sys.load = sys.load * 0.6 + clamp(lag * 2, 0, 100) * 0.4;
+  }, 250);
+
+  // Images par seconde réellement affichées
+  let fpsFrames = 0, fpsLast = now();
+  (function countFrames() {
+    fpsFrames++;
+    const t = now();
+    if (t - fpsLast >= 1000) {
+      sys.fps = Math.round((fpsFrames * 1000) / (t - fpsLast));
+      fpsFrames = 0;
+      fpsLast = t;
+    }
+    requestAnimationFrame(countFrames);
+  })();
+
+  // Batterie (Chrome, Edge, Opera)
+  navigator.getBattery?.()
+    .then((b) => {
+      const read = () => (sys.battery = { level: b.level, charging: b.charging });
+      read();
+      b.addEventListener("levelchange", read);
+      b.addEventListener("chargingchange", read);
+    })
+    .catch(() => {});
+
+  function detectSystem() {
+    const ua = navigator.userAgent;
+    const uad = navigator.userAgentData;
+    const os = uad?.platform ||
+      (/Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad|iPod/.test(ua) ? "iOS" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "Inconnu");
+    let browser = "Inconnu";
+    const brand = uad?.brands?.find((b) => !/not.?a.?brand|chromium/i.test(b.brand));
+    if (brand) browser = `${brand.brand.replace(/^(Google|Microsoft) /, "")} ${brand.version}`;
+    else {
+      const m = ua.match(/(Firefox|Edg|OPR|Chrome|Version)\/(\d+)/);
+      if (m) browser = `${{ Edg: "Edge", OPR: "Opera", Version: "Safari" }[m[1]] || m[1]} ${m[2]}`;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    $("sys-os").textContent = os;
+    $("sys-browser").textContent = browser;
+    $("sys-cores").textContent = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} cœurs` : "—";
+    $("sys-ram").textContent = navigator.deviceMemory ? `${navigator.deviceMemory} Go ou +` : "—";
+    $("sys-screen").textContent = `${screen.width}×${screen.height}${dpr !== 1 ? ` @${Math.round(dpr * 100) / 100}x` : ""}`;
+  }
+
+  function setMeter(name, pct, text, hot = pct > 85) {
     const bar = $("m-" + name);
-    bar.style.width = v + "%";
-    bar.classList.toggle("hot", v > 85);
-    $("v-" + name).textContent = v + "%";
+    bar.style.width = clamp(pct, 0, 100) + "%";
+    bar.classList.toggle("hot", hot);
+    $("v-" + name).textContent = text;
   }
 
   function updateHud() {
-    const cpm = cpmOver(3000);
-    const wins = openWins.length;
-    hudState.cpu = clamp(hudState.cpu * 0.5 + (6 + cpm / 22 + wins * 9 + rand(-4, 4)) * 0.5, 2, 99);
-    hudState.ram = clamp(hudState.ram + rand(-1.5, 1.6) + wins * 0.3 - (hudState.ram > 70 ? 1 : 0), 24, 94);
-    hudState.net = clamp(hudState.net * 0.4 + (cpm / 28 + wins * 12 + rand(0, 8)) * 0.6, 1, 99);
-    hudState.enc = clamp(hudState.enc + rand(-1.2, 1.2), 82, 100);
-    setMeter("cpu", hudState.cpu);
-    setMeter("ram", hudState.ram);
-    setMeter("net", hudState.net);
-    setMeter("enc", hudState.enc);
+    setMeter("load", sys.load, `${Math.round(sys.load)} %`);
+    const mem = performance.memory;
+    if (mem) {
+      const used = mem.usedJSHeapSize / 1048576;
+      setMeter("mem", (mem.usedJSHeapSize / mem.jsHeapSizeLimit) * 100, `${Math.round(used)} Mo`);
+    } else setMeter("mem", 0, "—", false);
+    if (sys.battery) {
+      const pct = Math.round(sys.battery.level * 100);
+      setMeter("bat", pct, `${pct} %${sys.battery.charging ? " ⚡" : ""}`, pct <= 20 && !sys.battery.charging);
+    } else setMeter("bat", 0, "—", false);
+    setMeter("fps", (sys.fps / 60) * 100, `${sys.fps}`, false);
+    const c = navigator.connection;
+    $("sys-net").textContent = !navigator.onLine
+      ? "Hors ligne"
+      : c?.effectiveType
+        ? `${c.effectiveType.toUpperCase()}${c.downlink ? ` · ${c.downlink.toLocaleString("fr-FR")} Mb/s` : ""}`
+        : "En ligne";
   }
 
   function drawSpark() {
@@ -914,13 +981,12 @@
     sparkData.shift();
     sparkData.push(cpmOver(3000));
     if (hudVisible()) drawSpark();
-    if (Math.random() < 0.4) $("hud-ping").textContent = `${randInt(8, 42)} ms`;
-    if (Math.random() < 0.05) $("hud-proxy").textContent = `${randInt(5, 12)} rebonds`;
   }, 1000);
 
   $("top-session").textContent = `SESSION #${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
-  $("hud-ip").textContent = `10.${randInt(0, 255)}.${randInt(0, 255)}.${randInt(2, 254)}`;
   $("top-clock").textContent = clockStr();
+  detectSystem();
+  window.addEventListener("resize", detectSystem);
 
   // ===== Dock & aide (générés à partir de la liste d'effets) =====
   const numbered = EFFECTS.filter((e) => e.digit !== undefined).sort((a, b) => (a.digit || 10) - (b.digit || 10));
@@ -1032,7 +1098,8 @@
 
   // ===== Fenêtres aide / réglages / succès =====
   const achEl = $("achievements");
-  const MODALS = [helpEl, settingsEl, achEl];
+  const wipeEl = $("wipe");
+  const MODALS = [helpEl, settingsEl, achEl, wipeEl];
   const isOpen = (el) => !el.hidden;
   const modalOpen = () => MODALS.some(isOpen);
 
@@ -1210,7 +1277,7 @@
       }
       return;
     }
-    if (story.playing()) return; // la cinématique gère ses propres touches
+    if (story.playing() || survie.playing()) return; // la cinématique ou le jeu gèrent leurs touches
 
     konami(e.key);
 
@@ -1224,7 +1291,7 @@
     if (e.key === "F9") { e.preventDefault(); isOpen(settingsEl) ? closeModal(settingsEl) : openModal(settingsEl); return; }
     if (e.key === "F10") { e.preventDefault(); setImmersive(!body.classList.contains("immersive")); return; }
 
-    if (isOpen(settingsEl) || isOpen(achEl)) return; // le clavier sert aux menus
+    if (isOpen(settingsEl) || isOpen(achEl) || isOpen(wipeEl)) return; // le clavier sert aux menus
     if (isOpen(helpEl)) {
       if (!IGNORED.has(e.key) && e.key !== "Tab") {
         e.preventDefault();
@@ -1279,7 +1346,7 @@
   let maxTouches = 0;
 
   document.addEventListener("touchstart", (e) => {
-    if (booting || modalOpen() || story.playing()) return;
+    if (booting || modalOpen() || story.playing() || survie.playing()) return;
     maxTouches = Math.max(maxTouches, e.touches.length);
     if (e.touches.length > 1) {
       e.preventDefault();
@@ -1293,7 +1360,7 @@
 
   document.addEventListener("touchend", (e) => {
     if (e.touches.length) return;
-    if (story.playing()) { maxTouches = 0; return; }
+    if (story.playing() || survie.playing()) { maxTouches = 0; return; }
     if (maxTouches === 3) access(true);
     else if (maxTouches >= 4) access(false);
     maxTouches = 0;
@@ -1333,6 +1400,19 @@
     applySettings();
     toast(settings.customCode.trim() ? "Ton code est prêt : tape !" : "Code personnalisé effacé", "code");
     closeModal(settingsEl);
+  });
+  // Tout réinitialiser (après confirmation)
+  $("btn-wipe").addEventListener("click", () => {
+    $("wipe-ach").textContent = Object.keys(progress.ach).length;
+    $("wipe-chars").textContent = fr(progress.lifetime);
+    openModal(wipeEl);
+  });
+  $("btn-wipe-confirm").addEventListener("click", () => {
+    wiping = true;
+    try {
+      [STORE, PROGRESS_KEY, "ghostterminal-seen"].forEach((k) => localStorage.removeItem(k));
+    } catch { /* navigation privée */ }
+    location.reload();
   });
   $("btn-mission").addEventListener("click", toggleMission);
   $("btn-auto").addEventListener("click", () => setAuto(!auto));
@@ -1378,21 +1458,58 @@
     achieve, toast, log,
     colors: () => themeColors,
     settings, progress, saveProgress,
-    isBusy: () => !!mission || modalOpen() || booting || fxHandles.size > 0,
+    isBusy: () => !!mission || modalOpen() || booting || fxHandles.size > 0 || survie.playing(),
     prepare: () => {
       [...openWins].forEach((w) => w.close());
       [...fxHandles].forEach((h) => h.close());
     },
     whisper: (text) => (pendingWhisper = text),
-    stats: () => ({ chars: fr(progress.lifetime), done: Object.keys(progress.ach).length, total: ACHIEVEMENTS.length }),
-    onFinale: unlockGold,
+    stats: () => ({ chars: fr(progress.lifetime), done: mainDone(), total: MAIN_ACH.length }),
+    onFinale: () => {
+      unlockGold();
+      // La première fois : le jeu secret démarre juste après l'épilogue
+      if (!progress.secretSeen) {
+        progress.secretSeen = true;
+        saveProgress();
+        toast("🔓 Jeu secret débloqué…", "trophy");
+        setTimeout(startSecretGame, 2500);
+      }
+    },
   });
+
+  // ===== Jeu secret « SURVIE » =====
+  const survie = window.HT_SURVIE.create({
+    sound: Sound,
+    speak: (text) => Voice.say(text),
+    colors: () => themeColors,
+  });
+
+  async function startSecretGame() {
+    if (story.playing() || survie.playing()) return;
+    MODALS.forEach((m) => (m.hidden = true));
+    [...openWins].forEach((w) => w.close());
+    [...fxHandles].forEach((h) => h.close());
+    stopMission(false);
+    const wasAuto = auto;
+    if (auto) setAuto(false, true);
+    log("Jeu secret : survie");
+    await story.playSecret();
+    const res = await survie.start();
+    progress.survieBest = Math.max(progress.survieBest || 0, Math.round(res.best || 0));
+    saveProgress();
+    if (res.won) {
+      achieve("survivor");
+      toast("Tu as survécu à l'explosion !", "trophy");
+    }
+    if (wasAuto) setAuto(true, true);
+    terminal.focus({ preventScroll: true });
+  }
 
   // Épilogue secret : se lance tout seul quand tous les succès sont débloqués
   function scheduleFinale(delay) {
     setTimeout(function tryFinale() {
       if (story.state().finale || !settings.story) return;
-      if (story.playing() || modalOpen() || booting || mission || fxHandles.size) return setTimeout(tryFinale, 1500);
+      if (story.playing() || survie.playing() || modalOpen() || booting || mission || fxHandles.size) return setTimeout(tryFinale, 1500);
       story.playFinale();
     }, delay);
   }
@@ -1419,15 +1536,22 @@
       : seen === 0
         ? "Continue de taper… quelque chose se réveille dans le terminal."
         : `${seen} chapitre${seen > 1 ? "s" : ""} sur ${chapters.length} · le suivant dans environ ${fr(story.remaining())} caractères.`;
-    const finaleOpen = s.finale || Object.keys(progress.ach).length === ACHIEVEMENTS.length;
+    const finaleOpen = s.finale || allDone();
+    const secretOpen = !!s.finale;
+    const best = progress.survieBest ? ` · record : ${Math.floor(progress.survieBest / 60)} min ${progress.survieBest % 60} s` : "";
     $("story-panel").innerHTML = `
       <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire</small></h3>
       <p class="muted small">${esc(status)}</p>
       <div class="story-btns">
         ${chapters.map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
         <button type="button" class="btn story-finale" ${finaleOpen ? "" : "disabled"}>${finaleOpen ? "▶ Épilogue secret" : "🔒 Épilogue (100 % des succès)"}</button>
+        <button type="button" class="btn story-secret" ${secretOpen ? "" : "disabled"}>${secretOpen ? `▶ Jeu secret : survie${esc(best)}` : "🔒 Jeu secret (après l'épilogue)"}</button>
         <button type="button" class="btn story-reset" ${seen ? "" : "disabled"}>Recommencer l'histoire</button>
       </div>`;
+    $("story-panel").querySelector(".story-secret").addEventListener("click", () => {
+      closeModal(achEl);
+      startSecretGame();
+    });
     $("story-panel").querySelectorAll(".story-play").forEach((b) => b.addEventListener("click", () => {
       closeModal(achEl);
       story.play(+b.dataset.ch, { replay: true });
@@ -1459,5 +1583,5 @@
   updateHud();
   if (settings.boot) boot();
   else afterBoot();
-  if (Object.keys(progress.ach).length === ACHIEVEMENTS.length && !story.state().finale) scheduleFinale(6000);
+  if (allDone() && !story.state().finale) scheduleFinale(6000);
 })();
