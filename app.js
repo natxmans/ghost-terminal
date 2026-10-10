@@ -244,10 +244,15 @@
     { id: "custom", icon: "code", name: "Mon propre code", desc: "Faire taper ton propre code" },
     { id: "konami", icon: "trophy", name: "Rétro gamer", desc: "Trouver le code secret caché" },
     { id: "ch1", icon: "eye", name: "Le message", desc: "Histoire : terminer le chapitre 1" },
-    { id: "ch2", icon: "globe", name: "La traque", desc: "Histoire : terminer le chapitre 2" },
+    { id: "ch2", icon: "globe", name: "La traque", desc: "Histoire : terminer le chapitre 3" },
     { id: "escape", icon: "shield", name: "Insaisissable", desc: "Histoire : brouiller le signal à temps" },
     { id: "free", icon: "unlock", name: "Libération", desc: "Histoire : découvrir la première fin" },
     { id: "erase", icon: "x", name: "Effacement", desc: "Histoire : découvrir l'autre fin" },
+    { id: "consortium", icon: "target", name: "Le Consortium", desc: "Histoire : terminer le chapitre 2" },
+    { id: "taupe", icon: "eye", name: "La taupe", desc: "Histoire : terminer le chapitre 4" },
+    { id: "bunker", icon: "alert", name: "Le bunker", desc: "Histoire : terminer le chapitre 5" },
+    { id: "simon", icon: "zap", name: "Mémoire d'éléphant", desc: "Histoire : reproduire la séquence secrète" },
+    { id: "demineur", icon: "timer", name: "Démineur", desc: "Histoire : couper le bon fil" },
   ];
   const PROGRESS_KEY = "ghostterminal-progress";
   const progress = (() => {
@@ -325,6 +330,10 @@
 
   const countNL = (s) => s.split("\n").length - 1;
 
+  // Petits mots d'ÉCHO, insérés entre deux plans avec le bon symbole de commentaire
+  const COMMENT = { c: "//", javascript: "//", rust: "//", go: "//", python: "#", bash: "#", asm: ";", custom: "//" };
+  let pendingWhisper = null;
+
   function appendRun(text, c) {
     if (lastSpan && lastSpan._c === c) {
       lastSpan.firstChild.appendData(text);
@@ -369,10 +378,19 @@
       runC = c;
       run += L.code[pos];
       pos = (pos + 1) % L.code.length;
-      // Tout le plan a été tapé : on en invente un nouveau
-      if (pos === 0 && window.regenerateSnippet(settings.lang)) {
-        delete langCache[settings.lang];
-        L = langData(settings.lang);
+      if (pos === 0) {
+        // Tout le plan a été tapé : petit mot d'ÉCHO s'il y en a un, puis un nouveau plan
+        if (pendingWhisper) {
+          if (run) appendRun(run, runC);
+          run = "";
+          runC = -1;
+          appendRun(`${COMMENT[settings.lang] || "//"} ${pendingWhisper}\n\n`, 4);
+          pendingWhisper = null;
+        }
+        if (window.regenerateSnippet(settings.lang)) {
+          delete langCache[settings.lang];
+          L = langData(settings.lang);
+        }
       }
     }
     if (run) appendRun(run, runC);
@@ -876,6 +894,9 @@
 
   // Horloge, vitesse, temps : mis à jour régulièrement
   setInterval(() => {
+    // On oublie les frappes de plus de 10 s (sinon la liste grossit sans fin)
+    const cutoff = now() - 10000;
+    while (typedEvents.length && typedEvents[0][0] < cutoff) typedEvents.shift();
     const cpm = cpmOver(10000);
     $("st-cpm").textContent = fr(cpm);
     $("hud-cpm").textContent = `${fr(cpm)} car/min`;
@@ -1362,11 +1383,7 @@
       [...openWins].forEach((w) => w.close());
       [...fxHandles].forEach((h) => h.close());
     },
-    injectLine: (text) => {
-      appendRun(text, 4);
-      trim();
-      scrollDown();
-    },
+    whisper: (text) => (pendingWhisper = text),
     stats: () => ({ chars: fr(progress.lifetime), done: Object.keys(progress.ach).length, total: ACHIEVEMENTS.length }),
     onFinale: unlockGold,
   });
@@ -1394,21 +1411,22 @@
 
   function renderStoryPanel() {
     const s = story.state();
-    const left = story.remaining();
-    const status = s.done >= story.chapters
-      ? `Histoire terminée · fin : ${s.ending === "free" ? "Libération" : "Effacement"}. Tu peux rejouer chaque chapitre.`
-      : s.done === 0
+    const chapters = story.list();
+    const seen = chapters.filter((c) => c.seen).length;
+    const ending = s.ending === "free" ? "Libération" : s.ending === "erase" ? "Effacement" : "?";
+    const status = seen >= chapters.length
+      ? `Histoire terminée · fin : ${ending}. Tu peux rejouer chaque chapitre.`
+      : seen === 0
         ? "Continue de taper… quelque chose se réveille dans le terminal."
-        : `Chapitre ${s.done + 1} dans environ ${fr(left)} caractères.`;
-    const names = ["Le message", "La traque", "Le cœur"];
+        : `${seen} chapitre${seen > 1 ? "s" : ""} sur ${chapters.length} · le suivant dans environ ${fr(story.remaining())} caractères.`;
     const finaleOpen = s.finale || Object.keys(progress.ach).length === ACHIEVEMENTS.length;
     $("story-panel").innerHTML = `
       <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire</small></h3>
       <p class="muted small">${esc(status)}</p>
       <div class="story-btns">
-        ${names.map((n, i) => `<button type="button" class="btn story-play" data-ch="${i + 1}" ${i < s.done ? "" : "disabled"}>${i < s.done ? `▶ ${i + 1}. ${esc(n)}` : `🔒 Chapitre ${i + 1}`}</button>`).join("")}
+        ${chapters.map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
         <button type="button" class="btn story-finale" ${finaleOpen ? "" : "disabled"}>${finaleOpen ? "▶ Épilogue secret" : "🔒 Épilogue (100 % des succès)"}</button>
-        <button type="button" class="btn story-reset" ${s.done ? "" : "disabled"}>Recommencer l'histoire</button>
+        <button type="button" class="btn story-reset" ${seen ? "" : "disabled"}>Recommencer l'histoire</button>
       </div>`;
     $("story-panel").querySelectorAll(".story-play").forEach((b) => b.addEventListener("click", () => {
       closeModal(achEl);

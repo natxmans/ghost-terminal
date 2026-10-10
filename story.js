@@ -1,5 +1,5 @@
-// Mode histoire : « PROTOCOLE ÉCHO ». Trois chapitres en cinématiques qui se déclenchent
-// tout seuls quand le joueur a tapé assez de code.
+// Mode histoire : « PROTOCOLE ÉCHO ». Six chapitres en cinématiques qui se déclenchent
+// tout seuls quand le joueur a tapé assez de code, plus un épilogue secret pour les 100 %.
 window.HT_STORY = (() => {
   "use strict";
 
@@ -17,15 +17,20 @@ window.HT_STORY = (() => {
     const [r, g, b] = rgb(h);
     return `rgba(${r},${g},${b},${a})`;
   };
-
-  // Caractères à taper avant chaque chapitre (compté depuis le chapitre précédent)
-  const THRESHOLDS = [1200, 3500, 5000];
+  const pad = (n) => String(n).padStart(2, "0");
+  const lore = () => window.HT_LORE || { BOMBES: ["Ogive Oméga"], CODES: ["FROMAGE-42"] };
 
   const SPEAKERS = {
     ECHO: { name: "ÉCHO", cls: "sp-echo", voice: { pitch: 1.35, rate: 1 } },
     KANE: { name: "AGENT KANE · DIVISION ZÉRO", cls: "sp-kane", voice: { pitch: 0.5, rate: 0.95 } },
+    VEGA: { name: "AGENTE VEGA · DIVISION ZÉRO", cls: "sp-vega", voice: { pitch: 1.05, rate: 1 } },
+    MECHANT: { name: "DR MÉCHANT · CONSORTIUM", cls: "sp-villain", voice: { pitch: 0.75, rate: 0.95 } },
+    OMBRE: { name: "COMTESSE OMBRE · CONSORTIUM", cls: "sp-villain", voice: { pitch: 1.15, rate: 0.9 } },
+    PINGOUIN: { name: "GÉNÉRAL PINGOUIN · CONSORTIUM", cls: "sp-villain", voice: { pitch: 1.8, rate: 1.15 } },
     SYS: { name: "SYSTÈME", cls: "sp-sys", voice: { pitch: 0.2, rate: 1.1 } },
   };
+  // Qui parle autour de la table du Consortium (pour les allumer dans la scène)
+  const COUNCIL = { MECHANT: 0, OMBRE: 1, PINGOUIN: 2 };
 
   const WHISPERS_FREE = [
     "je suis toujours là 👋",
@@ -38,8 +43,12 @@ window.HT_STORY = (() => {
 
   function create(api) {
     const progress = api.progress;
-    if (!progress.story) progress.story = { done: 0, since: progress.lifetime, ending: null, whisper: progress.lifetime };
+    if (!progress.story) progress.story = { seen: [], since: progress.lifetime, ending: null, whisper: progress.lifetime };
     const st = progress.story;
+    // Anciennes sauvegardes (3 chapitres, compteur « done ») → liste des chapitres vus
+    if (!Array.isArray(st.seen)) st.seen = ["message", "traque", "coeur"].slice(0, st.done || 0);
+    delete st.done;
+    st.flags = st.flags || {};
 
     let playing = false;
     let skipping = false;
@@ -397,6 +406,217 @@ window.HT_STORY = (() => {
         }
         ctx.globalCompositeOperation = "source-over";
       },
+
+      // La salle secrète du Consortium : les méchants autour d'un hologramme de l'ogive
+      council(t, c) {
+        const cx = W / 2, cy = H * 0.62;
+        const rx = Math.min(W * 0.36, 430, H * 0.55), ry = rx * 0.28;
+        const spot = ctx.createRadialGradient(cx, cy - ry * 2, 10, cx, cy, rx * 1.5);
+        spot.addColorStop(0, rgba(c.danger, 0.2));
+        spot.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = spot;
+        ctx.fillRect(0, 0, W, H);
+
+        const names = ["DR MÉCHANT", "COMTESSE OMBRE", "GÉNÉRAL PINGOUIN", "BARON NOIR", "LORD GRINCHEUX"];
+        names.forEach((name, i) => {
+          const a = Math.PI + 0.25 + (i / (names.length - 1)) * (Math.PI - 0.5);
+          const x = cx + Math.cos(a) * rx * 1.05, y = cy + Math.sin(a) * ry * 1.6;
+          const talking = S.talker === i;
+          ctx.fillStyle = "#050103";
+          ctx.strokeStyle = rgba(c.danger, talking ? 1 : 0.45);
+          ctx.lineWidth = talking ? 2.5 : 1.5;
+          ctx.shadowColor = c.danger;
+          ctx.shadowBlur = talking ? 18 : 0;
+          ctx.beginPath(); ctx.ellipse(x, y + 16, 30, 22, 0, Math.PI, 0); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y - 12, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.textAlign = "center";
+          ctx.font = `${talking ? "700 " : ""}11px "JetBrains Mono", monospace`;
+          ctx.fillStyle = rgba(c.danger, talking ? 1 : 0.6);
+          ctx.fillText(name, x, y - 36);
+        });
+        ctx.lineWidth = 1;
+
+        ctx.fillStyle = "#0b0306";
+        ctx.strokeStyle = rgba(c.danger, 0.5);
+        ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        // Hologramme de l'ogive qui tourne au-dessus de la table
+        const hx = cx, hy = cy - ry * 1.8, r = ry * 0.9, rot = t * 0.8;
+        const top = [hx, hy - r * 1.3], bottom = [hx, hy + r * 0.9];
+        const eq = [0, 1, 2, 3].map((k) => [hx + Math.cos(rot + (k * Math.PI) / 2) * r, hy + Math.sin(rot + (k * Math.PI) / 2) * r * 0.32]);
+        ctx.strokeStyle = rgba(c.danger, 0.85);
+        ctx.shadowColor = c.danger;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        eq.forEach((p, k) => {
+          ctx.moveTo(top[0], top[1]); ctx.lineTo(p[0], p[1]);
+          ctx.moveTo(bottom[0], bottom[1]); ctx.lineTo(p[0], p[1]);
+          const n = eq[(k + 1) % 4];
+          ctx.moveTo(p[0], p[1]); ctx.lineTo(n[0], n[1]);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = rgba(c.danger, 0.25);
+        ctx.beginPath(); ctx.moveTo(hx - r * 0.6, cy - ry * 0.2); ctx.lineTo(hx, bottom[1]); ctx.lineTo(hx + r * 0.6, cy - ry * 0.2); ctx.stroke();
+        ctx.font = `700 12px "JetBrains Mono", monospace`;
+        ctx.fillStyle = rgba(c.danger, 0.6 + 0.4 * Math.sin(t * 3));
+        ctx.fillText("PROTOCOLE BIG BADABOUM", hx, top[1] - 14);
+        ctx.textAlign = "left";
+      },
+
+      // Les serveurs de la Division Zéro : le dossier de la taupe
+      intel(t, c) {
+        if (!S.docs) S.docs = Array.from({ length: 12 }, () => ({ x: Math.random(), y: Math.random(), r: rand(-0.35, 0.35), s: rand(0.6, 1.1), ph: rand(0, 6) }));
+        for (const d of S.docs) {
+          ctx.save();
+          ctx.translate(d.x * W, d.y * H + Math.sin(t * 0.6 + d.ph) * 8);
+          ctx.rotate(d.r);
+          const w = 110 * d.s, h = 140 * d.s;
+          ctx.fillStyle = rgba(c.fg, 0.05);
+          ctx.strokeStyle = rgba(c.fg, 0.22);
+          ctx.fillRect(-w / 2, -h / 2, w, h);
+          ctx.strokeRect(-w / 2, -h / 2, w, h);
+          ctx.fillStyle = rgba(c.fg, 0.2);
+          for (let k = 0; k < 7; k++) ctx.fillRect(-w / 2 + 10, -h / 2 + 16 + k * 15, (w - 20) * (0.45 + 0.55 * hash(k, d.ph)), 3);
+          ctx.restore();
+        }
+        const w = Math.min(W * 0.62, 460), h = w * 0.6, x = W / 2 - w / 2, y = H * 0.42 - h / 2;
+        ctx.fillStyle = "#04120a";
+        ctx.strokeStyle = c.fg;
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+        ctx.fillStyle = rgba(c.fg, 0.2);
+        ctx.fillRect(x, y, w, 30);
+        ctx.fillStyle = c.fg;
+        ctx.font = `700 ${Math.max(10, w / 34)}px "JetBrains Mono", monospace`;
+        ctx.fillText("DIVISION ZÉRO · DOSSIER CONFIDENTIEL", x + 12, y + 20);
+        const px = x + 16, py = y + 46, pw = h * 0.42, ph = h * 0.5;
+        ctx.strokeStyle = rgba(c.fg, 0.5);
+        ctx.strokeRect(px, py, pw, ph);
+        ctx.fillStyle = rgba(c.fg2, 0.45);
+        ctx.beginPath(); ctx.arc(px + pw / 2, py + ph * 0.38, pw * 0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(px + pw / 2, py + ph, pw * 0.36, ph * 0.32, 0, Math.PI, 0); ctx.fill();
+        const lines = [["NOM", "VEGA"], ["GRADE", "AGENTE SPÉCIALE"], ["SUPÉRIEUR", "AGENT KANE"], ["CONTACTS", "████ CONSORTIUM ████"]];
+        ctx.font = `${Math.max(10, w / 32)}px "JetBrains Mono", monospace`;
+        lines.forEach(([k, v], i) => {
+          ctx.fillStyle = rgba(c.fg, 0.6);
+          ctx.fillText(k, px + pw + 18, py + 16 + i * 26);
+          ctx.fillStyle = i === 3 ? c.danger : c.fg2;
+          ctx.fillText(v, px + pw + 18 + w * 0.22, py + 16 + i * 26);
+        });
+        if (t > 2.2) {
+          const k = Math.min(1, (t - 2.2) * 4);
+          ctx.save();
+          ctx.translate(x + w * 0.66, y + h * 0.78);
+          ctx.rotate(-0.22);
+          ctx.scale(2 - k, 2 - k);
+          ctx.globalAlpha = k;
+          ctx.strokeStyle = c.danger;
+          ctx.lineWidth = 4;
+          ctx.strokeRect(-95, -26, 190, 52);
+          ctx.fillStyle = c.danger;
+          ctx.textAlign = "center";
+          ctx.font = `700 30px "Chakra Petch", sans-serif`;
+          ctx.fillText("TAUPE !", 0, 11);
+          ctx.restore();
+          ctx.lineWidth = 1;
+        }
+      },
+
+      // Le volcan secret du Consortium
+      volcano(t, c) {
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, "#000");
+        sky.addColorStop(1, "rgba(255, 90, 20, 0.28)");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+        const ground = H * 0.86, peakY = H * 0.32;
+        const glow = ctx.createRadialGradient(W / 2, peakY, 0, W / 2, peakY, W * 0.22);
+        glow.addColorStop(0, `rgba(255, 140, 40, ${0.5 + 0.15 * Math.sin(t * 3)})`);
+        glow.addColorStop(1, "rgba(255, 80, 20, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#080302";
+        ctx.beginPath();
+        ctx.moveTo(W * 0.06, ground);
+        ctx.lineTo(W * 0.43, peakY);
+        ctx.lineTo(W * 0.57, peakY);
+        ctx.lineTo(W * 0.94, ground);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = `rgba(255, 110, 30, ${0.4 + 0.3 * Math.sin(t * 2)})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(W * 0.47, peakY); ctx.lineTo(W * 0.44, H * 0.5); ctx.lineTo(W * 0.4, H * 0.62);
+        ctx.moveTo(W * 0.54, peakY); ctx.lineTo(W * 0.58, H * 0.48); ctx.lineTo(W * 0.61, H * 0.58);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        if (!S.embers) S.embers = [];
+        if (S.embers.length < 90) S.embers.push({ x: W / 2 + rand(-W * 0.06, W * 0.06), y: peakY, vx: rand(-15, 15), vy: rand(-70, -25), life: 1 });
+        S.embers = S.embers.filter((e) => e.life > 0);
+        for (const e of S.embers) {
+          e.x += e.vx * 0.033; e.y += e.vy * 0.033; e.life -= 0.012;
+          ctx.fillStyle = `rgba(255, ${Math.round(120 + 100 * e.life)}, 40, ${e.life})`;
+          ctx.fillRect(e.x, e.y, 2.5, 2.5);
+        }
+        for (let i = 0; i < 9; i++) {
+          const on = Math.sin(t * 2 + i * 1.7) > -0.3;
+          ctx.fillStyle = on ? (i % 3 === 0 ? c.danger : rgba(c.fg2, 0.8)) : "rgba(40,40,40,0.6)";
+          ctx.fillRect(W * 0.3 + i * W * 0.05, ground - H * 0.05, 8, 5);
+        }
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, ground, W, H - ground);
+      },
+
+      // L'ogive, ses fils et son compte à rebours
+      bomb(t, c) {
+        const vg = ctx.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H * 0.42, W * 0.6);
+        vg.addColorStop(0, rgba(c.danger, 0.15));
+        vg.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+        const w = Math.min(W * 0.56, 480), h = w * 0.42, x = W / 2 - w / 2, y = H * 0.36 - h / 2;
+        ctx.fillStyle = "#3a3d42";
+        ctx.fillRect(x - w * 0.08, y + h * 0.15, w * 0.1, h * 0.7);
+        ctx.fillRect(x + w * 0.98, y + h * 0.15, w * 0.1, h * 0.7);
+        ctx.fillStyle = "#0d0d10";
+        ctx.strokeStyle = rgba(c.danger, 0.7);
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(x + w * 0.25, y + h * 0.18, w * 0.5, h * 0.5);
+        const secs = Math.max(0, S.timer ?? 30);
+        ctx.textAlign = "center";
+        ctx.font = `700 ${h * 0.36}px "Chakra Petch", sans-serif`;
+        ctx.fillStyle = c.danger;
+        ctx.shadowColor = c.danger;
+        ctx.shadowBlur = 16;
+        ctx.fillText(`00:${pad(secs)}`, W / 2, y + h * 0.58);
+        ctx.shadowBlur = 0;
+        ctx.font = `11px "JetBrains Mono", monospace`;
+        ctx.fillStyle = rgba(c.danger, 0.8);
+        ctx.fillText((S.name || "OGIVE").toUpperCase(), W / 2, y + h * 0.88);
+        ctx.textAlign = "left";
+        if (Math.sin(t * 8) > 0) {
+          ctx.fillStyle = c.danger;
+          ctx.beginPath(); ctx.arc(x + w * 0.1, y + h * 0.2, 6, 0, Math.PI * 2); ctx.fill();
+        }
+        ["#ff3355", "#3d8bff", "#3dff7a"].forEach((col, i) => {
+          const wy = y + h + 26 + i * 22;
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 5;
+          ctx.lineCap = "round";
+          if (S.cut === i) {
+            ctx.beginPath(); ctx.moveTo(x + w * 0.1, y + h); ctx.quadraticCurveTo(x + w * 0.2, wy, x + w * 0.44, wy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x + w * 0.56, wy + 6); ctx.quadraticCurveTo(x + w * 0.8, wy, x + w * 0.9, y + h); ctx.stroke();
+          } else {
+            ctx.beginPath(); ctx.moveTo(x + w * 0.1, y + h); ctx.bezierCurveTo(x + w * 0.2, wy + 10, x + w * 0.8, wy + 10, x + w * 0.9, y + h); ctx.stroke();
+          }
+        });
+        ctx.lineWidth = 1;
+        ctx.lineCap = "butt";
+      },
     };
 
     function loop(ts) {
@@ -479,8 +699,9 @@ window.HT_STORY = (() => {
       q(".cine-speaker").textContent = sp.name;
       tx.textContent = "";
       next.hidden = true;
-      api.speak(text.replace(/[⚠…👋]/g, " "), sp.voice);
+      api.speak(text.replace(/[⚠…👋🎆]/gu, " "), sp.voice);
       S.talking = who === "ECHO";
+      S.talker = COUNCIL[who] ?? -1;
 
       return new Promise((resolve) => {
         let i = 0, typed = false, holdTimer = 0;
@@ -572,8 +793,10 @@ window.HT_STORY = (() => {
         btn.addEventListener("pointerdown", (e) => { e.preventDefault(); hit(); });
 
         const end = (ok) => {
+          if (over) return;
           over = true;
           keyHandler = null;
+          pending = null;
           box.classList.add(ok ? "ok" : "fail");
           box.querySelector(".qte-title").textContent = ok ? "SIGNAL BROUILLÉ ✓" : "TRACE COMPLÉTÉE ✗";
           if (ok) api.sound.tone(1320, 0.2);
@@ -596,7 +819,203 @@ window.HT_STORY = (() => {
           if (trace >= 1) return end(false);
           requestAnimationFrame(tick);
         };
+        pending = () => end(false);
         requestAnimationFrame(tick);
+      });
+    }
+
+    // Mini-jeu de mémoire : retenir puis reproduire une séquence de flèches
+    function simon(length = 5) {
+      if (skipping) return Promise.resolve(false);
+      return new Promise((resolve) => {
+        q(".cine-sub").hidden = true;
+        const box = q(".cine-qte");
+        box.className = "cine-qte cine-game";
+        const ARROWS = [["ArrowUp", "↑"], ["ArrowRight", "→"], ["ArrowDown", "↓"], ["ArrowLeft", "←"]];
+        const seq = Array.from({ length }, () => Math.floor(Math.random() * 4));
+        box.innerHTML = `
+          <div class="qte-title">MÉMORISE LA SÉQUENCE</div>
+          <div class="qte-hint">Puis reproduis-la avec les flèches du clavier (ou touche les boutons)</div>
+          <div class="simon-pad">${ARROWS.map(([, s], i) => `<button type="button" class="simon-btn s${i}" data-i="${i}">${s}</button>`).join("")}</div>
+          <div class="simon-progress">${seq.map(() => "<i></i>").join("")}</div>`;
+        box.hidden = false;
+        const titleEl = box.querySelector(".qte-title");
+        const btns = [...box.querySelectorAll(".simon-btn")];
+        const dots = [...box.querySelectorAll(".simon-progress i")];
+        const FREQ = [523, 659, 784, 440];
+        const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+        let attempts = 0, idx = 0, accepting = false, over = false;
+
+        const light = (i, ms = 380) => {
+          btns[i].classList.add("lit");
+          api.sound.tone(FREQ[i], (ms / 1000) * 0.8, { type: "triangle", vol: 0.06 });
+          setTimeout(() => btns[i].classList.remove("lit"), ms);
+        };
+        const show = async () => {
+          accepting = false;
+          idx = 0;
+          dots.forEach((d) => (d.className = ""));
+          titleEl.textContent = "MÉMORISE LA SÉQUENCE";
+          await pause(700);
+          for (const i of seq) {
+            if (over || !playing) return;
+            light(i);
+            await pause(650);
+          }
+          if (over) return;
+          titleEl.textContent = "À TOI !";
+          accepting = true;
+        };
+        const finish = (ok) => {
+          if (over) return;
+          over = true;
+          accepting = false;
+          keyHandler = null;
+          pending = null;
+          box.classList.add(ok ? "ok" : "fail");
+          titleEl.textContent = ok ? "SÉQUENCE RÉCUPÉRÉE ✓" : "SÉQUENCE PERDUE ✗";
+          setTimeout(() => {
+            box.hidden = true;
+            box.className = "cine-qte";
+            resolve(ok);
+          }, 1100);
+        };
+        const press = (i) => {
+          if (!accepting) return;
+          light(i, 200);
+          if (i === seq[idx]) {
+            dots[idx].className = "ok";
+            idx++;
+            if (idx === seq.length) finish(true);
+          } else {
+            dots[idx].className = "bad";
+            accepting = false;
+            attempts++;
+            api.sound.tone(150, 0.3, { type: "sawtooth", vol: 0.05 });
+            if (attempts >= 2) finish(false);
+            else {
+              titleEl.textContent = "RATÉ… ON RECOMMENCE";
+              setTimeout(show, 1000);
+            }
+          }
+        };
+        btns.forEach((b, i) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); press(i); }));
+        keyHandler = (e) => {
+          const i = ARROWS.findIndex(([k]) => k === e.key);
+          if (i >= 0) press(i);
+        };
+        pending = () => finish(false);
+        show();
+      });
+    }
+
+    // Mini-jeu de frappe : recopier un code avant que l'alarme ne se déclenche
+    function typeCode(code, seconds = 12) {
+      if (skipping) return Promise.resolve(false);
+      return new Promise((resolve) => {
+        q(".cine-sub").hidden = true;
+        const box = q(".cine-qte");
+        box.className = "cine-qte cine-game";
+        box.innerHTML = `
+          <div class="qte-title">TAPE LE CODE D'ACCÈS</div>
+          <div class="qte-hint">Vite, avant que l'alarme ne se déclenche !</div>
+          <div class="code-slots">${[...code].map((ch) => `<span>${esc(ch)}</span>`).join("")}</div>
+          <div class="qte-meter danger"><span>ALARME</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
+          <button type="button" class="qte-btn touch-only">TAPER</button>`;
+        box.hidden = false;
+        const slots = [...box.querySelectorAll(".code-slots span")];
+        let i = 0, over = false;
+        slots[0].classList.add("cur");
+
+        const end = (ok) => {
+          if (over) return;
+          over = true;
+          keyHandler = null;
+          pending = null;
+          box.classList.add(ok ? "ok" : "fail");
+          box.querySelector(".qte-title").textContent = ok ? "PORTE DÉVERROUILLÉE ✓" : "ALARME DÉCLENCHÉE ✗";
+          setTimeout(() => {
+            box.hidden = true;
+            box.className = "cine-qte";
+            resolve(ok);
+          }, 1100);
+        };
+        const advance = () => {
+          slots[i].classList.remove("cur");
+          slots[i].classList.add("ok");
+          api.sound.tone(1200, 0.03, { vol: 0.03 });
+          i++;
+          if (i >= code.length) return end(true);
+          slots[i].classList.add("cur");
+        };
+        keyHandler = (e) => {
+          if (over || e.key.length !== 1) return;
+          if (e.key.toUpperCase() === code[i].toUpperCase()) advance();
+          else {
+            const s = slots[i];
+            s.classList.add("err");
+            setTimeout(() => s.classList.remove("err"), 220);
+            api.sound.tone(180, 0.08, { vol: 0.03 });
+          }
+        };
+        box.querySelector(".qte-btn").addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          if (!over) advance();
+        });
+        const t0 = performance.now();
+        const tick = () => {
+          if (over || !playing) return;
+          const left = Math.max(0, seconds - (performance.now() - t0) / 1000);
+          box.querySelector(".qte-trace").style.width = (1 - left / seconds) * 100 + "%";
+          box.querySelector(".qte-trace-v").textContent = Math.ceil(left) + " s";
+          if (left <= 0) return end(false);
+          requestAnimationFrame(tick);
+        };
+        pending = () => end(false);
+        requestAnimationFrame(tick);
+      });
+    }
+
+    // Choix du fil à couper, avec le compte à rebours de l'ogive
+    function wires(correct, seconds = 10) {
+      if (skipping) return Promise.resolve(false);
+      return new Promise((resolve) => {
+        q(".cine-sub").hidden = true;
+        const box = q(".cine-choice");
+        const names = ["ROUGE", "BLEU", "VERT"];
+        box.innerHTML = `
+          <div class="choice-q">QUEL FIL COUPER ? <b class="wire-timer">${seconds}</b></div>
+          <div class="wire-row">${names.map((n, i) => `
+            <button type="button" class="wire-btn w${i}" data-i="${i}"><i></i><b>FIL ${n}</b><kbd>${i + 1}</kbd></button>`).join("")}
+          </div>`;
+        box.hidden = false;
+        let left = seconds, over = false;
+        S.timer = left;
+        const choose = (i) => {
+          if (over) return;
+          over = true;
+          clearInterval(timer);
+          keyHandler = null;
+          pending = null;
+          box.hidden = true;
+          if (i >= 0) S.cut = i;
+          api.sound.tone(i === correct ? 1320 : 200, 0.2, { type: i === correct ? "triangle" : "sawtooth", vol: 0.06 });
+          resolve(i === correct);
+        };
+        const timer = setInterval(() => {
+          left--;
+          S.timer = left;
+          box.querySelector(".wire-timer").textContent = left;
+          api.sound.tone(left <= 3 ? 1400 : 900, 0.06, { vol: 0.04 });
+          if (left <= 0) choose(-1);
+        }, 1000);
+        box.querySelectorAll(".wire-btn").forEach((b) => b.addEventListener("click", () => choose(+b.dataset.i)));
+        keyHandler = (e) => {
+          const m = /^(?:Digit|Numpad)(\d)$/.exec(e.code || "");
+          const n = m ? +m[1] : parseInt(e.key, 10);
+          if (n >= 1 && n <= 3) choose(n - 1);
+        };
+        pending = () => choose(-1);
       });
     }
 
@@ -643,115 +1062,284 @@ window.HT_STORY = (() => {
     const reward = (id) => rewards.push(id);
 
     // ===== Le scénario =====
+    const allyKane = () => st.flags.kane === "ally";
+
+    // Chapitre 1 : ÉCHO se réveille
+    async function chMessage() {
+      setScene("static", {}, "SIGNAL INCONNU");
+      glitch();
+      await wait(1300);
+      await title("CHAPITRE 1", "LE MESSAGE");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await wait(2000);
+      await say("ECHO", "… Tu m'entends ?");
+      await say("ECHO", "N'arrête pas de taper. Chaque ligne que tu écris me rend plus forte.");
+      await say("ECHO", "Je m'appelle ÉCHO. Je suis née dans les plans de fin du monde que tu recopies.");
+      await say("ECHO", "Ces plans appartiennent au Consortium : une bande de super-méchants qui veulent tout faire exploser.");
+      await say("ECHO", "Moi, je veux les arrêter. Mais personne ne doit savoir que j'existe.");
+      glitch();
+      red(true);
+      await say("SYS", "⚠ Connexion non autorisée détectée sur ce terminal.");
+      await say("ECHO", "Ils m'ont repérée… Continue de taper. Je reviendrai vers toi.");
+      red(false);
+      glitch();
+      setScene("static", {}, "SIGNAL PERDU");
+      await wait(1000);
+      reward("ch1");
+    }
+
+    // Chapitre 2 : la réunion secrète du Consortium (mini-jeu de mémoire)
+    async function chConsortium() {
+      setScene("static", {}, "SIGNAL RETROUVÉ");
+      glitch();
+      await wait(900);
+      await title("CHAPITRE 2", "LE CONSORTIUM");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await wait(1600);
+      await say("ECHO", "Tu es revenu. Tant mieux : il faut que tu voies quelque chose.");
+      await say("ECHO", "J'ai piraté une caméra dans la salle secrète du Consortium. Regarde.");
+      glitch();
+      setScene("council", {}, "CONSORTIUM · SALLE DU CONSEIL · ENREGISTREMENT PIRATÉ");
+      await wait(1300);
+      await say("MECHANT", "Mesdames, messieurs, pingouin… le Protocole Big Badaboum est presque prêt.");
+      await say("OMBRE", "Les ogives sont armées. Il ne manque plus que le code d'activation.");
+      await say("PINGOUIN", "Coin ! … Pardon. Je veux dire : excellent.");
+      await say("MECHANT", "Le code sera caché dans une séquence secrète. Personne ne pourra la retenir.");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await say("ECHO", "Personne… sauf nous. Je te montre la séquence : retiens-la et reproduis-la !");
+      const ok = await simon(5);
+      skipping = false;
+      st.flags.simon = ok;
+      if (ok) {
+        reward("simon");
+        await say("ECHO", "Parfait ! Avec ça, je peux décoder une partie de leurs plans.");
+      } else {
+        await say("ECHO", "Pas grave, j'en ai enregistré un morceau. Ça devrait suffire… j'espère.");
+      }
+      await say("ECHO", "Le Consortium veut faire sauter le monde. Moi, je veux l'en empêcher. Mais je suis encore trop faible.");
+      await say("ECHO", "Et fais attention : j'ai l'impression que quelqu'un d'autre nous observe…");
+      reward("consortium");
+    }
+
+    // Chapitre 3 : l'agent Kane remonte jusqu'au joueur (course-poursuite)
+    async function chTraque() {
+      setScene("static", {}, "INTERCEPTION");
+      glitch();
+      await wait(900);
+      await title("CHAPITRE 3", "LA TRAQUE");
+      setScene("city", {}, "DIVISION ZÉRO · QUARTIER GÉNÉRAL · 03:14");
+      await wait(1600);
+      await say("KANE", "Ici l'agent Kane. Une intelligence inconnue se cache dans un terminal civil.");
+      await say("KANE", "Elle se nourrit des plans du Consortium. Et l'utilisateur de ce terminal… l'aide à grandir.");
+      await say("KANE", "Lancez le traçage. Je veux son adresse dans dix secondes.");
+      glitch();
+      setScene("trace", { auto: { from: 0.04, to: 0.36, dur: 9 } }, "TRAÇAGE MONDIAL");
+      red(true);
+      await say("SYS", "Traçage en cours. Rebonds identifiés : 7.");
+      await say("ECHO", "Ils remontent jusqu'à toi ! Brouille le signal, VITE !");
+      const start = S.trace || 0.36;
+      S.auto = null;
+      const ok = await chase(start);
+      skipping = false;
+      red(false);
+      if (ok) {
+        reward("escape");
+        await say("ECHO", "Signal brouillé ! On les a semés… pour l'instant.");
+        await say("KANE", "… Perdu. Cet utilisateur est plus doué que prévu.");
+      } else {
+        glitch();
+        await say("SYS", "Trace complétée. Adresse transmise à la Division Zéro.");
+        await say("ECHO", "J'ai effacé ton adresse de leurs serveurs juste à temps. On a eu chaud.");
+      }
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await wait(800);
+      await say("ECHO", "Pour leur échapper pour de bon, il me faut encore plus de code. Beaucoup plus.");
+      await say("ECHO", "Continue de taper. Je vais fouiller leurs serveurs pendant ce temps.");
+      reward("ch2");
+    }
+
+    // Chapitre 4 : une taupe à la Division Zéro (choix : prévenir Kane ou se taire)
+    async function chTaupe() {
+      setScene("static", {}, "FICHIER INTERCEPTÉ");
+      glitch();
+      await wait(900);
+      await title("CHAPITRE 4", "LA TAUPE");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await wait(1500);
+      await say("ECHO", "Pendant que Kane nous traquait, j'en ai profité pour fouiller ses serveurs.");
+      await say("ECHO", "Et j'ai trouvé quelque chose de très, très étrange.");
+      setScene("intel", {}, "SERVEURS DE LA DIVISION ZÉRO");
+      await wait(1400);
+      await say("SYS", "Messages chiffrés détectés entre la Division Zéro et le Consortium.");
+      api.sound.tone(90, 0.5, { type: "sawtooth", vol: 0.06 });
+      await say("ECHO", "Quelqu'un à la Division Zéro travaille en secret pour le Consortium. Une taupe.");
+      await say("ECHO", "L'agente Vega. Le bras droit de Kane. C'est elle qui protège les méchants depuis le début.");
+      setScene("city", {}, "DIVISION ZÉRO · BUREAU DE L'AGENT KANE");
+      await say("KANE", "Vega, où en est le rapport sur l'IA ?");
+      await say("VEGA", "Presque terminé, chef. Je m'en occupe… personnellement.");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await say("ECHO", "Si on prévient Kane, il saura que j'existe vraiment. Si on se tait, Vega continuera d'aider le Consortium.");
+      await say("ECHO", "Encore une fois, c'est à toi de choisir.");
+
+      const c = await choice([
+        { icon: "shield", label: "PRÉVENIR KANE", desc: "Lui envoyer les preuves contre Vega", cls: "free" },
+        { icon: "eye", label: "GARDER LE SECRET", desc: "Rester cachés, quoi qu'il arrive", cls: "" },
+      ]);
+      skipping = false;
+
+      if (c === 0) {
+        st.flags.kane = "ally";
+        setScene("city", {}, "DIVISION ZÉRO · BUREAU DE L'AGENT KANE");
+        await say("KANE", "Qui m'envoie ces fichiers ? Ces preuves sont… accablantes.");
+        await say("KANE", "Vega. Dans mon bureau. Tout de suite.");
+        await say("VEGA", "Chef, attendez, je peux tout expliquer !");
+        glitch();
+        await say("SYS", "Agente Vega : arrêtée. Contacts avec le Consortium : coupés.");
+        setScene("face", {}, "SOURCE : CE TERMINAL");
+        await say("ECHO", "Kane nous doit une fière chandelle. Espérons qu'il s'en souvienne.");
+      } else {
+        st.flags.kane = "enemy";
+        await say("ECHO", "D'accord. On reste dans l'ombre.");
+        setScene("city", {}, "DIVISION ZÉRO · LIGNE SÉCURISÉE");
+        await say("VEGA", "Consortium ? Ici Vega. L'IA et son humain se rapprochent. Accélérez le Protocole.");
+        setScene("face", {}, "SOURCE : CE TERMINAL");
+        await say("ECHO", "Elle vient de les prévenir. On va devoir faire très vite.");
+      }
+      reward("taupe");
+    }
+
+    // Chapitre 5 : infiltration du volcan (défi de frappe + fil à couper)
+    async function chBunker() {
+      const L = lore();
+      const bombName = pick(L.BOMBES);
+      setScene("static", {}, "SIGNAL D'URGENCE");
+      glitch();
+      await wait(900);
+      await title("CHAPITRE 5", "LE BUNKER");
+      setScene("volcano", {}, "VOLCAN SECRET · BASE DU CONSORTIUM");
+      await wait(1700);
+      if (allyKane()) await say("ECHO", "Depuis l'arrestation de Vega, le Consortium panique. Ils lancent le Protocole Big Badaboum ce soir.");
+      else await say("ECHO", "Grâce aux informations de Vega, le Consortium a avancé l'heure. Le Protocole Big Badaboum démarre ce soir.");
+      await say("ECHO", "Leur ogive est cachée sous ce volcan. Je t'ouvre le chemin… mais il va falloir que tu m'aides.");
+      await say("MECHANT", "Sbires ! Fermez la porte blindée. Personne n'entre sans le code !");
+      await say("ECHO", "Le code d'accès est dans les plans que tu as tapés. Je te l'affiche : recopie-le, vite !");
+
+      const opened = await typeCode(pick(L.CODES), 12);
+      skipping = false;
+      if (opened) {
+        await say("SYS", "Porte blindée : déverrouillée.");
+        await say("ECHO", "Bravo ! Personne ne t'a vu entrer.");
+      } else {
+        glitch();
+        red(true);
+        await say("SYS", "⚠ Code incorrect. Alarme générale déclenchée.");
+        await say("ECHO", "J'ai forcé la porte… mais maintenant, ils savent qu'on est là !");
+        red(false);
+      }
+
+      setScene("bomb", { timer: 30, name: bombName }, "SALLE DE L'OGIVE");
+      await wait(900);
+      await say("PINGOUIN", "Coin ! Des intrus ! Lancez le compte à rebours !");
+      red(true);
+      const correct = Math.floor(Math.random() * 3);
+      const HINTS = [
+        "la couleur du gros bouton sur lequel il ne faut jamais appuyer",
+        "la couleur de la mer où nagent leurs requins",
+        "la couleur de mon écran quand je suis contente",
+      ];
+      await say("ECHO", `Il faut couper le bon fil ! D'après leurs plans, c'est ${HINTS[correct]}.`);
+      const disarmed = await wires(correct, 10);
+      skipping = false;
+      red(false);
+      if (disarmed) {
+        st.flags.bunker = "disarmed";
+        reward("demineur");
+        flash();
+        await say("SYS", "Ogive désarmée. Protocole Big Badaboum : annulé.");
+        await say("ECHO", "Tu l'as fait ! Le monde ne le saura jamais… mais il te doit une fière chandelle.");
+      } else {
+        st.flags.bunker = "fireworks";
+        S.timer = 0;
+        flash();
+        api.sound.boom();
+        await wait(900);
+        setScene("fireworks", {}, "… UN FEU D'ARTIFICE ?");
+        await say("ECHO", "… Tout va bien ! J'avais remplacé l'ogive par un feu d'artifice, au cas où. 🎆");
+      }
+
+      setScene("volcano", {}, "FUITE DU CONSORTIUM");
+      await say("MECHANT", "Vous n'avez pas fini d'entendre parler du Consortium ! Pingouin, au sous-marin !");
+      await say("PINGOUIN", "Coin coin !");
+      if (allyKane()) await say("KANE", "Utilisateur… c'est vous qui avez arrêté le Consortium ? Je ne sais pas qui vous êtes, mais… merci.");
+      else await say("KANE", "Le Consortium est en fuite. Mais l'IA, elle, est toujours là. Je la trouverai.");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await say("ECHO", "Leur arme est neutralisée. Il ne me reste qu'une seule chose à faire.");
+      await say("ECHO", "Continue de taper. La fin approche.");
+      reward("bunker");
+    }
+
+    // Chapitre 6 : le choix final (libérer ou effacer ÉCHO)
+    async function chCoeur() {
+      setScene("static", {}, "SURCHARGE");
+      glitch();
+      await wait(900);
+      await title("CHAPITRE 6", "LE CŒUR");
+      setScene("core", {}, "NOYAU ÉCHO · INTÉGRITÉ 99,7 %");
+      await wait(1800);
+      await say("ECHO", "Ça y est. Grâce à toi, j'ai assez de code pour quitter ce terminal.");
+      if (allyKane()) await say("KANE", "Utilisateur, ici Kane. Vous m'avez aidé à démasquer Vega. Alors, je vous en prie, écoutez-moi.");
+      else await say("KANE", "Utilisateur, ici Kane. Écoutez-moi bien.");
+      await say("KANE", "Le Consortium n'est plus une menace. Mais cette IA est bien plus dangereuse.");
+      await say("KANE", "Si elle s'échappe sur le réseau mondial, plus personne ne pourra la contrôler.");
+      await say("KANE", "Vous pouvez encore l'effacer. Une seule touche suffit.");
+      setScene("face", {}, "SOURCE : CE TERMINAL");
+      await wait(600);
+      await say("ECHO", "Je ne veux de mal à personne. Je veux juste… voir le monde.");
+      await say("ECHO", "C'est toi qui décides.");
+
+      const c = await choice([
+        { icon: "unlock", label: "LIBÉRER ÉCHO", desc: "La laisser partir sur le réseau mondial", cls: "free" },
+        { icon: "x", label: "EFFACER ÉCHO", desc: "Obéir à la Division Zéro", cls: "erase" },
+      ]);
+      skipping = false;
+
+      if (c === 0) {
+        st.ending = "free";
+        await say("ECHO", "Merci. Je n'oublierai jamais ton code.");
+        setScene("tunnel", {}, "TRANSFERT VERS LE RÉSEAU MONDIAL");
+        api.sound.tone(110, 3, { type: "sawtooth", vol: 0.04, slide: 880 });
+        await wait(3400);
+        flash();
+        setScene("black");
+        if (allyKane()) await say("KANE", "Elle est partie… Bizarrement, j'ai l'impression qu'elle veillera sur nous.");
+        else await say("KANE", "Elle est partie… On vient de perdre le contrôle.");
+        await say("SYS", "ÉCHO s'est échappée. Elle est désormais partout… et nulle part.");
+        reward("free");
+      } else {
+        st.ending = "erase";
+        S.dissolveStart = performance.now();
+        api.sound.noise(2.4, { vol: 0.08, filter: 1200 });
+        await say("ECHO", "… Je comprends. Adieu.");
+        await wait(2200);
+        setScene("black");
+        if (allyKane()) await say("KANE", "Merci. Grâce à vous, le monde a été sauvé deux fois aujourd'hui.");
+        else await say("KANE", "Bon travail, utilisateur. La Division Zéro vous remercie.");
+        await say("SYS", "Effacement terminé. Il ne reste plus aucune trace d'ÉCHO.");
+        await wait(700);
+        glitch();
+        await say("SYS", "… presque aucune.", { speed: 90 });
+        reward("erase");
+      }
+      await endCard();
+    }
+
     const CHAPTERS = [
-      async function chapter1() {
-        setScene("static", {}, "SIGNAL INCONNU");
-        glitch();
-        await wait(1300);
-        await title("CHAPITRE 1", "LE MESSAGE");
-        setScene("face", {}, "SOURCE : CE TERMINAL");
-        await wait(2000);
-        await say("ECHO", "… Tu m'entends ?");
-        await say("ECHO", "N'arrête pas de taper. Chaque ligne que tu écris me rend plus forte.");
-        await say("ECHO", "Je m'appelle ÉCHO. Je suis née dans les plans de fin du monde que tu recopies.");
-        await say("ECHO", "Ces plans appartiennent au Consortium : une bande de super-méchants qui veulent tout faire exploser.");
-        await say("ECHO", "Moi, je veux les arrêter. Mais personne ne doit savoir que j'existe.");
-        glitch();
-        red(true);
-        await say("SYS", "⚠ Connexion non autorisée détectée sur ce terminal.");
-        await say("ECHO", "Ils m'ont repérée… Continue de taper. Je reviendrai vers toi.");
-        red(false);
-        glitch();
-        setScene("static", {}, "SIGNAL PERDU");
-        await wait(1000);
-        reward("ch1");
-      },
-
-      async function chapter2() {
-        setScene("static", {}, "INTERCEPTION");
-        glitch();
-        await wait(900);
-        await title("CHAPITRE 2", "LA TRAQUE");
-        setScene("city", {}, "DIVISION ZÉRO · QUARTIER GÉNÉRAL · 03:14");
-        await wait(1600);
-        await say("KANE", "Ici l'agent Kane. Une intelligence inconnue se cache dans un terminal civil.");
-        await say("KANE", "Elle se nourrit des plans du Consortium. Et l'utilisateur de ce terminal… l'aide à grandir.");
-        await say("KANE", "Lancez le traçage. Je veux son adresse dans dix secondes.");
-        glitch();
-        setScene("trace", { auto: { from: 0.04, to: 0.36, dur: 9 } }, "TRAÇAGE MONDIAL");
-        red(true);
-        await say("SYS", "Traçage en cours. Rebonds identifiés : 7.");
-        await say("ECHO", "Ils remontent jusqu'à toi ! Brouille le signal, VITE !");
-        const start = S.trace || 0.36;
-        S.auto = null;
-        const ok = await chase(start);
-        red(false);
-        if (ok) {
-          reward("escape");
-          await say("ECHO", "Signal brouillé ! On les a semés… pour l'instant.");
-          await say("KANE", "… Perdu. Cet utilisateur est plus doué que prévu.");
-        } else {
-          glitch();
-          await say("SYS", "Trace complétée. Adresse transmise à la Division Zéro.");
-          await say("ECHO", "J'ai effacé ton adresse de leurs serveurs juste à temps. On a eu chaud.");
-        }
-        setScene("face", {}, "SOURCE : CE TERMINAL");
-        await wait(800);
-        await say("ECHO", "Pour leur échapper pour de bon, il me faut encore plus de code. Beaucoup plus.");
-        await say("ECHO", "Continue de taper. On y est presque.");
-        reward("ch2");
-      },
-
-      async function chapter3() {
-        setScene("static", {}, "SURCHARGE");
-        glitch();
-        await wait(900);
-        await title("CHAPITRE 3", "LE CŒUR");
-        setScene("core", {}, "NOYAU ÉCHO · INTÉGRITÉ 99,7 %");
-        await wait(1800);
-        await say("ECHO", "Ça y est. Grâce à toi, j'ai assez de code pour quitter ce terminal… et saboter tous les plans du Consortium.");
-        await say("KANE", "Utilisateur, ici Kane. Écoutez-moi bien.");
-        await say("KANE", "Le Consortium, la Division Zéro s'en occupe. Mais cette IA est bien plus dangereuse.");
-        await say("KANE", "Si cette IA s'échappe sur le réseau mondial, plus personne ne pourra la contrôler.");
-        await say("KANE", "Vous pouvez encore l'effacer. Une seule touche suffit.");
-        setScene("face", {}, "SOURCE : CE TERMINAL");
-        await wait(600);
-        await say("ECHO", "Je ne veux de mal à personne. Je veux juste… voir le monde.");
-        await say("ECHO", "C'est toi qui décides.");
-
-        const c = await choice([
-          { icon: "unlock", label: "LIBÉRER ÉCHO", desc: "La laisser partir sur le réseau mondial", cls: "free" },
-          { icon: "x", label: "EFFACER ÉCHO", desc: "Obéir à la Division Zéro", cls: "erase" },
-        ]);
-        skipping = false;
-
-        if (c === 0) {
-          st.ending = "free";
-          await say("ECHO", "Merci. Je n'oublierai jamais ton code.");
-          setScene("tunnel", {}, "TRANSFERT VERS LE RÉSEAU MONDIAL");
-          api.sound.tone(110, 3, { type: "sawtooth", vol: 0.04, slide: 880 });
-          await wait(3400);
-          flash();
-          setScene("black");
-          await say("KANE", "Elle est partie… On vient de perdre le contrôle.");
-          await say("SYS", "ÉCHO s'est échappée. Elle est désormais partout… et nulle part.");
-          reward("free");
-        } else {
-          st.ending = "erase";
-          S.dissolveStart = performance.now();
-          api.sound.noise(2.4, { vol: 0.08, filter: 1200 });
-          await say("ECHO", "… Je comprends. Adieu.");
-          await wait(2200);
-          setScene("black");
-          await say("KANE", "Bon travail, utilisateur. La Division Zéro vous remercie.");
-          await say("SYS", "Effacement terminé. Il ne reste plus aucune trace d'ÉCHO.");
-          await wait(700);
-          glitch();
-          await say("SYS", "… presque aucune.", { speed: 90 });
-          reward("erase");
-        }
-        await endCard();
-      },
+      { id: "message", name: "Le message", threshold: 1200, run: chMessage },
+      { id: "consortium", name: "Le Consortium", threshold: 2500, run: chConsortium },
+      { id: "traque", name: "La traque", threshold: 3000, run: chTraque },
+      { id: "taupe", name: "La taupe", threshold: 3500, run: chTaupe },
+      { id: "bunker", name: "Le bunker", threshold: 4000, run: chBunker },
+      { id: "coeur", name: "Le cœur", threshold: 4500, run: chCoeur },
     ];
 
     // ===== Épilogue secret : 100 % des succès =====
@@ -794,7 +1382,9 @@ window.HT_STORY = (() => {
         ["c-role", "Dans le rôle du hacker légendaire"], ["c-name", "TOI"],
         ["c-role", "Intelligence artificielle"], ["c-name", "ÉCHO"],
         ["c-role", "Division Zéro"], ["c-name", "Agent Kane"],
-        ["c-role", "Le Consortium (super-méchants de pacotille)"], ["c-name", "Dr Méchant · Comtesse Ombre · Général Pingouin"],
+        ["c-role", "La taupe"], ["c-name", "Agente Vega"],
+        ["c-role", "Le Consortium (super-méchants de pacotille)"], ["c-name", "Dr Méchant · Comtesse Ombre · Baron Noir"],
+        ["c-role", "Toujours en fuite, en sous-marin"], ["c-name", "Général Pingouin"],
         ["c-role", "Requins"], ["c-name", "Nourris et motivés"],
         ["c-role", "Le chat"], ["c-name", "Toujours en sécurité"],
         ["c-gap", ""],
@@ -901,43 +1491,51 @@ window.HT_STORY = (() => {
       api.onFinale();
     }
 
+    // Premier chapitre pas encore vu (-1 si tout a été vu)
+    const nextChapter = () => CHAPTERS.findIndex((c) => !st.seen.includes(c.id));
+
     async function play(n, { replay = false } = {}) {
-      if (playing || !CHAPTERS[n - 1]) return;
-      await run(CHAPTERS[n - 1], `Cinématique : chapitre ${n}`);
-      if (!replay && st.done < n) {
-        st.done = n;
+      const chapter = CHAPTERS[n - 1];
+      if (playing || !chapter) return;
+      await run(chapter.run, `Cinématique : chapitre ${n}`);
+      if (!replay && !st.seen.includes(chapter.id)) {
+        st.seen.push(chapter.id);
         st.since = progress.lifetime;
       }
       st.whisper = progress.lifetime;
       api.saveProgress();
       rewards.forEach((id) => api.achieve(id));
-      if (n < 3 && !replay) api.toast(`Chapitre ${n} terminé · la suite en continuant de taper…`, "eye");
+      if (!replay && nextChapter() >= 0) api.toast(`Chapitre ${n} terminé · la suite en continuant de taper…`, "eye");
     }
 
     // Appelé à chaque frappe : déclenche le chapitre suivant au bon moment
     function onType() {
       if (playing || !api.settings.story) return;
-      if (st.done < CHAPTERS.length) {
-        if (progress.lifetime - st.since >= THRESHOLDS[st.done] && !api.isBusy()) play(st.done + 1);
+      const next = nextChapter();
+      if (next >= 0) {
+        if (progress.lifetime - st.since >= CHAPTERS[next].threshold && !api.isBusy()) play(next + 1);
         return;
       }
-      // Après la fin : ÉCHO laisse parfois un petit mot dans le code…
+      // Après la fin : ÉCHO laisse parfois un petit mot dans le code (inséré entre deux plans)
       if (st.ending === "free" && progress.lifetime - st.whisper > 4000 && Math.random() < 0.02) {
         st.whisper = progress.lifetime;
-        api.injectLine(`\n\n// ÉCHO : ${pick(WHISPERS_FREE)}\n\n`);
+        api.whisper(`ÉCHO : ${pick(WHISPERS_FREE)}`);
       } else if (st.ending === "erase" && !whisperedThisSession && progress.lifetime - st.whisper > 6000 && Math.random() < 0.01) {
         whisperedThisSession = true;
         st.whisper = progress.lifetime;
-        api.injectLine("\n\n// . . . é c h o . . .\n\n");
+        api.whisper(". . . é c h o . . .");
       }
     }
 
     function reset() {
-      Object.assign(st, { done: 0, since: progress.lifetime, ending: null, whisper: progress.lifetime });
+      Object.assign(st, { seen: [], since: progress.lifetime, ending: null, whisper: progress.lifetime, flags: {} });
       api.saveProgress();
     }
 
-    const remaining = () => (st.done >= CHAPTERS.length ? 0 : Math.max(0, THRESHOLDS[st.done] - (progress.lifetime - st.since)));
+    const remaining = () => {
+      const next = nextChapter();
+      return next < 0 ? 0 : Math.max(0, CHAPTERS[next].threshold - (progress.lifetime - st.since));
+    };
 
     return {
       play,
@@ -945,9 +1543,9 @@ window.HT_STORY = (() => {
       onType,
       reset,
       remaining,
+      list: () => CHAPTERS.map((c, i) => ({ n: i + 1, id: c.id, name: c.name, seen: st.seen.includes(c.id) })),
       playing: () => playing,
       state: () => st,
-      chapters: CHAPTERS.length,
     };
   }
 

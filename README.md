@@ -12,15 +12,15 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 
 ## ✨ Fonctionnalités
 
-- **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde. Méchant, base secrète, code de lancement, arme et étapes bonus sont **tirés au hasard** : à chaque fois que tout le code a été tapé, un nouveau plan est inventé.
+- **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde : journal de bord, sbires, étapes détaillées… Méchant, base secrète, code de lancement, arme et étapes sont **tirés au hasard** : à chaque fois que tout le code a été tapé (5 000 à 9 000 caractères), un nouveau plan est inventé.
 - **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran.
-- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. 3 chapitres en cinématiques, une course-poursuite, deux fins possibles… et un épilogue secret pour ceux qui débloquent 100 % des succès.
+- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. 6 chapitres en cinématiques, des mini-jeux (mémoire, course-poursuite, code à taper, fil à couper), des choix qui changent la suite, deux fins possibles… et un épilogue secret pour ceux qui débloquent 100 % des succès.
 - **Un seul univers** : le faux code, les effets et les missions racontent tous la même histoire. Une IA nommée ÉCHO, les super-méchants du Consortium et l'agent Kane de la Division Zéro.
 - **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables.
 - **Mode mission** : une opération complète qui enchaîne plusieurs effets toute seule.
 - **Pilote automatique** : le code s'écrit sans toucher au clavier.
 - **Mode immersion** : plus aucune interface, juste le terminal. Parfait pour une blague.
-- **23 succès** à débloquer, et un code secret caché 🌈.
+- **28 succès** à débloquer, et un code secret caché 🌈.
 - **Voix de l'ordinateur** (synthèse vocale) et **sons** générés en direct.
 - **HUD** façon film : processeur, radar, trafic, journal des événements.
 - **7 thèmes** de couleur et effet écran CRT.

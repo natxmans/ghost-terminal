@@ -18,7 +18,10 @@
   }
 
   // Clic droit
-  document.addEventListener("contextmenu", (e) => blocked(e, "🔒 Clic droit désactivé"), true);
+  document.addEventListener("contextmenu", (e) => {
+    if (isField(e.target)) return; // coller son propre code dans les réglages : autorisé
+    blocked(e, "🔒 Clic droit désactivé");
+  }, true);
 
   // Sélection et glisser-déposer
   document.addEventListener("selectstart", (e) => { if (!isField(e.target)) e.preventDefault(); }, true);

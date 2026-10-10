@@ -1,6 +1,6 @@
 // Service worker : permet d'installer Ghost Terminal et de l'utiliser hors ligne.
 // Stratégie "réseau d'abord" : toujours la dernière version en ligne, la copie en cache sinon.
-const CACHE = "ghost-terminal-v4";
+const CACHE = "ghost-terminal-v5";
 const FILES = [
   "./",
   "index.html",
