@@ -1,0 +1,6 @@
+# Réglages locaux de l'éditeur / de Claude Code
+.claude/
+
+# Fichiers système Windows / OneDrive
+Thumbs.db
+desktop.ini

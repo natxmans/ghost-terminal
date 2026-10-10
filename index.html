@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' file: data:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Ghost Terminal</title>
+  <meta name="description" content="Ghost Terminal : tape n'importe quoi sur ton clavier et deviens un hacker de film. Effets dramatiques, missions, succès, mode immersion.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Ghost Terminal">
+  <meta property="og:description" content="Tape n'importe quoi. Deviens un hacker de film.">
+  <meta property="og:url" content="https://natxmans.github.io/ghost-terminal/">
+  <meta property="og:image" content="https://natxmans.github.io/ghost-terminal/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23000'/%3E%3Cpath d='M7 10l6 6-6 6' stroke='%233dff7a' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='15' y='20' width='10' height='3' fill='%233dff7a'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="green">
+
+  <!-- Fond -->
+  <div id="bg-grid" aria-hidden="true"></div>
+
+  <!-- Barre du haut -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-logo" aria-hidden="true">&gt;_</span>
+      <span class="brand-name">GHOST<span class="brand-inv">TERMINAL</span></span>
+      <span class="brand-version">v1.0</span>
+    </div>
+
+    <div class="top-center">
+      <span class="live-dot"></span>
+      <span id="top-clock">00:00:00</span>
+      <span class="sep">//</span>
+      <span id="top-session">SESSION #0000</span>
+    </div>
+
+    <nav class="actions">
+      <button class="tbtn" id="btn-dock" data-icon="zap" title="Afficher / cacher les effets"><span class="label">Effets</span></button>
+      <button class="tbtn" id="btn-mission" data-icon="target" title="Mode mission (F3)"><span class="label">Mission</span></button>
+      <button class="tbtn" id="btn-auto" data-icon="play" title="Pilote automatique (F6)"><span class="label">Auto</span></button>
+      <button class="tbtn" id="btn-hud" data-icon="activity" title="Panneau HUD (F7)"><span class="label">HUD</span></button>
+      <button class="tbtn" id="btn-ach" data-icon="trophy" title="Succès"><span class="label">Succès</span> <b class="ach-count" id="ach-count">0/18</b></button>
+      <button class="tbtn" id="btn-immersive" data-icon="eye" title="Mode immersion (F10)"></button>
+      <button class="tbtn" id="btn-settings" data-icon="sliders" title="Réglages (F9)"><span class="label">Réglages</span></button>
+      <button class="tbtn" id="btn-help" data-icon="help" title="Aide (F1)"><span class="label">Aide</span></button>
+      <button class="tbtn" id="btn-fullscreen" data-icon="maximize" title="Plein écran"></button>
+    </nav>
+  </header>
+
+  <!-- Bandeau de mission -->
+  <div id="mission" hidden>
+    <span class="mission-ic" data-icon="target"></span>
+    <div class="mission-text">
+      <div class="mission-name" id="mission-name">OPÉRATION</div>
+      <div class="mission-step" id="mission-step">Préparation…</div>
+    </div>
+    <div class="mission-dots" id="mission-dots"></div>
+  </div>
+
+  <!-- Le terminal -->
+  <main id="terminal" tabindex="0" aria-label="Terminal">
+    <pre id="console"><span id="output"></span><span id="cursor"></span></pre>
+  </main>
+
+  <!-- HUD à droite -->
+  <aside id="hud" aria-label="Moniteur système">
+    <section class="hud-card">
+      <h3>SYSTÈME</h3>
+      <div class="meter"><span>CPU</span><div class="meter-bar"><i id="m-cpu"></i></div><b id="v-cpu">0%</b></div>
+      <div class="meter"><span>RAM</span><div class="meter-bar"><i id="m-ram"></i></div><b id="v-ram">0%</b></div>
+      <div class="meter"><span>RÉSEAU</span><div class="meter-bar"><i id="m-net"></i></div><b id="v-net">0%</b></div>
+      <div class="meter"><span>CHIFFR.</span><div class="meter-bar"><i id="m-enc"></i></div><b id="v-enc">0%</b></div>
+    </section>
+    <section class="hud-card">
+      <h3>ACTIVITÉ <small id="hud-cpm">0 car/min</small></h3>
+      <canvas id="spark"></canvas>
+    </section>
+    <section class="hud-card hud-radar">
+      <canvas id="radar"></canvas>
+      <ul class="hud-info">
+        <li><span>NOEUD</span><b>GHOST-7</b></li>
+        <li><span>IP</span><b id="hud-ip">10.13.37.42</b></li>
+        <li><span>PROXY</span><b id="hud-proxy">7 rebonds</b></li>
+        <li><span>LATENCE</span><b id="hud-ping">13 ms</b></li>
+      </ul>
+    </section>
+    <section class="hud-card hud-log-card">
+      <h3>JOURNAL</h3>
+      <ul id="hud-log"></ul>
+    </section>
+  </aside>
+
+  <!-- Dock des effets -->
+  <div id="dock" role="toolbar" aria-label="Effets"></div>
+
+  <!-- Barre d'état -->
+  <footer id="statusbar">
+    <span class="st-online"><i></i>EN LIGNE</span>
+    <span>LANG <b id="st-lang">C</b></span>
+    <span>CAR. <b id="st-chars">0</b></span>
+    <span class="hide-mobile">LIGNES <b id="st-lines">0</b></span>
+    <span>VITESSE <b id="st-cpm">0</b></span>
+    <span class="hide-mobile">TEMPS <b id="st-time">00:00</b></span>
+    <span>NIVEAU <b id="st-level">INVITÉ</b></span>
+    <span class="badge" id="st-auto" hidden>AUTO</span>
+    <span class="badge badge-mission" id="st-mission" hidden>MISSION</span>
+    <span class="st-hint hide-mobile"><kbd>Maj</kbd>+<kbd>1</kbd>…<kbd>0</kbd> effets · <kbd>F1</kbd> aide</span>
+  </footer>
+
+  <!-- Notifications -->
+  <div id="toasts" aria-live="polite"></div>
+
+  <!-- Fenêtres d'effets -->
+  <div id="windows"></div>
+
+  <!-- Effets plein écran -->
+  <div id="fx"></div>
+
+  <!-- Sortie du mode immersion (discrète) -->
+  <button id="btn-exit-immersive" type="button" data-icon="x" title="Quitter le mode immersion (F10)" aria-label="Quitter le mode immersion"></button>
+
+  <!-- Champ caché pour ouvrir le clavier sur mobile -->
+  <textarea id="mobile-input" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1"></textarea>
+
+  <!-- Aide -->
+  <div class="overlay" id="help" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <div class="panel panel-wide">
+      <button class="panel-x" data-close aria-label="Fermer" data-icon="x"></button>
+      <h1 id="help-title" class="panel-title">&gt; MODE D'EMPLOI<span class="caret">_</span></h1>
+      <p class="muted">Tape n'importe quoi sur ton clavier : du vrai code de hacker s'écrit tout seul. Sur téléphone, touche simplement l'écran.</p>
+
+      <div class="help-grid">
+        <section class="card">
+          <h3>ACCÈS</h3>
+          <dl class="keys">
+            <dt><kbd>Alt</kbd> ×3</dt><dd>Accès autorisé</dd>
+            <dt><kbd>Verr. Maj</kbd> ×3</dt><dd>Accès refusé</dd>
+            <dt>📱 3 doigts</dt><dd>Accès autorisé</dd>
+            <dt>📱 4 doigts</dt><dd>Accès refusé</dd>
+            <dt><kbd>Échap</kbd></dt><dd>Tout fermer</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h3>EFFETS DRAMATIQUES</h3>
+          <dl class="keys" id="help-effects"></dl>
+        </section>
+
+        <section class="card">
+          <h3>COMMANDES</h3>
+          <dl class="keys">
+            <dt><kbd>F2</kbd></dt><dd>Téléchargement</dd>
+            <dt><kbd>F3</kbd></dt><dd>Mode mission (enchaîne les effets)</dd>
+            <dt><kbd>F6</kbd></dt><dd>Pilote automatique</dd>
+            <dt><kbd>F7</kbd></dt><dd>Panneau HUD</dd>
+            <dt><kbd>F8</kbd></dt><dd>Thème suivant</dd>
+            <dt><kbd>F9</kbd></dt><dd>Réglages</dd>
+            <dt><kbd>F10</kbd></dt><dd>Mode immersion (zéro interface)</dd>
+            <dt><kbd>Retour</kbd></dt><dd>Effacer</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h3>ASTUCES</h3>
+          <ul class="tips">
+            <li>Lance plusieurs effets en même temps et déplace les fenêtres en les attrapant par le titre.</li>
+            <li>Le mode mission enchaîne tout seul une opération complète. Parfait pour impressionner.</li>
+            <li>Le mode immersion (F10) cache tout : idéal pour faire une blague à quelqu'un.</li>
+            <li>Dans les réglages, colle ton propre code pour qu'il s'écrive à l'écran, et active la voix de l'ordinateur.</li>
+            <li>18 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn btn-primary" data-close>C'est parti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Réglages -->
+  <div class="overlay" id="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <div class="panel">
+      <button class="panel-x" data-close aria-label="Fermer" data-icon="x"></button>
+      <h2 id="settings-title" class="panel-title">&gt; RÉGLAGES</h2>
+
+      <h4 class="group">Code</h4>
+      <label class="row"><span>Langage</span><select id="opt-lang"></select></label>
+      <label class="row"><span>Vitesse <b id="opt-speed-val">3</b> car/touche</span><input type="range" id="opt-speed" min="1" max="12"></label>
+      <label class="row check"><input type="checkbox" id="opt-highlight"><span>Coloration du code</span></label>
+
+      <h4 class="group">Mon code</h4>
+      <p class="muted small">Colle ici n'importe quel code (ou texte) : c'est lui qui s'écrira quand tu tapes.</p>
+      <textarea id="opt-custom" class="code-input" rows="6" spellcheck="false" placeholder="// Colle ton code ici…"></textarea>
+      <div class="row buttons-row"><button class="btn" id="btn-custom-save" type="button">Utiliser mon code</button></div>
+
+      <h4 class="group">Affichage</h4>
+      <div class="row"><span>Thème</span><div class="swatches" id="opt-theme"></div></div>
+      <label class="row"><span>Taille du texte <b id="opt-size-val">15</b> px</span><input type="range" id="opt-size" min="11" max="28"></label>
+      <label class="row check"><input type="checkbox" id="opt-crt"><span>Effet écran CRT</span></label>
+      <label class="row check"><input type="checkbox" id="opt-hud"><span>Panneau HUD (grand écran)</span></label>
+      <label class="row check"><input type="checkbox" id="opt-dock"><span>Barre d'effets</span></label>
+      <label class="row check"><input type="checkbox" id="opt-boot"><span>Séquence de démarrage</span></label>
+
+      <h4 class="group">Son &amp; événements</h4>
+      <label class="row check"><input type="checkbox" id="opt-sound"><span>Sons</span></label>
+      <label class="row check"><input type="checkbox" id="opt-voice"><span>Voix de l'ordinateur (synthèse vocale)</span></label>
+      <label class="row"><span>Volume <b id="opt-volume-val">60</b>%</span><input type="range" id="opt-volume" min="0" max="100"></label>
+      <label class="row check"><input type="checkbox" id="opt-popups"><span>Événements surprises pendant la frappe</span></label>
+
+      <div class="panel-actions">
+        <button class="btn" id="btn-install" data-icon="install" hidden>Installer l'appli</button>
+        <button class="btn" id="btn-reset">Réinitialiser</button>
+        <button class="btn" id="btn-clear">Effacer l'écran</button>
+        <button class="btn btn-primary" data-close>Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Succès -->
+  <div class="overlay" id="achievements" role="dialog" aria-modal="true" aria-labelledby="ach-title" hidden>
+    <div class="panel panel-wide">
+      <button class="panel-x" data-close aria-label="Fermer" data-icon="x"></button>
+      <h2 id="ach-title" class="panel-title">&gt; SUCCÈS</h2>
+      <p class="muted" id="ach-summary"></p>
+      <div class="ach-bar"><i id="ach-progress"></i></div>
+      <div class="ach-grid" id="ach-grid"></div>
+      <div class="panel-actions">
+        <button class="btn btn-primary" data-close>Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Démarrage -->
+  <div id="boot" hidden>
+    <pre id="boot-log"></pre>
+    <div id="boot-logo" hidden>
+      <pre class="logo-art"></pre>
+      <div class="boot-press">Appuie sur n'importe quelle touche<span class="caret">_</span></div>
+    </div>
+  </div>
+
+  <script src="security.js"></script>
+  <script src="icons.js"></script>
+  <script src="snippets.js"></script>
+  <script src="highlight.js"></script>
+  <script src="effects.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
