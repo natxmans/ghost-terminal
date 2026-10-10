@@ -12,12 +12,14 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 
 ## ✨ Fonctionnalités
 
-- **8 langages** de faux code : C (noyau), Python, JavaScript, Rust, Go, Assembleur x86, Bash… et **ton propre code** (colle-le dans les réglages).
+- **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde. Méchant, base secrète, code de lancement, arme et étapes bonus sont **tirés au hasard** : à chaque fois que tout le code a été tapé, un nouveau plan est inventé.
+- **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran.
+- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. 3 chapitres en cinématiques, une course-poursuite et deux fins possibles.
 - **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables.
 - **Mode mission** : une opération complète qui enchaîne plusieurs effets toute seule.
 - **Pilote automatique** : le code s'écrit sans toucher au clavier.
 - **Mode immersion** : plus aucune interface, juste le terminal. Parfait pour une blague.
-- **18 succès** à débloquer, et un code secret caché 🌈.
+- **23 succès** à débloquer, et un code secret caché 🌈.
 - **Voix de l'ordinateur** (synthèse vocale) et **sons** générés en direct.
 - **HUD** façon film : processeur, radar, trafic, journal des événements.
 - **7 thèmes** de couleur et effet écran CRT.
@@ -53,7 +55,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 
 ## 🔒 Tout est faux (et sans danger)
 
-Ghost Terminal est un **jouet**. Rien n'est piraté : la caméra, le micro, le GPS et les fichiers affichés sont **100 % simulés**. Le site n'accède à aucun de tes appareils et ne collecte aucune donnée : les réglages et succès restent dans ton navigateur, et seules les polices d'écriture sont chargées depuis Google Fonts.
+Ghost Terminal est un **jouet**. Rien n'est piraté : la caméra, le micro, le GPS et les fichiers affichés sont **100 % simulés**, et le « plan de fin du monde » n'est qu'une parodie de film qui ne fait strictement rien. Le site n'accède à aucun de tes appareils et ne collecte aucune donnée : les réglages et succès restent dans ton navigateur, et seules les polices d'écriture sont chargées depuis Google Fonts.
 
 ## 🚀 Lancer en local
 
@@ -75,7 +77,8 @@ puis ouvre <http://localhost:8000>.
 | `style.css` | Le design (thèmes, fenêtres, effets) |
 | `app.js` | Le moteur : frappe, fenêtres, missions, succès, HUD, son, voix |
 | `effects.js` | Les 11 effets dramatiques |
-| `snippets.js` | Le faux code de chaque langage |
+| `story.js` | Le mode histoire et ses cinématiques |
+| `snippets.js` | Le générateur de faux code (un nouveau plan à chaque tour) |
 | `highlight.js` | La coloration du code |
 | `icons.js` | Les icônes |
 | `security.js` | La protection anti-copie |

@@ -60,7 +60,7 @@
   const DEFAULTS = {
     lang: "c", theme: "green", speed: 3, size: 15,
     highlight: true, crt: true, hud: true, dock: true, boot: true,
-    sound: false, voice: false, volume: 60, popups: true, customCode: "",
+    sound: false, voice: false, volume: 60, popups: true, story: true, customCode: "",
   };
   const STORE = "ghostterminal-v1";
 
@@ -205,16 +205,19 @@
       choose();
       speechSynthesis.addEventListener?.("voiceschanged", choose);
     },
-    say(text) {
+    say(text, { pitch = 0.6, rate = 1.05 } = {}) {
       if (!settings.voice || !("speechSynthesis" in window)) return;
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "fr-FR";
       if (this.voice) u.voice = this.voice;
-      u.rate = 1.05;
-      u.pitch = 0.6;
+      u.rate = rate;
+      u.pitch = pitch;
       u.volume = clamp(settings.volume / 100, 0.1, 1);
       speechSynthesis.speak(u);
+    },
+    hush() {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
     },
   };
   Voice.init();
@@ -239,6 +242,11 @@
     { id: "immersion", icon: "eye", name: "Immersion totale", desc: "Passer en mode immersion" },
     { id: "custom", icon: "code", name: "Mon propre code", desc: "Faire taper ton propre code" },
     { id: "konami", icon: "trophy", name: "Rétro gamer", desc: "Trouver le code secret caché" },
+    { id: "ch1", icon: "eye", name: "Le message", desc: "Histoire : terminer le chapitre 1" },
+    { id: "ch2", icon: "globe", name: "La traque", desc: "Histoire : terminer le chapitre 2" },
+    { id: "escape", icon: "shield", name: "Insaisissable", desc: "Histoire : brouiller le signal à temps" },
+    { id: "free", icon: "unlock", name: "Libération", desc: "Histoire : découvrir la première fin" },
+    { id: "erase", icon: "x", name: "Effacement", desc: "Histoire : découvrir l'autre fin" },
   ];
   const PROGRESS_KEY = "ghostterminal-progress";
   const progress = (() => {
@@ -348,7 +356,7 @@
 
   function typeChars(n) {
     if (!startTime) startTime = Date.now();
-    const L = langData(settings.lang);
+    let L = langData(settings.lang);
     let run = "", runC = -1;
     for (let i = 0; i < n; i++) {
       const c = L.cls[pos];
@@ -359,6 +367,11 @@
       runC = c;
       run += L.code[pos];
       pos = (pos + 1) % L.code.length;
+      // Tout le plan a été tapé : on en invente un nouveau
+      if (pos === 0 && window.regenerateSnippet(settings.lang)) {
+        delete langCache[settings.lang];
+        L = langData(settings.lang);
+      }
     }
     if (run) appendRun(run, runC);
     trim();
@@ -378,6 +391,7 @@
     if (progress.lifetime >= 10000) achieve("hacker");
     if (progress.lifetime >= 50000) achieve("legend");
     if (settings.lang === "custom" && settings.customCode.trim()) achieve("custom");
+    story.onType();
   }
 
   function eraseChars(n) {
@@ -665,7 +679,7 @@
   }
 
   function maybeSurprise() {
-    if (!settings.popups || mission) return;
+    if (!settings.popups || mission || story.playing()) return;
     if (charsSinceEvent > 1500 && Math.random() < 0.03) {
       charsSinceEvent = 0;
       runEffect(pick(["download", "download", "download", "radar", "password", "gps", "database", "files", "network"]), { auto: true });
@@ -695,7 +709,7 @@
   }
   function autoLoop() {
     if (!auto) return;
-    typeChars(randInt(1, Math.max(2, settings.speed)));
+    if (!story.playing()) typeChars(randInt(1, Math.max(2, settings.speed)));
     autoTimer = setTimeout(autoLoop, Math.random() < 0.06 ? rand(250, 600) : rand(30, 85));
   }
 
@@ -929,7 +943,7 @@
     $("opt-size-val").textContent = settings.size;
     $("opt-volume").value = settings.volume;
     $("opt-volume-val").textContent = settings.volume;
-    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups"]) $("opt-" + k).checked = settings[k];
+    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story"]) $("opt-" + k).checked = settings[k];
     document.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.theme === settings.theme));
     $("btn-hud").classList.toggle("active", settings.hud);
     $("btn-dock").classList.toggle("active", settings.dock);
@@ -981,7 +995,10 @@
 
   function openModal(el) {
     MODALS.forEach((m) => { if (m !== el) m.hidden = true; });
-    if (el === achEl) renderAchievements();
+    if (el === achEl) {
+      renderAchievements();
+      renderStoryPanel();
+    }
     el.hidden = false;
     el.querySelector("[data-close].btn-primary, select, button")?.focus();
   }
@@ -1150,6 +1167,7 @@
       }
       return;
     }
+    if (story.playing()) return; // la cinématique gère ses propres touches
 
     konami(e.key);
 
@@ -1218,7 +1236,7 @@
   let maxTouches = 0;
 
   document.addEventListener("touchstart", (e) => {
-    if (booting || modalOpen()) return;
+    if (booting || modalOpen() || story.playing()) return;
     maxTouches = Math.max(maxTouches, e.touches.length);
     if (e.touches.length > 1) {
       e.preventDefault();
@@ -1232,6 +1250,7 @@
 
   document.addEventListener("touchend", (e) => {
     if (e.touches.length) return;
+    if (story.playing()) { maxTouches = 0; return; }
     if (maxTouches === 3) access(true);
     else if (maxTouches >= 4) access(false);
     maxTouches = 0;
@@ -1294,7 +1313,7 @@
   $("opt-speed").addEventListener("input", (e) => { settings.speed = +e.target.value; applySettings(); });
   $("opt-size").addEventListener("input", (e) => { settings.size = +e.target.value; applySettings(); });
   $("opt-volume").addEventListener("input", (e) => { settings.volume = +e.target.value; applySettings(); });
-  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups"]) {
+  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story"]) {
     $("opt-" + k).addEventListener("change", (e) => { settings[k] = e.target.checked; applySettings(); });
   }
   $("opt-voice").addEventListener("change", (e) => {
@@ -1307,6 +1326,53 @@
     applySettings();
     if (settings.sound) Sound.granted();
   });
+
+  // ===== Mode histoire « PROTOCOLE ÉCHO » =====
+  const story = window.HT_STORY.create({
+    sound: Sound,
+    speak: (text, opts) => Voice.say(text, opts),
+    hush: () => Voice.hush(),
+    achieve, toast, log,
+    colors: () => themeColors,
+    settings, progress, saveProgress,
+    isBusy: () => !!mission || modalOpen() || booting || fxHandles.size > 0,
+    prepare: () => {
+      [...openWins].forEach((w) => w.close());
+      [...fxHandles].forEach((h) => h.close());
+    },
+    injectLine: (text) => {
+      appendRun(text, 4);
+      trim();
+      scrollDown();
+    },
+  });
+
+  function renderStoryPanel() {
+    const s = story.state();
+    const left = story.remaining();
+    const status = s.done >= story.chapters
+      ? `Histoire terminée · fin : ${s.ending === "free" ? "Libération" : "Effacement"}. Tu peux rejouer chaque chapitre.`
+      : s.done === 0
+        ? "Continue de taper… quelque chose se réveille dans le terminal."
+        : `Chapitre ${s.done + 1} dans environ ${fr(left)} caractères.`;
+    const names = ["Le message", "La traque", "Le cœur"];
+    $("story-panel").innerHTML = `
+      <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire</small></h3>
+      <p class="muted small">${esc(status)}</p>
+      <div class="story-btns">
+        ${names.map((n, i) => `<button type="button" class="btn story-play" data-ch="${i + 1}" ${i < s.done ? "" : "disabled"}>${i < s.done ? `▶ ${i + 1}. ${esc(n)}` : `🔒 Chapitre ${i + 1}`}</button>`).join("")}
+        <button type="button" class="btn story-reset" ${s.done ? "" : "disabled"}>Recommencer l'histoire</button>
+      </div>`;
+    $("story-panel").querySelectorAll(".story-play").forEach((b) => b.addEventListener("click", () => {
+      closeModal(achEl);
+      story.play(+b.dataset.ch, { replay: true });
+    }));
+    $("story-panel").querySelector(".story-reset").addEventListener("click", () => {
+      story.reset();
+      renderStoryPanel();
+      toast("Histoire réinitialisée : continue de taper…", "eye");
+    });
+  }
 
   // Messages de security.js (copie bloquée, etc.)
   window.addEventListener("ht-blocked", (e) => {

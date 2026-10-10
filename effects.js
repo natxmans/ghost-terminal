@@ -955,4 +955,5 @@
   });
 
   window.HT_EFFECTS = EFFECTS;
+  window.HT_MAP = { worldDots, project, mapLayer, CITIES };
 })();

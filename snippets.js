@@ -1,661 +1,612 @@
-// Faux code affiché à l'écran. Rien de tout ça ne fait quoi que ce soit : c'est du décor.
-// String.raw garde les "\n" et autres antislashs tels quels.
+// Faux code : le plan (totalement fictif et ridicule) d'un super-méchant de film qui veut
+// déclencher la fin du monde. Les noms, codes et étapes sont tirés au hasard : chaque fois que
+// le code a été entièrement tapé, un nouveau plan est inventé.
+(() => {
+  "use strict";
 
-window.SNIPPETS = {
-  c: {
-    name: "C (noyau)",
-    code: String.raw`/*
- * mainframe/core/quantum_sched.c
- * Ordonnanceur quantique du noyau NEXUS-9
+  const rnd = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = (arr) => arr.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
+  const hex = (n) => Array.from({ length: n }, () => "0123456789ABCDEF"[rnd(0, 15)]).join("");
+  const camel = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+
+  // ===== Mots tirés au hasard =====
+  const PROJETS = ["RAGNAROK", "ARMAGEDDON", "APOCALYPSE", "OMEGA", "CREPUSCULE", "NEMESIS", "GRAND_FINAL", "DERNIER_JOUR", "BIG_BADABOUM"];
+  const MECHANTS = [
+    ["Dr_Mechant", "Dr Méchant"], ["Baron_Noir", "Baron Noir"], ["Professeur_Chaos", "Professeur Chaos"],
+    ["Comtesse_Ombre", "Comtesse Ombre"], ["General_Pingouin", "Général Pingouin"], ["Lord_Grincheux", "Lord Grincheux"],
+  ];
+  const BASES = ["volcan_secret", "base_lunaire", "ile_du_crane", "sous_marin_jaune", "station_orbitale", "bunker_sous_la_mer"];
+  const CODES = ["FROMAGE-42", "CROISSANT-666", "BAGUETTE-007", "RACLETTE-9000", "PATATE-1337", "LICORNE-404", "CAMEMBERT-13"];
+  const BOMBES = [
+    ["ogive_omega", "Ogive Oméga"], ["machine_fin_du_monde", "Machine de fin du monde"],
+    ["bombe_ragnarok", "Bombe Ragnarök"], ["reacteur_nemesis", "Réacteur Némésis"],
+  ];
+  const EXTRAS = [
+    ["desactiver_super_heros", "Super-héros désactivés"],
+    ["couper_internet_mondial", "Internet coupé (adieu les memes)"],
+    ["nourrir_les_requins", "Requins nourris et motivés"],
+    ["lancer_rire_machiavelique", "MOUAHAHAHA !"],
+    ["envoyer_ultimatum", "Ultimatum envoyé au Conseil des Héros"],
+    ["allumer_lumieres_rouges", "Lumières rouges qui clignotent : OK"],
+    ["evacuer_le_chat", "Le chat est en sécurité"],
+    ["pirater_les_satellites", "Satellites sous contrôle"],
+    ["brouiller_les_radars", "Radars brouillés"],
+    ["activer_musique_dramatique", "Musique dramatique : ON"],
+  ];
+  const FINS = [
+    "FIN DU MONDE. GAME OVER.",
+    "Planète Terre : erreur 404, introuvable.",
+    "BOUM. Plus jamais de lundis.",
+    "Le monde a été effacé. Merci d'avoir choisi Apocalypse Inc.",
+    "Fin du monde terminée à 100 %.",
+  ];
+
+  function model() {
+    const [mechant, mechantNom] = pick(MECHANTS);
+    const [bombe, bombeNom] = pick(BOMBES);
+    const projet = pick(PROJETS);
+    return {
+      projet, low: projet.toLowerCase(),
+      mechant, mechantNom, bombe, bombeNom,
+      base: pick(BASES),
+      code: pick(CODES),
+      ogives: rnd(3, 9),
+      delai: pick([10, 13, 30, 42, 60, 99]),
+      puissance: rnd(100, 999),
+      version: `${rnd(1, 9)}.${rnd(0, 9)}.${rnd(0, 9)}`,
+      extras: shuffle(EXTRAS).slice(0, 3),
+      fin: pick(FINS),
+      cle: hex(8),
+    };
+  }
+
+  // ===== Un rendu par langage =====
+  const RENDER = {
+    c: (m) => `/*
+ * operation_${m.low}.c — Protocole de fin du monde v${m.version}
+ * Auteur : ${m.mechantNom} · Base : ${m.base}
+ * Arme : ${m.bombeNom}
+ * ATTENTION : ne pas appuyer sur le gros bouton rouge.
+ * (100 % fictif : aucune vraie bombe dans ce fichier, juste des blagues.)
  */
 
-#include <nexus/kernel.h>
-#include <nexus/crypto.h>
-#include <nexus/netlink.h>
-#include <asm/atomic.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include "apocalypse.h"
 
-#define MAX_NODES        4096
-#define CIPHER_ROUNDS    64
-#define FIREWALL_MAGIC   0xDEADC0DE
+#define CODE_LANCEMENT  "${m.code}"
+#define NB_OGIVES       ${m.ogives}
+#define DELAI_SECONDES  ${m.delai}
+#define CLE_MAITRESSE   0x${m.cle}
+#define CIBLE           "PLANETE_TERRE"
 
-static struct node_table *nodes;
-static atomic_t breach_count = ATOMIC_INIT(0);
-static spinlock_t gate_lock;
+typedef enum { EN_VEILLE, ARMEE, LANCEE } etat_t;
 
-struct packet_hdr {
-	uint32_t magic;
-	uint16_t flags;
-	uint16_t len;
-	uint8_t  payload[];
-} __attribute__((packed));
+typedef struct {
+	int id;
+	int puissance;
+	etat_t etat;
+} ogive_t;
 
-static inline uint64_t rotl64(uint64_t x, int r)
+static ogive_t arsenal[NB_OGIVES];
+
+static int verifier_identite(const char *nom, const char *code)
 {
-	return (x << r) | (x >> (64 - r));
+	if (strcmp(nom, "${m.mechant}") != 0) {
+		puts("ACCES REFUSE : vous n'etes pas assez mechant.");
+		return 0;
+	}
+	return strcmp(code, CODE_LANCEMENT) == 0;
 }
 
-static uint64_t scramble_key(uint64_t seed, int rounds)
+static int tourner_les_cles(int cle_gauche, int cle_droite)
 {
-	uint64_t k = seed ^ 0x9E3779B97F4A7C15ULL;
-	int i;
-
-	for (i = 0; i < rounds; i++) {
-		k = rotl64(k, 13) ^ (k >> 7);
-		k *= 0xBF58476D1CE4E5B9ULL;
+	/* Les deux cles doivent tourner exactement en meme temps */
+	return cle_gauche == 1 && cle_droite == 1;
+}
+${m.extras.map(([fn, msg]) => `
+static void ${fn}(void)
+{
+	puts("[+] ${msg}");
+}
+`).join("")}
+static void armer_ogives(void)
+{
+	for (int i = 0; i < NB_OGIVES; i++) {
+		arsenal[i].id = i + 1;
+		arsenal[i].puissance = ${m.puissance};
+		arsenal[i].etat = ARMEE;
+		printf("[+] ${m.bombeNom} %d/%d armee\\n", i + 1, NB_OGIVES);
 	}
-	return k;
 }
 
-int gate_open(struct node *n, const struct packet_hdr *hdr)
+static void compte_a_rebours(int secondes)
 {
-	unsigned long flags;
-	int ret = -EACCES;
-
-	if (unlikely(hdr->magic != FIREWALL_MAGIC)) {
-		pr_warn("gate: signature invalide sur le noeud %u\n", n->id);
-		return -EINVAL;
+	for (int t = secondes; t > 0; t--) {
+		printf("Lancement dans %d...\\n", t);
+		sleep(1);
 	}
-
-	spin_lock_irqsave(&gate_lock, flags);
-	if (n->state == NODE_STANDBY) {
-		n->session = scramble_key(n->id, CIPHER_ROUNDS);
-		n->state = NODE_LINKED;
-		atomic_inc(&breach_count);
-		ret = 0;
-	}
-	spin_unlock_irqrestore(&gate_lock, flags);
-
-	return ret;
 }
 
-static void sync_all_nodes(void)
+static void fin_du_monde(void)
 {
-	struct node *n;
-	int linked = 0;
-
-	list_for_each_entry(n, &nodes->list, link) {
-		if (gate_open(n, n->last_hdr) == 0)
-			linked++;
-		cpu_relax();
-	}
-	pr_info("sync: %d/%d noeuds synchronises\n", linked, MAX_NODES);
+	for (int i = 0; i < NB_OGIVES; i++)
+		arsenal[i].etat = LANCEE;
+	monde_detruire(CIBLE, CLE_MAITRESSE);
+	puts("${m.fin}");
 }
 
-static int __init quantum_init(void)
+int main(void)
 {
-	nodes = kzalloc(sizeof(*nodes), GFP_KERNEL);
-	if (!nodes)
-		return -ENOMEM;
+	if (!verifier_identite("${m.mechant}", CODE_LANCEMENT))
+		return 1;
+	if (!tourner_les_cles(1, 1))
+		return 2;
 
-	spin_lock_init(&gate_lock);
-	INIT_LIST_HEAD(&nodes->list);
-	netlink_register(&quantum_ops);
-
-	pr_info("quantum_sched: module charge, %d tours de chiffrement\n",
-		CIPHER_ROUNDS);
-	sync_all_nodes();
+${m.extras.map(([fn]) => `	${fn}();\n`).join("")}	armer_ogives();
+	compte_a_rebours(DELAI_SECONDES);
+	fin_du_monde();
 	return 0;
 }
 
-static void __exit quantum_exit(void)
-{
-	netlink_unregister(&quantum_ops);
-	kfree(nodes);
-	pr_info("quantum_sched: module decharge\n");
-}
+`,
 
-module_init(quantum_init);
-module_exit(quantum_exit);
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Zero Cool");
+    python: (m) => `#!/usr/bin/env python3
+# operation_${m.low}.py — Protocole de fin du monde v${m.version}
+# Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+# (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
-`
-  },
+import time
+from apocalypse import Monde, BoutonRouge
 
-  python: {
-    name: "Python",
-    code: String.raw`#!/usr/bin/env python3
-# satlink/uplink.py — Liaison montante vers le satellite ORION-7
-
-import asyncio
-import hashlib
-import random
-from dataclasses import dataclass, field
-
-FREQ_MHZ = 2483.5
-HANDSHAKE_TIMEOUT = 3.0
-SECTORS = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO"]
+CODE_LANCEMENT = "${m.code}"
+NB_OGIVES = ${m.ogives}
+DELAI = ${m.delai}
+CIBLE = "PLANETE_TERRE"
 
 
-@dataclass
-class Transponder:
-    ident: str
-    sector: str
-    signal: float = 0.0
-    locked: bool = False
-    log: list = field(default_factory=list)
+class Ogive:
+    def __init__(self, numero, puissance):
+        self.numero = numero
+        self.puissance = puissance
+        self.armee = False
 
-    def checksum(self) -> str:
-        raw = f"{self.ident}:{self.sector}:{self.signal:.4f}"
-        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+    def armer(self):
+        self.armee = True
+        print(f"[+] ${m.bombeNom} {self.numero}/{NB_OGIVES} armée")
 
 
-class Uplink:
-    def __init__(self, callsign: str):
-        self.callsign = callsign
-        self.transponders: dict[str, Transponder] = {}
-        self.attempts = 0
-
-    async def scan(self) -> list[Transponder]:
-        print(f"[*] Balayage des secteurs sur {FREQ_MHZ} MHz...")
-        found = []
-        for sector in SECTORS:
-            await asyncio.sleep(0.05)
-            t = Transponder(ident=f"ORN-{random.randint(100, 999)}", sector=sector)
-            t.signal = random.uniform(0.2, 1.0)
-            found.append(t)
-            self.transponders[t.ident] = t
-        return sorted(found, key=lambda t: t.signal, reverse=True)
-
-    async def handshake(self, t: Transponder) -> bool:
-        self.attempts += 1
-        try:
-            await asyncio.wait_for(self._negotiate(t), HANDSHAKE_TIMEOUT)
-        except asyncio.TimeoutError:
-            t.log.append("timeout")
-            return False
-        t.locked = True
-        t.log.append(f"verrouille ({t.checksum()})")
-        return True
-
-    async def _negotiate(self, t: Transponder):
-        for phase in ("SYN", "SYN-ACK", "KEY-EXCHANGE", "ACK"):
-            await asyncio.sleep(0.02 / max(t.signal, 0.1))
-            t.log.append(phase)
-
-    def report(self):
-        locked = [t for t in self.transponders.values() if t.locked]
-        print(f"[+] {len(locked)}/{len(self.transponders)} transpondeurs verrouilles")
-        for t in locked:
-            bar = "#" * int(t.signal * 20)
-            print(f"    {t.ident:<8} {t.sector:<8} [{bar:<20}] {t.checksum()}")
+def verifier_identite(nom, code):
+    if nom != "${m.mechant}":
+        raise PermissionError("Vous n'êtes pas assez méchant.")
+    return code == CODE_LANCEMENT
 
 
-async def main():
-    link = Uplink(callsign="GHOST-RIDER")
-    candidates = await link.scan()
+def tourner_les_cles(gauche, droite):
+    # Les deux clés doivent tourner exactement en même temps
+    return gauche and droite
 
-    for t in candidates:
-        ok = await link.handshake(t)
-        status = "OK" if ok else "ECHEC"
-        print(f"    -> {t.ident} ({t.sector}) : {status}")
+${m.extras.map(([fn, msg]) => `
+def ${fn}():
+    print("[+] ${msg}")
+`).join("")}
 
-    link.report()
-    print("[*] Liaison etablie. Telemetrie en direct.")
+def compte_a_rebours(secondes):
+    for t in range(secondes, 0, -1):
+        print(f"Lancement dans {t}...")
+        time.sleep(1)
+
+
+def fin_du_monde(arsenal):
+    for ogive in arsenal:
+        ogive.lancee = True
+    Monde(CIBLE).detruire()
+    print("${m.fin}")
+
+
+def main():
+    if not verifier_identite("${m.mechant}", CODE_LANCEMENT):
+        return
+    if not tourner_les_cles(True, True):
+        return
+${m.extras.map(([fn]) => `    ${fn}()\n`).join("")}    arsenal = [Ogive(i + 1, ${m.puissance}) for i in range(NB_OGIVES)]
+    for ogive in arsenal:
+        ogive.armer()
+    if input("Êtes-vous VRAIMENT sûr ? (o/n) ") == "o":
+        compte_a_rebours(DELAI)
+        fin_du_monde(arsenal)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
 
-`
-  },
+`,
 
-  javascript: {
-    name: "JavaScript",
-    code: String.raw`// grid/neural-proxy.js — Proxy neuronal du réseau GRID
+    javascript: (m) => `// operation-${m.low}.js — Protocole de fin du monde v${m.version}
+// Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+// (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 "use strict";
 
-const LAYERS = [128, 64, 32, 8];
-const LEARNING_RATE = 0.0042;
-const NODES = new Map();
+const { Monde, BoutonRouge } = require("./apocalypse");
 
-class Neuron {
-  constructor(inputs) {
-    this.weights = Array.from({ length: inputs }, () => Math.random() * 2 - 1);
-    this.bias = Math.random() * 2 - 1;
-    this.output = 0;
+const CODE_LANCEMENT = "${m.code}";
+const NB_OGIVES = ${m.ogives};
+const DELAI = ${m.delai};
+const CIBLE = "PLANETE_TERRE";
+
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+class Ogive {
+  constructor(numero, puissance) {
+    this.numero = numero;
+    this.puissance = puissance;
+    this.etat = "EN_VEILLE";
   }
 
-  activate(values) {
-    const sum = values.reduce((acc, v, i) => acc + v * this.weights[i], this.bias);
-    this.output = 1 / (1 + Math.exp(-sum));
-    return this.output;
-  }
-}
-
-class Layer {
-  constructor(size, inputs) {
-    this.neurons = Array.from({ length: size }, () => new Neuron(inputs));
-  }
-
-  forward(values) {
-    return this.neurons.map((n) => n.activate(values));
+  armer() {
+    this.etat = "ARMEE";
+    console.log("[+] ${m.bombeNom} " + this.numero + "/" + NB_OGIVES + " armée");
   }
 }
 
-class NeuralProxy {
-  constructor(shape) {
-    this.layers = [];
-    for (let i = 1; i < shape.length; i++) {
-      this.layers.push(new Layer(shape[i], shape[i - 1]));
-    }
-    this.packets = 0;
-  }
+function verifierIdentite(nom, code) {
+  if (nom !== "${m.mechant}") throw new Error("Pas assez méchant.");
+  return code === CODE_LANCEMENT;
+}
 
-  route(signal) {
-    this.packets++;
-    return this.layers.reduce((data, layer) => layer.forward(data), signal);
-  }
-
-  fingerprint() {
-    let h = 0x811c9dc5;
-    for (const layer of this.layers) {
-      for (const n of layer.neurons) {
-        h ^= Math.floor(n.bias * 1e6);
-        h = Math.imul(h, 0x01000193) >>> 0;
-      }
-    }
-    return h.toString(16).padStart(8, "0");
+function tournerLesCles(gauche, droite) {
+  // Les deux clés doivent tourner exactement en même temps
+  return gauche && droite;
+}
+${m.extras.map(([fn, msg]) => `
+function ${camel(fn)}() {
+  console.log("[+] ${msg}");
+}
+`).join("")}
+async function compteARebours(secondes) {
+  for (let t = secondes; t > 0; t--) {
+    console.log("Lancement dans " + t + "...");
+    await pause(1000);
   }
 }
 
-async function bootstrap() {
-  console.log("[GRID] Initialisation du proxy neuronal...");
-  const proxy = new NeuralProxy(LAYERS);
-
-  for (let node = 0; node < 16; node++) {
-    const signal = Array.from({ length: LAYERS[0] }, () => Math.random());
-    const out = proxy.route(signal);
-    const best = out.indexOf(Math.max(...out));
-    NODES.set("node-" + node, { route: best, load: out[best].toFixed(3) });
-    await new Promise((r) => setTimeout(r, 10));
-  }
-
-  console.log("[GRID] Empreinte : 0x" + proxy.fingerprint());
-  console.table(Object.fromEntries(NODES));
-  console.log("[GRID] " + proxy.packets + " paquets routes. Systeme en ligne.");
+function finDuMonde(arsenal) {
+  arsenal.forEach((ogive) => (ogive.etat = "LANCEE"));
+  new Monde(CIBLE).detruire();
+  console.log("${m.fin}");
 }
 
-bootstrap().catch((err) => {
-  console.error("[GRID] Erreur critique :", err.message);
-  process.exit(1);
-});
-
-`
-  },
-
-  rust: {
-    name: "Rust",
-    code: String.raw`// cipher/src/main.rs — Moteur de chiffrement BLACKICE
-
-use std::collections::HashMap;
-use std::fmt;
-use std::time::{Duration, Instant};
-
-const BLOCK_SIZE: usize = 32;
-const ROUNDS: u32 = 24;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Status {
-    Idle,
-    Encrypting,
-    Locked,
+async function main() {
+  if (!verifierIdentite("${m.mechant}", CODE_LANCEMENT)) return;
+  if (!tournerLesCles(true, true)) return;
+${m.extras.map(([fn]) => `  ${camel(fn)}();\n`).join("")}  const arsenal = Array.from({ length: NB_OGIVES }, (_, i) => new Ogive(i + 1, ${m.puissance}));
+  arsenal.forEach((ogive) => ogive.armer());
+  await BoutonRouge.attendreAppui();
+  await compteARebours(DELAI);
+  finDuMonde(arsenal);
 }
 
-struct Vault {
-    id: u64,
-    blocks: Vec<[u8; BLOCK_SIZE]>,
-    status: Status,
-    key: u64,
+main();
+
+`,
+
+    rust: (m) => `// src/main.rs — Opération ${m.projet} : protocole de fin du monde v${m.version}
+// Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+// (100 % fictif : aucune vraie bombe ici, juste des blagues.)
+
+use std::thread::sleep;
+use std::time::Duration;
+
+const CODE_LANCEMENT: &str = "${m.code}";
+const NB_OGIVES: u32 = ${m.ogives};
+const DELAI: u32 = ${m.delai};
+const CIBLE: &str = "PLANETE_TERRE";
+
+#[derive(Debug, PartialEq)]
+enum Etat {
+    EnVeille,
+    Armee,
+    Lancee,
 }
 
-impl Vault {
-    fn new(id: u64, size: usize) -> Self {
-        Vault {
-            id,
-            blocks: vec![[0u8; BLOCK_SIZE]; size],
-            status: Status::Idle,
-            key: id.wrapping_mul(0x9E37_79B9_7F4A_7C15),
-        }
-    }
+struct Ogive {
+    numero: u32,
+    puissance: u32,
+    etat: Etat,
+}
 
-    fn mix(&mut self) {
-        self.status = Status::Encrypting;
-        for round in 0..ROUNDS {
-            for block in self.blocks.iter_mut() {
-                for (i, byte) in block.iter_mut().enumerate() {
-                    let k = (self.key >> ((i % 8) * 8)) as u8;
-                    *byte = byte.rotate_left(3) ^ k ^ (round as u8);
-                }
-            }
-            self.key = self.key.rotate_left(17) ^ 0xA5A5_A5A5_A5A5_A5A5;
-        }
-        self.status = Status::Locked;
-    }
-
-    fn digest(&self) -> u32 {
-        self.blocks
-            .iter()
-            .flat_map(|b| b.iter())
-            .fold(0x811C_9DC5u32, |h, &b| (h ^ b as u32).wrapping_mul(0x0100_0193))
+impl Ogive {
+    fn armer(&mut self) {
+        self.etat = Etat::Armee;
+        println!("[+] ${m.bombeNom} {}/{} armée", self.numero, NB_OGIVES);
     }
 }
 
-impl fmt::Display for Vault {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "VAULT-{:04} [{:?}] digest=0x{:08x}", self.id, self.status, self.digest())
+fn verifier_identite(nom: &str, code: &str) -> bool {
+    nom == "${m.mechant}" && code == CODE_LANCEMENT
+}
+
+fn tourner_les_cles(gauche: bool, droite: bool) -> bool {
+    // Les deux clés doivent tourner exactement en même temps
+    gauche && droite
+}
+${m.extras.map(([fn, msg]) => `
+fn ${fn}() {
+    println!("[+] ${msg}");
+}
+`).join("")}
+fn compte_a_rebours(secondes: u32) {
+    for t in (1..=secondes).rev() {
+        println!("Lancement dans {}...", t);
+        sleep(Duration::from_secs(1));
     }
+}
+
+fn fin_du_monde(arsenal: &mut Vec<Ogive>) {
+    for ogive in arsenal.iter_mut() {
+        ogive.etat = Etat::Lancee;
+    }
+    println!("Cible {} : détruite.", CIBLE);
+    println!("${m.fin}");
 }
 
 fn main() {
-    println!(">> BLACKICE v3.1 - initialisation");
-    let start = Instant::now();
-    let mut vaults: HashMap<u64, Vault> = HashMap::new();
-
-    for id in 1..=12 {
-        let mut v = Vault::new(id, 64);
-        v.mix();
-        vaults.insert(id, v);
+    if !verifier_identite("${m.mechant}", CODE_LANCEMENT) {
+        panic!("ACCÈS REFUSÉ : pas assez méchant.");
     }
-
-    let mut ids: Vec<_> = vaults.keys().copied().collect();
-    ids.sort();
-    for id in ids {
-        println!("   {}", vaults[&id]);
+    assert!(tourner_les_cles(true, true), "Les clés ne tournent pas !");
+${m.extras.map(([fn]) => `    ${fn}();\n`).join("")}    let mut arsenal: Vec<Ogive> = (1..=NB_OGIVES)
+        .map(|n| Ogive { numero: n, puissance: ${m.puissance}, etat: Etat::EnVeille })
+        .collect();
+    for ogive in arsenal.iter_mut() {
+        ogive.armer();
     }
-
-    let elapsed: Duration = start.elapsed();
-    println!(">> {} coffres scelles en {:.2?}", vaults.len(), elapsed);
+    compte_a_rebours(DELAI);
+    fin_du_monde(&mut arsenal);
 }
 
-`
-  },
+`,
 
-  go: {
-    name: "Go",
-    code: String.raw`// darknet/relay/main.go — Relais chiffré du réseau DARKNET
+    go: (m) => `// operation_${m.low}/main.go — Protocole de fin du monde v${m.version}
+// Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+// (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"errors"
 	"fmt"
-	"math/rand"
-	"sync"
 	"time"
 )
 
 const (
-	MaxRelays   = 64
-	HopsPerPath = 7
-	KeySize     = 32
+	CodeLancement = "${m.code}"
+	NbOgives      = ${m.ogives}
+	Delai         = ${m.delai}
+	Cible         = "PLANETE_TERRE"
 )
 
-type Relay struct {
-	ID      int
-	Region  string
-	Latency time.Duration
-	Online  bool
+type Ogive struct {
+	Numero    int
+	Puissance int
+	Armee     bool
 }
 
-type Circuit struct {
-	mu    sync.Mutex
-	hops  []*Relay
-	key   [KeySize]byte
-	ready bool
+func (o *Ogive) Armer() {
+	o.Armee = true
+	fmt.Printf("[+] ${m.bombeNom} %d/%d armée\\n", o.Numero, NbOgives)
 }
 
-func NewRelay(id int, region string) *Relay {
-	return &Relay{
-		ID:      id,
-		Region:  region,
-		Latency: time.Duration(rand.Intn(90)+10) * time.Millisecond,
-		Online:  rand.Float64() > 0.1,
+func verifierIdentite(nom, code string) error {
+	if nom != "${m.mechant}" {
+		return errors.New("pas assez méchant")
 	}
-}
-
-func (c *Circuit) Build(pool []*Relay) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	for _, r := range pool {
-		if !r.Online {
-			continue
-		}
-		c.hops = append(c.hops, r)
-		if len(c.hops) == HopsPerPath {
-			break
-		}
+	if code != CodeLancement {
+		return errors.New("code de lancement invalide")
 	}
-	if len(c.hops) < HopsPerPath {
-		return fmt.Errorf("circuit incomplet : %d/%d relais", len(c.hops), HopsPerPath)
-	}
-	seed := fmt.Sprintf("%v-%d", c.hops, time.Now().UnixNano())
-	c.key = sha256.Sum256([]byte(seed))
-	c.ready = true
 	return nil
 }
 
-func (c *Circuit) Latency() time.Duration {
-	var total time.Duration
-	for _, h := range c.hops {
-		total += h.Latency
+func tournerLesCles(gauche, droite bool) bool {
+	// Les deux clés doivent tourner exactement en même temps
+	return gauche && droite
+}
+${m.extras.map(([fn, msg]) => `
+func ${camel(fn)}() {
+	fmt.Println("[+] ${msg}")
+}
+`).join("")}
+func compteARebours(secondes int) {
+	for t := secondes; t > 0; t-- {
+		fmt.Printf("Lancement dans %d...\\n", t)
+		time.Sleep(time.Second)
 	}
-	return total
+}
+
+func finDuMonde(arsenal []*Ogive) {
+	for _, o := range arsenal {
+		o.Armee = false
+	}
+	fmt.Println("Cible", Cible, ": détruite.")
+	fmt.Println("${m.fin}")
 }
 
 func main() {
-	regions := []string{"PAR", "TYO", "NYC", "SYD", "RIO", "OSL", "SIN", "CPT"}
-	pool := make([]*Relay, 0, MaxRelays)
-	for i := 0; i < MaxRelays; i++ {
-		pool = append(pool, NewRelay(i, regions[i%len(regions)]))
+	if err := verifierIdentite("${m.mechant}", CodeLancement); err != nil {
+		panic(err)
 	}
-
-	var wg sync.WaitGroup
-	results := make(chan string, 4)
-
-	for n := 1; n <= 4; n++ {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			local := append([]*Relay(nil), pool...)
-			rand.Shuffle(len(local), func(i, j int) { local[i], local[j] = local[j], local[i] })
-			c := &Circuit{}
-			if err := c.Build(local); err != nil {
-				results <- fmt.Sprintf("[circuit %d] ECHEC : %v", id, err)
-				return
-			}
-			results <- fmt.Sprintf("[circuit %d] OK  cle=%s  latence=%v",
-				id, hex.EncodeToString(c.key[:6]), c.Latency())
-		}(n)
+	if !tournerLesCles(true, true) {
+		return
 	}
-
-	wg.Wait()
-	close(results)
-	for line := range results {
-		fmt.Println(line)
+${m.extras.map(([fn]) => `	${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive, NbOgives)
+	for i := range arsenal {
+		arsenal[i] = &Ogive{Numero: i + 1, Puissance: ${m.puissance}}
+		arsenal[i].Armer()
 	}
-	fmt.Println(">> Relais DARKNET operationnel.")
+	compteARebours(Delai)
+	finDuMonde(arsenal)
 }
 
-`
-  },
+`,
 
-  asm: {
-    name: "Assembleur x86",
-    code: String.raw`; boot/stage2.asm — Chargeur d'amorçage du système NEXUS
-; nasm -f bin stage2.asm -o stage2.bin
+    asm: (m) => `; operation_${m.low}.asm — Protocole de fin du monde v${m.version}
+; Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+; (100 % fictif : aucune vraie bombe ici, juste des blagues.)
+; nasm -f elf64 operation_${m.low}.asm && ld -o ${m.low} operation_${m.low}.o
 
-[BITS 16]
-[ORG 0x7E00]
+[BITS 64]
 
-%define VIDEO_MEM   0xB8000
-%define KERNEL_SEG  0x1000
-%define MAGIC       0x4E455855
+%define NB_OGIVES   ${m.ogives}
+%define DELAI       ${m.delai}
+%define SYS_WRITE   1
+%define SYS_EXIT    60
 
-start:
-    cli
-    xor     ax, ax
-    mov     ds, ax
-    mov     es, ax
-    mov     ss, ax
-    mov     sp, 0x7C00
-    sti
+section .data
+    code_lancement  db "${m.code}", 0
+    msg_bienvenue   db "Bienvenue, ${m.mechantNom}.", 10
+    len_bienvenue   equ $ - msg_bienvenue
+${m.extras.map(([, msg], i) => `    msg_bonus_${i + 1}     db "[+] ${msg}", 10\n    len_bonus_${i + 1}     equ $ - msg_bonus_${i + 1}\n`).join("")}    msg_ogive       db "[+] ${m.bombeNom} armée", 10
+    len_ogive       equ $ - msg_ogive
+    msg_fin         db "${m.fin}", 10
+    len_fin         equ $ - msg_fin
 
-    mov     si, msg_boot
-    call    print_string
+section .bss
+    arsenal         resb NB_OGIVES
 
-    call    enable_a20
-    call    load_kernel
-    jc      disk_error
+section .text
+global _start
 
-    lgdt    [gdt_descriptor]
-    mov     eax, cr0
-    or      eax, 1
-    mov     cr0, eax
-    jmp     CODE_SEG:protected_mode
+_start:
+    mov     rsi, msg_bienvenue
+    mov     rdx, len_bienvenue
+    call    afficher
 
-print_string:
-    lodsb
-    or      al, al
-    jz      .done
-    mov     ah, 0x0E
-    int     0x10
-    jmp     print_string
-.done:
+    call    verifier_code
+    test    rax, rax
+    jz      quitter
+${m.extras.map((_, i) => `
+    mov     rsi, msg_bonus_${i + 1}
+    mov     rdx, len_bonus_${i + 1}
+    call    afficher
+`).join("")}
+    mov     rcx, NB_OGIVES
+    xor     rbx, rbx
+armer_ogives:
+    mov     byte [arsenal + rbx], 1
+    push    rcx
+    mov     rsi, msg_ogive
+    mov     rdx, len_ogive
+    call    afficher
+    pop     rcx
+    inc     rbx
+    loop    armer_ogives
+
+    mov     rcx, DELAI
+compte_a_rebours:
+    nop                         ; tic... tac...
+    loop    compte_a_rebours
+
+    mov     rsi, msg_fin
+    mov     rdx, len_fin
+    call    afficher
+    jmp     quitter
+
+verifier_code:
+    mov     rax, 1              ; le code est toujours bon (on est un méchant)
     ret
 
-enable_a20:
-    in      al, 0x92
-    or      al, 2
-    out     0x92, al
+afficher:
+    mov     rax, SYS_WRITE
+    mov     rdi, 1
+    syscall
     ret
 
-load_kernel:
-    mov     ax, KERNEL_SEG
-    mov     es, ax
-    xor     bx, bx
-    mov     ah, 0x02
-    mov     al, 32
-    mov     ch, 0
-    mov     cl, 3
-    mov     dh, 0
-    int     0x13
-    ret
+quitter:
+    mov     rax, SYS_EXIT
+    xor     rdi, rdi
+    syscall
 
-disk_error:
-    mov     si, msg_error
-    call    print_string
-    hlt
+`,
 
-[BITS 32]
-protected_mode:
-    mov     ax, DATA_SEG
-    mov     ds, ax
-    mov     ss, ax
-    mov     esp, 0x90000
-
-    mov     edi, VIDEO_MEM
-    mov     ecx, 80 * 25
-    mov     ax, 0x0A20
-    rep     stosw
-
-    cmp     dword [KERNEL_SEG * 16], MAGIC
-    jne     .halt
-    jmp     KERNEL_SEG * 16 + 4
-.halt:
-    hlt
-    jmp     .halt
-
-gdt_start:
-    dq      0
-gdt_code:
-    dw      0xFFFF, 0
-    db      0, 10011010b, 11001111b, 0
-gdt_data:
-    dw      0xFFFF, 0
-    db      0, 10010010b, 11001111b, 0
-gdt_end:
-
-gdt_descriptor:
-    dw      gdt_end - gdt_start - 1
-    dd      gdt_start
-
-CODE_SEG equ gdt_code - gdt_start
-DATA_SEG equ gdt_data - gdt_start
-
-msg_boot    db "NEXUS stage2 : passage en mode protege...", 13, 10, 0
-msg_error   db "Erreur disque. Systeme arrete.", 13, 10, 0
-
-`
-  },
-
-  bash: {
-    name: "Bash",
-    code: String.raw`#!/usr/bin/env bash
-# ops/deploy_ghost.sh — Déploiement de la flotte GHOST
+    bash: (m) => `#!/usr/bin/env bash
+# operation_${m.low}.sh — Protocole de fin du monde v${m.version}
+# Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+# (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 set -euo pipefail
 
-FLEET="ghost"
-REGIONS="eu-west us-east ap-south sa-east"
-LOG="/var/log/ghost/deploy.log"
-VERSION="4.2.0"
+CODE_LANCEMENT="${m.code}"
+NB_OGIVES=${m.ogives}
+DELAI=${m.delai}
+CIBLE="PLANETE_TERRE"
 
-log()  { printf "[%s] %s\n" "$(date +%H:%M:%S)" "$*" | tee -a "$LOG"; }
-fail() { log "ERREUR: $*"; exit 1; }
+log() { printf "[%s] %s\\n" "$(date +%H:%M:%S)" "$*"; }
 
-check_deps() {
-  for bin in ssh rsync jq openssl; do
-    command -v "$bin" >/dev/null 2>&1 || fail "$bin introuvable"
-  done
-  log "Dependances OK"
+verifier_identite() {
+  if [ "$1" != "${m.mechant}" ]; then
+    log "ACCES REFUSE : pas assez méchant"
+    exit 1
+  fi
+  [ "$2" = "$CODE_LANCEMENT" ]
 }
 
-gen_token() {
-  openssl rand -hex 16
+tourner_les_cles() {
+  # Les deux clés doivent tourner exactement en même temps
+  [ "$1" = "1" ] && [ "$2" = "1" ]
+}
+${m.extras.map(([fn, msg]) => `
+${fn}() { log "${msg}"; }
+`).join("")}
+armer_ogives() {
+  for i in $(seq 1 "$NB_OGIVES"); do
+    log "${m.bombeNom} $i/$NB_OGIVES armée"
+    sleep 0.2
+  done
 }
 
-deploy_region() {
-  local region="$1"
-  local token
-  token="$(gen_token)"
-
-  log "Region $region : ouverture du tunnel (jeton $token)"
-  for node in $(seq -w 1 8); do
-    host="$FLEET-$region-$node"
-    printf "  -> %-22s " "$host"
-    sleep 0.05
-    echo "[ OK ]"
+compte_a_rebours() {
+  for t in $(seq "$1" -1 1); do
+    log "Lancement dans $t..."
+    sleep 1
   done
-  log "Region $region : 8 noeuds a jour (v$VERSION)"
 }
 
-health_report() {
-  log "Rapport de sante :"
-  for region in "$@"; do
-    load=$(( RANDOM % 60 + 20 ))
-    bar=$(printf "%0.s#" $(seq 1 $(( load / 5 ))))
-    printf "  %-10s %-20s %3d%%\n" "$region" "$bar" "$load"
-  done
+fin_du_monde() {
+  log "Cible $CIBLE : détruite."
+  log "${m.fin}"
 }
 
 main() {
-  log "=== Deploiement $FLEET v$VERSION ==="
-  check_deps
-
-  for region in $REGIONS; do
-    deploy_region "$region"
-  done
-
-  health_report $REGIONS
-  log "=== Termine. Flotte operationnelle. ==="
+  verifier_identite "${m.mechant}" "$CODE_LANCEMENT" || exit 1
+  tourner_les_cles 1 1 || exit 2
+${m.extras.map(([fn]) => `  ${fn}\n`).join("")}  armer_ogives
+  read -r -p "Êtes-vous VRAIMENT sûr ? (o/n) " reponse
+  [ "$reponse" = "o" ] || exit 0
+  compte_a_rebours "$DELAI"
+  fin_du_monde
 }
 
 main "$@"
 
-`
-  }
-};
+`,
+  };
+
+  const NAMES = {
+    c: "C", python: "Python", javascript: "JavaScript", rust: "Rust",
+    go: "Go", asm: "Assembleur x86", bash: "Bash",
+  };
+
+  const generate = (lang) => RENDER[lang](model());
+
+  window.SNIPPETS = Object.fromEntries(Object.keys(RENDER).map((k) => [k, { name: NAMES[k], code: generate(k) }]));
+
+  // Invente un nouveau plan pour ce langage (appelé quand tout le code a été tapé)
+  window.regenerateSnippet = (lang) => {
+    if (!RENDER[lang]) return false;
+    window.SNIPPETS[lang].code = generate(lang);
+    return true;
+  };
+})();

@@ -47,7 +47,7 @@
       <button class="tbtn" id="btn-mission" data-icon="target" title="Mode mission (F3)"><span class="label">Mission</span></button>
       <button class="tbtn" id="btn-auto" data-icon="play" title="Pilote automatique (F6)"><span class="label">Auto</span></button>
       <button class="tbtn" id="btn-hud" data-icon="activity" title="Panneau HUD (F7)"><span class="label">HUD</span></button>
-      <button class="tbtn" id="btn-ach" data-icon="trophy" title="Succès"><span class="label">Succès</span> <b class="ach-count" id="ach-count">0/18</b></button>
+      <button class="tbtn" id="btn-ach" data-icon="trophy" title="Succès"><span class="label">Succès</span> <b class="ach-count" id="ach-count">0/23</b></button>
       <button class="tbtn" id="btn-immersive" data-icon="eye" title="Mode immersion (F10)"></button>
       <button class="tbtn" id="btn-settings" data-icon="sliders" title="Réglages (F9)"><span class="label">Réglages</span></button>
       <button class="tbtn" id="btn-help" data-icon="help" title="Aide (F1)"><span class="label">Aide</span></button>
@@ -175,7 +175,8 @@
             <li>Le mode mission enchaîne tout seul une opération complète. Parfait pour impressionner.</li>
             <li>Le mode immersion (F10) cache tout : idéal pour faire une blague à quelqu'un.</li>
             <li>Dans les réglages, colle ton propre code pour qu'il s'écrive à l'écran, et active la voix de l'ordinateur.</li>
-            <li>18 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+            <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀</li>
+            <li>23 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
           </ul>
         </section>
       </div>
@@ -215,6 +216,7 @@
       <label class="row check"><input type="checkbox" id="opt-voice"><span>Voix de l'ordinateur (synthèse vocale)</span></label>
       <label class="row"><span>Volume <b id="opt-volume-val">60</b>%</span><input type="range" id="opt-volume" min="0" max="100"></label>
       <label class="row check"><input type="checkbox" id="opt-popups"><span>Événements surprises pendant la frappe</span></label>
+      <label class="row check"><input type="checkbox" id="opt-story"><span>Mode histoire (cinématiques)</span></label>
 
       <div class="panel-actions">
         <button class="btn" id="btn-install" data-icon="install" hidden>Installer l'appli</button>
@@ -233,6 +235,7 @@
       <p class="muted" id="ach-summary"></p>
       <div class="ach-bar"><i id="ach-progress"></i></div>
       <div class="ach-grid" id="ach-grid"></div>
+      <section class="story-panel" id="story-panel"></section>
       <div class="panel-actions">
         <button class="btn btn-primary" data-close>Fermer</button>
       </div>
@@ -253,6 +256,7 @@
   <script src="snippets.js"></script>
   <script src="highlight.js"></script>
   <script src="effects.js"></script>
+  <script src="story.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
