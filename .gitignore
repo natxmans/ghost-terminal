@@ -1,6 +1,9 @@
 # Réglages locaux de l'éditeur / de Claude Code
 .claude/
 
+# Paquet du jeu et images pour itch.io (fabriqués par outils/paquet-itch.ps1)
+dist/
+
 # Fichiers système Windows / OneDrive
 Thumbs.db
 desktop.ini

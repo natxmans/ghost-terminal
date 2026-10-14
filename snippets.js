@@ -1,6 +1,6 @@
-// Faux code : le plan (totalement fictif et ridicule) d'un super-méchant de film qui veut
-// déclencher la fin du monde. Les noms, codes et étapes sont tirés au hasard : chaque fois que
-// le code a été entièrement tapé, un nouveau plan est inventé.
+// Faux code : le plan (totalement fictif et ridicule) d'un super-méchant du Consortium qui veut
+// déclencher la fin du monde. Les noms, codes, sbires et étapes sont tirés au hasard : chaque fois
+// que le code a été entièrement tapé, un nouveau plan est inventé.
 (() => {
   "use strict";
 
@@ -22,18 +22,6 @@
     ["ogive_omega", "Ogive Oméga"], ["machine_fin_du_monde", "Machine de fin du monde"],
     ["bombe_ragnarok", "Bombe Ragnarök"], ["reacteur_nemesis", "Réacteur Némésis"],
   ];
-  const EXTRAS = [
-    ["desactiver_super_heros", "Super-héros désactivés"],
-    ["couper_internet_mondial", "Internet coupé (adieu les memes)"],
-    ["nourrir_les_requins", "Requins nourris et motivés"],
-    ["lancer_rire_machiavelique", "MOUAHAHAHA !"],
-    ["envoyer_ultimatum", "Ultimatum envoyé au Conseil des Héros"],
-    ["allumer_lumieres_rouges", "Lumières rouges qui clignotent : OK"],
-    ["evacuer_le_chat", "Le chat est en sécurité"],
-    ["pirater_les_satellites", "Satellites sous contrôle"],
-    ["brouiller_les_radars", "Radars brouillés"],
-    ["activer_musique_dramatique", "Musique dramatique : ON"],
-  ];
   const FINS = [
     "FIN DU MONDE. GAME OVER.",
     "Planète Terre : erreur 404, introuvable.",
@@ -41,6 +29,43 @@
     "Le monde a été effacé. Le Consortium vous remercie.",
     "Fin du monde terminée à 100 %.",
   ];
+
+  // Étapes du plan : [fonction, titre, message de fin, sous-étapes]
+  const STEPS = [
+    ["preparer_les_sbires", "Préparation des sbires", "Sbires prêts (et motivés)", ["Réveiller les sbires", "Distribuer les casques ridicules", "Compter les sbires (encore)", "Vérifier qu'aucun sbire n'est un espion"]],
+    ["charger_carburant_malefique", "Chargement du carburant maléfique", "Réservoir plein", ["Ouvrir le réservoir", "Verser le carburant maléfique", "Ne pas en renverser sur le tapis", "Refermer le réservoir"]],
+    ["calibrer_rayon_laser", "Calibrage du rayon laser", "Rayon laser calibré", ["Allumer le laser", "Viser le mur (pas le chat)", "Régler la puissance sur ÉNORME", "Prendre une photo souvenir"]],
+    ["desactiver_super_heros", "Neutralisation des super-héros", "Super-héros désactivés", ["Cacher toutes les capes", "Remplacer leurs céréales par des brocolis", "Bloquer les cabines téléphoniques", "Annuler leurs abonnements"]],
+    ["couper_internet_mondial", "Coupure d'internet", "Internet coupé (adieu les memes)", ["Débrancher la box du monde", "Attendre que ça redémarre", "Couper le wifi des voisins", "Vérifier que les memes ont disparu"]],
+    ["nourrir_les_requins", "Repas des requins", "Requins nourris et motivés", ["Ouvrir la trappe de l'aquarium", "Servir les croquettes premium", "Brosser les dents des requins", "Leur souhaiter bonne nuit"]],
+    ["lancer_rire_machiavelique", "Échauffement du rire machiavélique", "MOUAHAHAHA !", ["Mouah", "Mouahaha", "Mouahahaha (plus fort)", "Boire un verre d'eau"]],
+    ["envoyer_ultimatum", "Envoi de l'ultimatum", "Ultimatum envoyé au Conseil des Héros", ["Écrire la lettre de menace", "Ajouter des paillettes", "Corriger les fautes d'orthographe", "Poster la lettre (sans timbre)"]],
+    ["allumer_lumieres_rouges", "Ambiance de base secrète", "Lumières rouges qui clignotent : OK", ["Allumer les lumières rouges", "Activer la sirène", "Lancer la fumée dramatique", "Baisser le chauffage du volcan"]],
+    ["evacuer_le_chat", "Mise à l'abri du chat", "Le chat est en sécurité", ["Trouver le chat", "Ouvrir une boîte de thon", "Installer le chat dans la capsule", "Lancer la capsule vers la Lune"]],
+    ["pirater_les_satellites", "Piratage des satellites", "Satellites sous contrôle", ["Pointer l'antenne vers le ciel", "Taper le mot de passe : 1234", "Tourner les satellites vers la base", "Dire bonjour aux astronautes"]],
+    ["brouiller_les_radars", "Brouillage des radars", "Radars brouillés", ["Lâcher des ballons argentés", "Taper sur une casserole", "Diffuser de la musique d'ascenseur", "Repeindre la base en vert camouflage"]],
+    ["activer_musique_dramatique", "Bande-son dramatique", "Musique dramatique : ON", ["Accorder l'orgue", "Lancer les violons", "Monter le volume à 11", "Ajouter des tambours"]],
+    ["inspecter_bouton_rouge", "Inspection du gros bouton rouge", "Bouton rouge : brillant", ["Dépoussiérer le bouton", "Vérifier qu'il est bien rouge", "Interdire au Pingouin d'y toucher", "Lustrer le bouton"]],
+    ["preparer_sous_marin", "Préparation du sous-marin de fuite", "Sous-marin prêt pour la fuite", ["Faire le plein", "Charger les sandwichs", "Installer le siège du Pingouin", "Tester le klaxon"]],
+    ["installer_compte_a_rebours", "Installation du compte à rebours", "Compte à rebours installé", ["Choisir une police de caractères menaçante", "Régler les chiffres rouges", "Ajouter des bips stressants", "Tester avec 3, 2, 1… non, pas encore"]],
+  ];
+
+  const JOURNAL = [
+    [1, "achat d'un volcan d'occasion. Il fume un peu."],
+    [4, "le Général Pingouin a mangé la moitié des plans."],
+    [9, "les requins refusent de porter des lasers sur la tête."],
+    [13, "quelqu'un a mis du fromage dans le réacteur. Odeur persistante."],
+    [21, "le bouton rouge a été repeint en rouge. Encore plus rouge."],
+    [34, "la Comtesse veut une ogive avec des paillettes."],
+    [42, "ÉCHO ? Qui est ÉCHO ? (à surveiller)"],
+    [55, "l'agent Kane rôde autour de la base. Changer les codes."],
+    [68, "le sous-marin de fuite a une fuite. Ironique."],
+    [77, "réunion du Consortium. Personne n'a apporté les croissants."],
+    [90, "tout est prêt. MOUAHAHA."],
+  ];
+
+  const SBIRES = ["Bob", "Gérard", "Josiane", "Kevin", "Brigitte", "Igor", "Ginette", "Tony la Clé", "Sacha", "Marcel", "Nadia", "Jojo"];
+  const ROLES = ["porte-clés", "goûteur de café", "gardien du bouton rouge", "nourrisseur de requins", "comptable du mal", "pilote de sous-marin", "DJ du rire machiavélique", "testeur de pièges", "repasseur de capes", "souffleur de fumée"];
 
   function model() {
     const [mechant, mechantNom] = pick(MECHANTS);
@@ -55,11 +80,20 @@
       delai: pick([10, 13, 30, 42, 60, 99]),
       puissance: rnd(100, 999),
       version: `${rnd(1, 9)}.${rnd(0, 9)}.${rnd(0, 9)}`,
-      extras: shuffle(EXTRAS).slice(0, 3),
+      steps: shuffle(STEPS).slice(0, 8),
+      journal: shuffle(JOURNAL).slice(0, 5).sort((a, b) => a[0] - b[0]),
+      sbires: shuffle(SBIRES).slice(0, 6).map((nom) => [nom, pick(ROLES)]),
       fin: pick(FINS),
       cle: hex(8),
     };
   }
+
+  // Journal de bord du méchant, en commentaires (le symbole dépend du langage)
+  const journal = (p, m) => [
+    `${p} ===== JOURNAL DE BORD : ${m.mechantNom.toUpperCase()} =====`,
+    ...m.journal.map(([jour, txt]) => `${p} Jour ${jour} : ${txt}`),
+    `${p} ${"=".repeat(44)}`,
+  ].join("\n");
 
   // ===== Un rendu par langage =====
   const RENDER = {
@@ -72,6 +106,8 @@
  * (100 % fictif : aucune vraie bombe dans ce fichier, juste des blagues.)
  */
 
+${journal("//", m)}
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -82,6 +118,7 @@
 #define DELAI_SECONDES  ${m.delai}
 #define CLE_MAITRESSE   0x${m.cle}
 #define CIBLE           "PLANETE_TERRE"
+#define NB_SBIRES       ${m.sbires.length}
 
 typedef enum { EN_VEILLE, ARMEE, LANCEE } etat_t;
 
@@ -91,7 +128,16 @@ typedef struct {
 	etat_t etat;
 } ogive_t;
 
+typedef struct {
+	const char *nom;
+	const char *role;
+} sbire_t;
+
 static ogive_t arsenal[NB_OGIVES];
+
+static const sbire_t equipe[NB_SBIRES] = {
+${m.sbires.map(([n, r]) => `\t{ "${n}", "${r}" },`).join("\n")}
+};
 
 static int verifier_identite(const char *nom, const char *code)
 {
@@ -107,9 +153,24 @@ static int tourner_les_cles(int cle_gauche, int cle_droite)
 	/* Les deux cles doivent tourner exactement en meme temps */
 	return cle_gauche == 1 && cle_droite == 1;
 }
-${m.extras.map(([fn, msg]) => `
+
+static void appeler_les_sbires(void)
+{
+	puts("[*] Appel des sbires du Consortium...");
+	for (int i = 0; i < NB_SBIRES; i++)
+		printf("    - %-12s : %s\\n", equipe[i].nom, equipe[i].role);
+}
+${m.steps.map(([fn, title, msg, subs]) => `
 static void ${fn}(void)
 {
+	static const char *etapes[] = {
+${subs.map((s) => `\t\t"${s}",`).join("\n")}
+	};
+	puts("[*] ${title}...");
+	for (size_t i = 0; i < sizeof(etapes) / sizeof(etapes[0]); i++) {
+		printf("    %zu. %s\\n", i + 1, etapes[i]);
+		usleep(150000);
+	}
 	puts("[+] ${msg}");
 }
 `).join("")}
@@ -147,7 +208,8 @@ int main(void)
 	if (!tourner_les_cles(1, 1))
 		return 2;
 
-${m.extras.map(([fn]) => `	${fn}();\n`).join("")}	armer_ogives();
+	appeler_les_sbires();
+${m.steps.map(([fn]) => `\t${fn}();\n`).join("")}	armer_ogives();
 	compte_a_rebours(DELAI_SECONDES);
 	fin_du_monde();
 	return 0;
@@ -161,6 +223,8 @@ ${m.extras.map(([fn]) => `	${fn}();\n`).join("")}	armer_ogives();
 # Document du CONSORTIUM, intercepté par ÉCHO.
 # (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
+${journal("#", m)}
+
 import time
 from apocalypse import Monde, BoutonRouge
 
@@ -168,6 +232,10 @@ CODE_LANCEMENT = "${m.code}"
 NB_OGIVES = ${m.ogives}
 DELAI = ${m.delai}
 CIBLE = "PLANETE_TERRE"
+
+SBIRES = [
+${m.sbires.map(([n, r]) => `    ("${n}", "${r}"),`).join("\n")}
+]
 
 
 class Ogive:
@@ -191,10 +259,23 @@ def tourner_les_cles(gauche, droite):
     # Les deux clés doivent tourner exactement en même temps
     return gauche and droite
 
-${m.extras.map(([fn, msg]) => `
+
+def appeler_les_sbires():
+    print("[*] Appel des sbires du Consortium...")
+    for nom, role in SBIRES:
+        print(f"    - {nom:<12} : {role}")
+${m.steps.map(([fn, title, msg, subs]) => `
+
 def ${fn}():
-    print("[+] ${msg}")
-`).join("")}
+    print("[*] ${title}...")
+    etapes = [
+${subs.map((s) => `        "${s}",`).join("\n")}
+    ]
+    for i, etape in enumerate(etapes, start=1):
+        print(f"    {i}. {etape}")
+        time.sleep(0.15)
+    print("[+] ${msg}")`).join("")}
+
 
 def compte_a_rebours(secondes):
     for t in range(secondes, 0, -1):
@@ -215,7 +296,8 @@ def main():
         return
     if not tourner_les_cles(True, True):
         return
-${m.extras.map(([fn]) => `    ${fn}()\n`).join("")}    arsenal = [Ogive(i + 1, ${m.puissance}) for i in range(NB_OGIVES)]
+    appeler_les_sbires()
+${m.steps.map(([fn]) => `    ${fn}()\n`).join("")}    arsenal = [Ogive(i + 1, ${m.puissance}) for i in range(NB_OGIVES)]
     for ogive in arsenal:
         ogive.armer()
     if input("Êtes-vous VRAIMENT sûr ? (o/n) ") == "o":
@@ -233,6 +315,8 @@ if __name__ == "__main__":
 // Document du CONSORTIUM, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
+${journal("//", m)}
+
 "use strict";
 
 const { Monde, BoutonRouge } = require("./apocalypse");
@@ -241,6 +325,10 @@ const CODE_LANCEMENT = "${m.code}";
 const NB_OGIVES = ${m.ogives};
 const DELAI = ${m.delai};
 const CIBLE = "PLANETE_TERRE";
+
+const SBIRES = [
+${m.sbires.map(([n, r]) => `  ["${n}", "${r}"],`).join("\n")}
+];
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -266,8 +354,21 @@ function tournerLesCles(gauche, droite) {
   // Les deux clés doivent tourner exactement en même temps
   return gauche && droite;
 }
-${m.extras.map(([fn, msg]) => `
-function ${camel(fn)}() {
+
+function appelerLesSbires() {
+  console.log("[*] Appel des sbires du Consortium...");
+  for (const [nom, role] of SBIRES) console.log("    - " + nom.padEnd(12) + " : " + role);
+}
+${m.steps.map(([fn, title, msg, subs]) => `
+async function ${camel(fn)}() {
+  console.log("[*] ${title}...");
+  const etapes = [
+${subs.map((s) => `    "${s}",`).join("\n")}
+  ];
+  for (const [i, etape] of etapes.entries()) {
+    console.log("    " + (i + 1) + ". " + etape);
+    await pause(150);
+  }
   console.log("[+] ${msg}");
 }
 `).join("")}
@@ -288,7 +389,8 @@ function finDuMonde(arsenal) {
 async function main() {
   if (!verifierIdentite("${m.mechant}", CODE_LANCEMENT)) return;
   if (!tournerLesCles(true, true)) return;
-${m.extras.map(([fn]) => `  ${camel(fn)}();\n`).join("")}  const arsenal = Array.from({ length: NB_OGIVES }, (_, i) => new Ogive(i + 1, ${m.puissance}));
+  appelerLesSbires();
+${m.steps.map(([fn]) => `  await ${camel(fn)}();\n`).join("")}  const arsenal = Array.from({ length: NB_OGIVES }, (_, i) => new Ogive(i + 1, ${m.puissance}));
   arsenal.forEach((ogive) => ogive.armer());
   await BoutonRouge.attendreAppui();
   await compteARebours(DELAI);
@@ -304,6 +406,8 @@ main();
 // Document du CONSORTIUM, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
+${journal("//", m)}
+
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -311,6 +415,10 @@ const CODE_LANCEMENT: &str = "${m.code}";
 const NB_OGIVES: u32 = ${m.ogives};
 const DELAI: u32 = ${m.delai};
 const CIBLE: &str = "PLANETE_TERRE";
+
+const SBIRES: [(&str, &str); ${m.sbires.length}] = [
+${m.sbires.map(([n, r]) => `    ("${n}", "${r}"),`).join("\n")}
+];
 
 #[derive(Debug, PartialEq)]
 enum Etat {
@@ -340,8 +448,23 @@ fn tourner_les_cles(gauche: bool, droite: bool) -> bool {
     // Les deux clés doivent tourner exactement en même temps
     gauche && droite
 }
-${m.extras.map(([fn, msg]) => `
+
+fn appeler_les_sbires() {
+    println!("[*] Appel des sbires du Consortium...");
+    for (nom, role) in SBIRES.iter() {
+        println!("    - {:<12} : {}", nom, role);
+    }
+}
+${m.steps.map(([fn, title, msg, subs]) => `
 fn ${fn}() {
+    println!("[*] ${title}...");
+    let etapes = [
+${subs.map((s) => `        "${s}",`).join("\n")}
+    ];
+    for (i, etape) in etapes.iter().enumerate() {
+        println!("    {}. {}", i + 1, etape);
+        sleep(Duration::from_millis(150));
+    }
     println!("[+] ${msg}");
 }
 `).join("")}
@@ -366,7 +489,8 @@ fn main() {
         panic!("ACCÈS REFUSÉ : pas assez méchant.");
     }
     assert!(tourner_les_cles(true, true), "Les clés ne tournent pas !");
-${m.extras.map(([fn]) => `    ${fn}();\n`).join("")}    let mut arsenal: Vec<Ogive> = (1..=NB_OGIVES)
+    appeler_les_sbires();
+${m.steps.map(([fn]) => `    ${fn}();\n`).join("")}    let mut arsenal: Vec<Ogive> = (1..=NB_OGIVES)
         .map(|n| Ogive { numero: n, puissance: ${m.puissance}, etat: Etat::EnVeille })
         .collect();
     for ogive in arsenal.iter_mut() {
@@ -383,6 +507,8 @@ ${m.extras.map(([fn]) => `    ${fn}();\n`).join("")}    let mut arsenal: Vec<Ogi
 // Document du CONSORTIUM, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
+${journal("//", m)}
+
 package main
 
 import (
@@ -397,6 +523,10 @@ const (
 	Delai         = ${m.delai}
 	Cible         = "PLANETE_TERRE"
 )
+
+var sbires = [][2]string{
+${m.sbires.map(([n, r]) => `\t{"${n}", "${r}"},`).join("\n")}
+}
 
 type Ogive struct {
 	Numero    int
@@ -423,8 +553,23 @@ func tournerLesCles(gauche, droite bool) bool {
 	// Les deux clés doivent tourner exactement en même temps
 	return gauche && droite
 }
-${m.extras.map(([fn, msg]) => `
+
+func appelerLesSbires() {
+	fmt.Println("[*] Appel des sbires du Consortium...")
+	for _, s := range sbires {
+		fmt.Printf("    - %-12s : %s\\n", s[0], s[1])
+	}
+}
+${m.steps.map(([fn, title, msg, subs]) => `
 func ${camel(fn)}() {
+	fmt.Println("[*] ${title}...")
+	etapes := []string{
+${subs.map((s) => `\t\t"${s}",`).join("\n")}
+	}
+	for i, etape := range etapes {
+		fmt.Printf("    %d. %s\\n", i+1, etape)
+		time.Sleep(150 * time.Millisecond)
+	}
 	fmt.Println("[+] ${msg}")
 }
 `).join("")}
@@ -451,7 +596,8 @@ func main() {
 	if !tournerLesCles(true, true) {
 		return
 	}
-${m.extras.map(([fn]) => `	${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive, NbOgives)
+	appelerLesSbires()
+${m.steps.map(([fn]) => `\t${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive, NbOgives)
 	for i := range arsenal {
 		arsenal[i] = &Ogive{Numero: i + 1, Puissance: ${m.puissance}}
 		arsenal[i].Armer()
@@ -468,6 +614,8 @@ ${m.extras.map(([fn]) => `	${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive
 ; (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 ; nasm -f elf64 operation_${m.low}.asm && ld -o ${m.low} operation_${m.low}.o
 
+${journal(";", m)}
+
 [BITS 64]
 
 %define NB_OGIVES   ${m.ogives}
@@ -475,14 +623,27 @@ ${m.extras.map(([fn]) => `	${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive
 %define SYS_WRITE   1
 %define SYS_EXIT    60
 
+; Affiche un message et sa longueur (étiquette + len_étiquette)
+%macro AFFICHER 1
+    mov     rsi, %1
+    mov     rdx, len_%1
+    call    afficher
+%endmacro
+
 section .data
     code_lancement  db "${m.code}", 0
     msg_bienvenue   db "Bienvenue, ${m.mechantNom}.", 10
-    len_bienvenue   equ $ - msg_bienvenue
-${m.extras.map(([, msg], i) => `    msg_bonus_${i + 1}     db "[+] ${msg}", 10\n    len_bonus_${i + 1}     equ $ - msg_bonus_${i + 1}\n`).join("")}    msg_ogive       db "[+] ${m.bombeNom} armée", 10
-    len_ogive       equ $ - msg_ogive
+    len_msg_bienvenue equ $ - msg_bienvenue
+    msg_sbires      db "[*] Appel des sbires du Consortium...", 10
+    len_msg_sbires  equ $ - msg_sbires
+${m.sbires.map(([n, r], i) => `    sbire_${i + 1}         db "    - ${n} : ${r}", 10\n    len_sbire_${i + 1}     equ $ - sbire_${i + 1}\n`).join("")}${m.steps.map(([, title, msg, subs], k) => `    etape${k + 1}_titre   db "[*] ${title}...", 10
+    len_etape${k + 1}_titre equ $ - etape${k + 1}_titre
+${subs.map((s, j) => `    etape${k + 1}_${j + 1}       db "    ${j + 1}. ${s}", 10\n    len_etape${k + 1}_${j + 1}   equ $ - etape${k + 1}_${j + 1}\n`).join("")}    etape${k + 1}_ok      db "[+] ${msg}", 10
+    len_etape${k + 1}_ok  equ $ - etape${k + 1}_ok
+`).join("")}    msg_ogive       db "[+] ${m.bombeNom} armée", 10
+    len_msg_ogive   equ $ - msg_ogive
     msg_fin         db "${m.fin}", 10
-    len_fin         equ $ - msg_fin
+    len_msg_fin     equ $ - msg_fin
 
 section .bss
     arsenal         resb NB_OGIVES
@@ -491,26 +652,23 @@ section .text
 global _start
 
 _start:
-    mov     rsi, msg_bienvenue
-    mov     rdx, len_bienvenue
-    call    afficher
-
+    AFFICHER msg_bienvenue
     call    verifier_code
     test    rax, rax
     jz      quitter
-${m.extras.map((_, i) => `
-    mov     rsi, msg_bonus_${i + 1}
-    mov     rdx, len_bonus_${i + 1}
-    call    afficher
+
+    AFFICHER msg_sbires
+${m.sbires.map((_, i) => `    AFFICHER sbire_${i + 1}\n`).join("")}${m.steps.map(([, title, , subs], k) => `
+    ; --- ${title} ---
+    AFFICHER etape${k + 1}_titre
+${subs.map((_, j) => `    AFFICHER etape${k + 1}_${j + 1}\n`).join("")}    AFFICHER etape${k + 1}_ok
 `).join("")}
     mov     rcx, NB_OGIVES
     xor     rbx, rbx
 armer_ogives:
     mov     byte [arsenal + rbx], 1
     push    rcx
-    mov     rsi, msg_ogive
-    mov     rdx, len_ogive
-    call    afficher
+    AFFICHER msg_ogive
     pop     rcx
     inc     rbx
     loop    armer_ogives
@@ -521,9 +679,7 @@ compte_a_rebours:
     loop    compte_a_rebours
 
     ; [ÉCHO] Je surveille ce plan. Continue de taper : je vais le saboter.
-    mov     rsi, msg_fin
-    mov     rdx, len_fin
-    call    afficher
+    AFFICHER msg_fin
     jmp     quitter
 
 verifier_code:
@@ -549,12 +705,18 @@ quitter:
 # Document du CONSORTIUM, intercepté par ÉCHO.
 # (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
+${journal("#", m)}
+
 set -euo pipefail
 
 CODE_LANCEMENT="${m.code}"
 NB_OGIVES=${m.ogives}
 DELAI=${m.delai}
 CIBLE="PLANETE_TERRE"
+
+SBIRES=(
+${m.sbires.map(([n, r]) => `  "${n}:${r}"`).join("\n")}
+)
 
 log() { printf "[%s] %s\\n" "$(date +%H:%M:%S)" "$*"; }
 
@@ -570,8 +732,27 @@ tourner_les_cles() {
   # Les deux clés doivent tourner exactement en même temps
   [ "$1" = "1" ] && [ "$2" = "1" ]
 }
-${m.extras.map(([fn, msg]) => `
-${fn}() { log "${msg}"; }
+
+appeler_les_sbires() {
+  log "Appel des sbires du Consortium..."
+  for sbire in "\${SBIRES[@]}"; do
+    log "  - \${sbire%%:*} : \${sbire#*:}"
+  done
+}
+${m.steps.map(([fn, title, msg, subs]) => `
+${fn}() {
+  log "${title}..."
+  local etapes=(
+${subs.map((s) => `    "${s}"`).join("\n")}
+  )
+  local i=1
+  for etape in "\${etapes[@]}"; do
+    log "  $i. $etape"
+    i=$((i + 1))
+    sleep 0.15
+  done
+  log "[+] ${msg}"
+}
 `).join("")}
 armer_ogives() {
   for i in $(seq 1 "$NB_OGIVES"); do
@@ -596,7 +777,8 @@ fin_du_monde() {
 main() {
   verifier_identite "${m.mechant}" "$CODE_LANCEMENT" || exit 1
   tourner_les_cles 1 1 || exit 2
-${m.extras.map(([fn]) => `  ${fn}\n`).join("")}  armer_ogives
+  appeler_les_sbires
+${m.steps.map(([fn]) => `  ${fn}\n`).join("")}  armer_ogives
   read -r -p "Êtes-vous VRAIMENT sûr ? (o/n) " reponse
   [ "$reponse" = "o" ] || exit 0
   compte_a_rebours "$DELAI"
@@ -617,7 +799,7 @@ main "$@"
 
   window.SNIPPETS = Object.fromEntries(Object.keys(RENDER).map((k) => [k, { name: NAMES[k], code: generate(k) }]));
 
-  // L'univers partagé avec les effets et les missions
+  // L'univers partagé avec les effets, les missions et l'histoire
   window.HT_LORE = {
     MECHANTS: MECHANTS.map(([, nom]) => nom),
     BASES,

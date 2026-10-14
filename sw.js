@@ -1,6 +1,6 @@
 // Service worker : permet d'installer Ghost Terminal et de l'utiliser hors ligne.
 // Stratégie "réseau d'abord" : toujours la dernière version en ligne, la copie en cache sinon.
-const CACHE = "ghost-terminal-v4";
+const CACHE = "ghost-terminal-v5";
 const FILES = [
   "./",
   "index.html",
@@ -11,6 +11,7 @@ const FILES = [
   "highlight.js",
   "effects.js",
   "story.js",
+  "survie.js",
   "app.js",
   "manifest.webmanifest",
   "icons/icon-192.png",
@@ -36,8 +37,11 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
 
   if (url.origin === self.location.origin) {
+    // « no-cache » : on revérifie toujours auprès du serveur, pour ne jamais mélanger
+    // une page récente avec un ancien script gardé dans le cache du navigateur
+    const fresh = req.mode === "navigate" ? req : new Request(req, { cache: "no-cache" });
     e.respondWith(
-      fetch(req)
+      fetch(fresh)
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
