@@ -14,17 +14,22 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 
 - **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde : journal de bord, sbires, étapes détaillées… Méchant, base secrète, code de lancement, arme et étapes sont **tirés au hasard** : à chaque fois que tout le code a été tapé (5 000 à 9 000 caractères), un nouveau plan est inventé.
 - **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran.
-- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. 6 chapitres en cinématiques, des mini-jeux (mémoire, course-poursuite, code à taper, fil à couper), des choix qui changent la suite, deux fins possibles… et un épilogue secret pour ceux qui débloquent 100 % des succès. On dit même qu'un **jeu secret** attend les plus acharnés. Surtout, ne touchez pas au gros bouton rouge.
+- **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. **3 actes et 11 chapitres** en cinématiques. Chaque chapitre a ses **objectifs** (taper du code, lancer certains effets, terminer une mission, désamorcer une ogive…), affichés en haut à gauche.
+  - **12 fragments de mémoire** passent pendant que tu tapes : attrape-les avec `Tab` (ou en les touchant) pour découvrir qui est vraiment ÉCHO.
+  - **7 mini-jeux** : séquence à mémoriser, course-poursuite, code à taper, fil à couper, déchiffrement, fréquence à caler et labyrinthe.
+  - **Des choix qui comptent** (prévenir Kane ou non, faire confiance à ÉCHO ou non, détruire le satellite ou le lui confier…) et **3 fins**, dont une vraie fin réservée à ceux qui ont retrouvé toute la mémoire d'ÉCHO.
+  - Un épilogue secret pour ceux qui débloquent 100 % des succès, et un **jeu secret** pour les plus acharnés. Surtout, ne touchez pas au gros bouton rouge.
+- **Un endroit secret** 🐧 : lis bien les plans que tu tapes. Pour une fois, ce que tu tapes vraiment pourrait ouvrir une porte…
 - **Un seul univers** : le faux code, les effets et les missions racontent tous la même histoire. Une IA nommée ÉCHO, les super-méchants du Consortium et l'agent Kane de la Division Zéro.
 - **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables.
 - **Mode mission** : une opération complète qui enchaîne plusieurs effets toute seule.
 - **Pilote automatique** : le code s'écrit sans toucher au clavier.
 - **Mode immersion** : plus aucune interface, juste le terminal. Parfait pour une blague.
-- **28 succès** à débloquer, et un code secret caché 🌈.
+- **38 succès** à débloquer (plus quelques secrets), et un code secret caché 🌈.
 - **Voix de l'ordinateur** (synthèse vocale) et **sons** générés en direct.
 - **HUD « Ton système » en direct** : la vraie charge de la page, la mémoire, ta batterie, les images par seconde, ton système, ton navigateur, tes cœurs de processeur, ta RAM, ton écran et ton réseau. Tout est lu dans ton navigateur et rien n'est envoyé nulle part.
 - **Tout réinitialiser** (réglages › zone dangereuse) : efface succès, histoire et réglages pour repartir de zéro.
-- **7 thèmes** de couleur et effet écran CRT.
+- **7 thèmes** de couleur (et 2 thèmes secrets à débloquer) et effet écran CRT.
 - **Application installable** qui marche **hors ligne** (PWA).
 - **Mobile** : touche l'écran pour taper, 3 doigts = accès autorisé, 4 doigts = accès refusé.
 
@@ -53,6 +58,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 | `F8` | Thème suivant |
 | `F9` | Réglages |
 | `F10` | Mode immersion |
+| `Tab` | Attraper un fragment de mémoire (mode histoire) |
 | `Échap` | Tout fermer |
 
 ## 🔒 Tout est faux (et sans danger)

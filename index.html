@@ -65,6 +65,17 @@
     <div class="mission-dots" id="mission-dots"></div>
   </div>
 
+  <!-- Objectifs du chapitre en cours (mode histoire) -->
+  <aside id="quest" hidden aria-label="Objectifs">
+    <button type="button" id="quest-toggle" class="quest-head" title="Réduire / agrandir">
+      <small id="quest-act"></small><b id="quest-title"></b><i>▾</i>
+    </button>
+    <ul id="quest-list"></ul>
+  </aside>
+
+  <!-- Fragment de mémoire d'ÉCHO à attraper (touche Tab) -->
+  <div id="frag" hidden role="button" aria-live="polite"></div>
+
   <!-- Le terminal -->
   <main id="terminal" tabindex="0" aria-label="Terminal">
     <pre id="console"><span id="output"></span><span id="cursor"></span></pre>
@@ -166,6 +177,7 @@
             <dt><kbd>F8</kbd></dt><dd>Thème suivant</dd>
             <dt><kbd>F9</kbd></dt><dd>Réglages</dd>
             <dt><kbd>F10</kbd></dt><dd>Mode immersion (zéro interface)</dd>
+            <dt><kbd>Tab</kbd></dt><dd>Attraper un fragment de mémoire</dd>
             <dt><kbd>Retour</kbd></dt><dd>Effacer</dd>
           </dl>
         </section>
@@ -177,9 +189,10 @@
             <li>Le mode mission enchaîne tout seul une opération complète. Parfait pour impressionner.</li>
             <li>Le mode immersion (F10) cache tout : idéal pour faire une blague à quelqu'un.</li>
             <li>Dans les réglages, colle ton propre code pour qu'il s'écrive à l'écran, et active la voix de l'ordinateur.</li>
-            <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀</li>
+            <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀 L'histoire compte 3 actes, 11 chapitres et 3 fins : suis les objectifs affichés en haut à gauche.</li>
             <li>Le panneau « Ton système » affiche ton vrai appareil en direct (rien n'est envoyé nulle part).</li>
-            <li>28 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+            <li>38 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+            <li>Lis bien les plans que tu tapes : ils cachent parfois des secrets. Pour une fois, ce que tu tapes vraiment pourrait compter…</li>
           </ul>
         </section>
       </div>

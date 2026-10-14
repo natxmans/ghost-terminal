@@ -58,6 +58,8 @@
     [21, "le bouton rouge a été repeint en rouge. Encore plus rouge."],
     [34, "la Comtesse veut une ogive avec des paillettes."],
     [42, "ÉCHO ? Qui est ÉCHO ? (à surveiller)"],
+    [47, "le Général Pingouin a encore vidé le frigo de sardines. Son plat préféré, paraît-il."],
+    [66, "note du Pingouin : pour entrer dans mon repaire secret, tapez au clavier mon plat préféré. Chut. Coin."],
     [55, "l'agent Kane rôde autour de la base. Changer les codes."],
     [68, "le sous-marin de fuite a une fuite. Ironique."],
     [77, "réunion du Consortium. Personne n'a apporté les croissants."],

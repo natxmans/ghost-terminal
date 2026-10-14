@@ -56,12 +56,15 @@
     { id: "purple", name: "Violet" },
     { id: "neon", name: "Néon" },
     { id: "white", name: "Blanc" },
-    { id: "gold", name: "Or (secret)", secret: true },
+    // Thèmes secrets : débloqués par progress.gold (100 %) et progress.ice (le repaire secret)
+    { id: "gold", name: "Or (secret)", secret: "gold" },
+    { id: "ice", name: "Banquise (secret)", secret: "ice" },
   ];
   const DEFAULTS = {
     lang: "c", theme: "green", speed: 3, size: 15,
     highlight: true, crt: true, hud: true, dock: true, boot: true,
     sound: false, voice: false, volume: 60, popups: true, story: true, customCode: "",
+    questMin: window.innerWidth < 700, // objectifs repliés par défaut sur téléphone
   };
   const STORE = "ghostterminal-v1";
   let wiping = false; // « Tout réinitialiser » en cours : on n'enregistre plus rien
@@ -246,16 +249,27 @@
     { id: "custom", icon: "code", name: "Mon propre code", desc: "Faire taper ton propre code" },
     { id: "konami", icon: "trophy", name: "Rétro gamer", desc: "Trouver le code secret caché" },
     { id: "ch1", icon: "eye", name: "Le message", desc: "Histoire : terminer le chapitre 1" },
-    { id: "ch2", icon: "globe", name: "La traque", desc: "Histoire : terminer le chapitre 3" },
-    { id: "escape", icon: "shield", name: "Insaisissable", desc: "Histoire : brouiller le signal à temps" },
-    { id: "free", icon: "unlock", name: "Libération", desc: "Histoire : découvrir la première fin" },
-    { id: "erase", icon: "x", name: "Effacement", desc: "Histoire : découvrir l'autre fin" },
     { id: "consortium", icon: "target", name: "Le Consortium", desc: "Histoire : terminer le chapitre 2" },
+    { id: "ch2", icon: "globe", name: "La traque", desc: "Histoire : terminer le chapitre 3" },
     { id: "taupe", icon: "eye", name: "La taupe", desc: "Histoire : terminer le chapitre 4" },
-    { id: "bunker", icon: "alert", name: "Le bunker", desc: "Histoire : terminer le chapitre 5" },
+    { id: "dossier", icon: "folder", name: "Le dossier Oméga", desc: "Histoire : terminer le chapitre 5" },
+    { id: "bunker", icon: "alert", name: "Le bunker", desc: "Histoire : terminer le chapitre 6" },
+    { id: "verite", icon: "eye", name: "La vérité", desc: "Histoire : terminer le chapitre 7" },
+    { id: "satellite", icon: "radar", name: "Le satellite", desc: "Histoire : terminer le chapitre 8" },
+    { id: "trahison", icon: "alert", name: "La trahison", desc: "Histoire : terminer le chapitre 9" },
+    { id: "tour", icon: "target", name: "La tour", desc: "Histoire : terminer le chapitre 10" },
+    { id: "free", icon: "unlock", name: "Libération", desc: "Histoire : laisser ÉCHO s'enfuir" },
+    { id: "erase", icon: "x", name: "Effacement", desc: "Histoire : effacer ÉCHO" },
+    { id: "truend", icon: "trophy", name: "Véritable fin", desc: "Histoire : réécrire le noyau d'ÉCHO" },
+    { id: "fragments", icon: "database", name: "Mémoire retrouvée", desc: "Attraper les 12 fragments de mémoire d'ÉCHO" },
+    { id: "escape", icon: "shield", name: "Insaisissable", desc: "Histoire : brouiller le signal à temps" },
     { id: "simon", icon: "zap", name: "Mémoire d'éléphant", desc: "Histoire : reproduire la séquence secrète" },
     { id: "demineur", icon: "timer", name: "Démineur", desc: "Histoire : couper le bon fil" },
+    { id: "decrypt", icon: "key", name: "Cryptographe", desc: "Histoire : déchiffrer le dossier Oméga" },
+    { id: "frequence", icon: "radar", name: "Œil de lynx", desc: "Histoire : caler la fréquence du satellite" },
+    { id: "labyrinthe", icon: "crosshair", name: "Passe-muraille", desc: "Histoire : sortir Kane du labyrinthe" },
     { id: "survivor", icon: "shield", name: "Survivant", desc: "Jeu secret : survivre à l'explosion de l'ogive", secret: true },
+    { id: "repaire", icon: "unlock", name: "Ami des pingouins", desc: "Endroit secret : visiter tout le repaire du Général Pingouin", secret: true },
   ];
   // Les succès secrets ne comptent pas dans les 100 % (ils se débloquent après)
   const MAIN_ACH = ACHIEVEMENTS.filter((a) => !a.secret);
@@ -419,6 +433,7 @@
     if (progress.lifetime >= 50000) achieve("legend");
     if (settings.lang === "custom" && settings.customCode.trim()) achieve("custom");
     story.onType();
+    renderQuest();
   }
 
   function eraseChars(n) {
@@ -689,6 +704,7 @@
     sound: Sound,
     speak: (text) => Voice.say(text),
     colors: () => themeColors,
+    event: (name) => story.event(name),
   };
 
   function runEffect(id, opts = {}) {
@@ -696,6 +712,7 @@
     if (!fx) return null;
     log(fx.name);
     if (fx.digit !== undefined && remember("effects", id) >= 10) achieve("collector");
+    if (!opts.auto) story.event("effect:" + id); // seuls les effets lancés par le joueur comptent pour les objectifs
     const btn = dockEl.querySelector(`[data-id="${id}"]`);
     if (btn) {
       btn.classList.remove("fired");
@@ -804,6 +821,7 @@
     toast(M.end, "shield");
     log("Mission accomplie");
     achieve("mission");
+    story.event("mission");
     setTimeout(() => Voice.say(`Mission accomplie. ${M.end}`), 1200);
     await sleep(3800);
     if (mission === token) stopMission(false);
@@ -1062,7 +1080,7 @@
     toast(`Langage : ${window.SNIPPETS[key].name}`, "terminal");
   }
 
-  const availableThemes = () => THEMES.filter((t) => !t.secret || progress.gold);
+  const availableThemes = () => THEMES.filter((t) => !t.secret || progress[t.secret]);
 
   function nextTheme() {
     const list = availableThemes();
@@ -1203,6 +1221,7 @@
       toast("Maj+1…0 : effets · F1 : aide", "zap");
     }
     log("Session ouverte");
+    renderQuest(true);
   }
 
   $("boot").addEventListener("pointerdown", finishBoot);
@@ -1303,6 +1322,13 @@
       return;
     }
 
+    // Tab attrape le fragment de mémoire affiché
+    if (e.key === "Tab" && fragOffer) {
+      e.preventDefault();
+      if (!e.repeat) fragOffer.done(true);
+      return;
+    }
+
     switch (e.key) {
       case "F2": e.preventDefault(); runEffect("download"); return;
       case "F3": e.preventDefault(); toggleMission(); return;
@@ -1335,9 +1361,27 @@
     if (e.key === "Unidentified" || e.keyCode === 229) return; // clavier virtuel : géré plus bas
 
     e.preventDefault();
+    if (!e.repeat) secretWord(e.key);
     if (e.key === "Backspace" || e.key === "Delete") eraseChars(settings.speed);
     else typeChars(settings.speed);
   });
+
+  // Le mot de passe du repaire secret : pour une fois, ce qu'on tape vraiment compte.
+  // L'indice est caché dans le journal de bord des plans du Consortium.
+  let secretBuf = "";
+  function secretWord(key) {
+    if (key.length !== 1) return;
+    secretBuf = (secretBuf + key.toLowerCase()).slice(-7);
+    if (secretBuf === "sardine") {
+      secretBuf = "";
+      setTimeout(openLair, 400);
+    }
+  }
+  function openLair() {
+    if (story.playing() || survie.playing() || booting || modalOpen()) return;
+    stopMission(true);
+    story.playLair();
+  }
 
   document.addEventListener("keyup", (e) => {
     if (e.key === "Alt") e.preventDefault();
@@ -1371,6 +1415,7 @@
 
   mobileInput.addEventListener("input", () => {
     const v = mobileInput.value;
+    for (const ch of v.slice(SENTINEL.length)) secretWord(ch);
     if (v.length < SENTINEL.length) eraseChars(settings.speed);
     else if (v.length > SENTINEL.length) typeChars(settings.speed * (v.length - SENTINEL.length));
     mobileInput.value = SENTINEL;
@@ -1440,7 +1485,11 @@
   $("opt-size").addEventListener("input", (e) => { settings.size = +e.target.value; applySettings(); });
   $("opt-volume").addEventListener("input", (e) => { settings.volume = +e.target.value; applySettings(); });
   for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story"]) {
-    $("opt-" + k).addEventListener("change", (e) => { settings[k] = e.target.checked; applySettings(); });
+    $("opt-" + k).addEventListener("change", (e) => {
+      settings[k] = e.target.checked;
+      applySettings();
+      if (k === "story") renderQuest(true);
+    });
   }
   $("opt-voice").addEventListener("change", (e) => {
     settings.voice = e.target.checked;
@@ -1465,9 +1514,13 @@
     prepare: () => {
       [...openWins].forEach((w) => w.close());
       [...fxHandles].forEach((h) => h.close());
+      fragOffer?.done(false);
     },
     whisper: (text) => (pendingWhisper = text),
     stats: () => ({ chars: fr(progress.lifetime), done: mainDone(), total: MAIN_ACH.length }),
+    offerFragment, onFragment,
+    onQuest: () => renderQuest(true),
+    unlockTheme,
     onFinale: () => {
       unlockGold();
       // La première fois : le jeu secret démarre juste après l'épilogue
@@ -1517,43 +1570,168 @@
     }, delay);
   }
 
-  // Récompense des 100 % : le thème secret « Or »
-  function unlockGold() {
-    if (progress.gold) return;
-    progress.gold = true;
+  // Thèmes secrets : « Or » (100 %) et « Banquise » (le repaire du Pingouin)
+  function unlockTheme(id) {
+    const t = THEMES.find((x) => x.id === id);
+    if (!t || progress[t.secret]) return;
+    progress[t.secret] = true;
     saveProgress();
     buildSwatches();
-    settings.theme = "gold";
+    settings.theme = id;
     applySettings();
-    toast("Thème secret « Or » débloqué !", "trophy");
-    log("Thème « Or » débloqué");
+    const name = t.name.replace(" (secret)", "");
+    toast(`Thème secret « ${name} » débloqué !`, "trophy");
+    log(`Thème « ${name} » débloqué`);
   }
+  const unlockGold = () => unlockTheme("gold");
+
+  // ===== Fragments de mémoire d'ÉCHO : ils passent pendant la frappe, Tab (ou un clic) pour les attraper =====
+  const fragEl = $("frag");
+  let fragOffer = null;
+  let fragHide = 0;
+
+  function offerFragment(n, total) {
+    if (booting || modalOpen() || survie.playing() || story.playing() || body.classList.contains("immersive")) return false;
+    return new Promise((resolve) => {
+      clearTimeout(fragHide);
+      fragEl.className = "frag offer";
+      fragEl.innerHTML = `${window.icon("database")}<div><small>FRAGMENT DE MÉMOIRE ${n}/${total}</small><b>Vite ! <kbd>Tab</kbd> ou clic pour l'attraper</b></div><i class="frag-timer"></i>`;
+      fragEl.hidden = false;
+      [880, 1175, 1568].forEach((f, i) => Sound.tone(f, 0.12, { type: "triangle", vol: 0.04, when: i * 0.08 }));
+      const timer = setTimeout(() => done(false), 7000);
+      function done(caught) {
+        if (fragOffer !== offer) return;
+        fragOffer = null;
+        clearTimeout(timer);
+        if (!caught) {
+          fragEl.classList.add("lost");
+          fragEl.querySelector("b").textContent = "Fragment perdu… il reviendra.";
+          fragHide = setTimeout(() => (fragEl.hidden = true), 1600);
+        }
+        resolve(caught);
+      }
+      const offer = { done };
+      fragOffer = offer;
+    });
+  }
+
+  function onFragment(count, text, total) {
+    clearTimeout(fragHide);
+    fragEl.className = "frag memory";
+    fragEl.innerHTML = `${window.icon("database")}<div><small>MÉMOIRE ${count}/${total} RESTAURÉE</small><span></span></div>`;
+    fragEl.querySelector("span").textContent = `« ${text} »`;
+    fragEl.hidden = false;
+    fragHide = setTimeout(() => (fragEl.hidden = true), 8000);
+    [523, 784, 1047].forEach((f, i) => Sound.tone(f, 0.18, { type: "triangle", vol: 0.05, when: i * 0.1 }));
+    Voice.say(text, { pitch: 1.35, rate: 1 });
+    log(`Fragment de mémoire ${count}/${total}`);
+    if (count >= total) achieve("fragments");
+  }
+
+  fragEl.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    if (fragOffer) fragOffer.done(true);
+    else {
+      clearTimeout(fragHide);
+      fragEl.hidden = true;
+    }
+  });
+
+  // ===== Objectifs du chapitre en cours (panneau en haut à gauche) =====
+  const questEl = $("quest");
+  let questDrawn = 0;
+
+  function goalLabel(key) {
+    if (key === "chars") return "Taper du code";
+    if (key === "fragments") return "Attraper des fragments de mémoire (Tab)";
+    if (key === "mission") return "Terminer une mission (F3)";
+    if (key === "disarm") return "Désamorcer une ogive (Maj + 8)";
+    const fx = effectById[key.replace("effect:", "")];
+    return fx ? `Lancer « ${fx.name} » (Maj + ${fx.digit})` : key;
+  }
+
+  function renderQuest(force = false) {
+    const t = now();
+    if (!force && t - questDrawn < 250) return;
+    questDrawn = t;
+    const Q = settings.story && !booting ? story.quest() : null;
+    // Caché avant le chapitre 1 : le réveil d'ÉCHO doit rester une surprise
+    const show = !!Q && story.state().seen.length > 0;
+    questEl.hidden = !show;
+    if (!show) return;
+    questEl.classList.toggle("min", settings.questMin);
+    let goals;
+    if (Q.after) {
+      $("quest-act").textContent = "ÉPILOGUE";
+      $("quest-title").textContent = "Mémoires d'ÉCHO";
+      goals = [{ key: "fragments", need: Q.total, have: Q.frags }];
+    } else {
+      $("quest-act").textContent = `ACTE ${Q.act.roman} · ${Q.act.name}`;
+      $("quest-title").textContent = `Chapitre ${Q.n} : objectifs`;
+      goals = Q.goals;
+    }
+    const list = $("quest-list");
+    list.innerHTML = goals.map((g) => `
+      <li class="${g.have >= g.need ? "done" : ""} ${g.bonus ? "bonus" : ""}">
+        <i></i><span>${esc(goalLabel(g.key))}${g.bonus ? " · bonus : débloque une autre fin" : ""}</span><b>${g.need > 1 ? `${fr(g.have)} / ${fr(g.need)}` : g.have >= g.need ? "✓" : ""}</b>
+        ${g.need > 1 ? "<em><u></u></em>" : ""}
+      </li>`).join("") + (Q.after && Q.frags >= Q.total
+      ? `<li class="hint"><span>Tous les souvenirs sont là : rejoue le chapitre 11 (panneau Succès) pour découvrir la vraie fin.</span></li>`
+      : Q.ready ? `<li class="hint"><span>Tout est prêt… continue de taper !</span></li>` : "");
+    list.querySelectorAll("em u").forEach((u, i) => {
+      const g = goals.filter((x) => x.need > 1)[i];
+      u.style.width = (g.have / g.need) * 100 + "%";
+    });
+  }
+
+  $("quest-toggle").addEventListener("click", () => {
+    settings.questMin = !settings.questMin;
+    saveSettings();
+    renderQuest(true);
+  });
 
   function renderStoryPanel() {
     const s = story.state();
     const chapters = story.list();
     const seen = chapters.filter((c) => c.seen).length;
-    const ending = s.ending === "free" ? "Libération" : s.ending === "erase" ? "Effacement" : "?";
+    const ENDINGS = { free: "Libération", erase: "Effacement", true: "la vraie fin" };
+    const Q = story.quest();
     const status = seen >= chapters.length
-      ? `Histoire terminée · fin : ${ending}. Tu peux rejouer chaque chapitre.`
+      ? `Histoire terminée · fin : ${ENDINGS[s.ending] || "?"}. Tu peux rejouer chaque chapitre.`
       : seen === 0
         ? "Continue de taper… quelque chose se réveille dans le terminal."
-        : `${seen} chapitre${seen > 1 ? "s" : ""} sur ${chapters.length} · le suivant dans environ ${fr(story.remaining())} caractères.`;
+        : `${seen} chapitre${seen > 1 ? "s" : ""} sur ${chapters.length} · les objectifs du chapitre ${Q.n} sont affichés en haut à gauche.`;
     const finaleOpen = s.finale || allDone();
     const secretOpen = !!s.finale;
     const best = progress.survieBest ? ` · record : ${Math.floor(progress.survieBest / 60)} min ${progress.survieBest % 60} s` : "";
+    const memories = story.memories();
+    const got = memories.filter(Boolean).length;
     $("story-panel").innerHTML = `
-      <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire</small></h3>
+      <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire · 3 actes · 3 fins</small></h3>
       <p class="muted small">${esc(status)}</p>
+      ${story.acts.map((a, ai) => `
+        <div class="story-act">ACTE ${a.roman} · ${esc(a.name)}</div>
+        <div class="story-btns">
+          ${chapters.filter((c) => c.act === ai).map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
+        </div>`).join("")}
+      <details class="memories">
+        <summary>${window.icon("database")} Mémoires d'ÉCHO · ${got}/${memories.length}</summary>
+        <ol>${memories.map((m) => `<li class="${m ? "" : "locked"}">${m ? esc(m) : "Fragment pas encore retrouvé…"}</li>`).join("")}</ol>
+      </details>
+      <div class="story-act">BONUS</div>
       <div class="story-btns">
-        ${chapters.map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
         <button type="button" class="btn story-finale" ${finaleOpen ? "" : "disabled"}>${finaleOpen ? "▶ Épilogue secret" : "🔒 Épilogue (100 % des succès)"}</button>
         <button type="button" class="btn story-secret" ${secretOpen ? "" : "disabled"}>${secretOpen ? `▶ Jeu secret : survie${esc(best)}` : "🔒 Jeu secret (après l'épilogue)"}</button>
+        ${progress.lair ? `<button type="button" class="btn story-lair">▶ Repaire du Pingouin</button>` : ""}
         <button type="button" class="btn story-reset" ${seen ? "" : "disabled"}>Recommencer l'histoire</button>
       </div>`;
     $("story-panel").querySelector(".story-secret").addEventListener("click", () => {
       closeModal(achEl);
       startSecretGame();
+    });
+    $("story-panel").querySelector(".story-lair")?.addEventListener("click", () => {
+      closeModal(achEl);
+      openLair();
     });
     $("story-panel").querySelectorAll(".story-play").forEach((b) => b.addEventListener("click", () => {
       closeModal(achEl);
