@@ -1405,11 +1405,13 @@
     closeModal(settingsEl);
   });
   // Tout réinitialiser (après confirmation)
-  $("btn-wipe").addEventListener("click", () => {
+  function askWipe() {
     $("wipe-ach").textContent = Object.keys(progress.ach).length;
     $("wipe-chars").textContent = fr(progress.lifetime);
     openModal(wipeEl);
-  });
+  }
+  $("btn-wipe").addEventListener("click", askWipe);
+  $("btn-ach-wipe").addEventListener("click", askWipe);
   $("btn-wipe-confirm").addEventListener("click", () => {
     wiping = true;
     try {
