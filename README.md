@@ -87,7 +87,8 @@ puis ouvre <http://localhost:8000>.
 | `effects.js` | Les 11 effets dramatiques |
 | `story.js` | Le mode histoire et ses cinématiques |
 | `survie.js` | Le jeu secret 🤫 |
-| `snippets.js` | Le générateur de faux code (un nouveau plan à chaque tour) |
+| `mots.js` | Le grand sac de mots du faux code, classés par thèmes |
+| `snippets.js` | Le générateur de faux code : il assemble les mots qui vont le mieux ensemble (un nouveau plan à chaque tour) |
 | `highlight.js` | La coloration du code |
 | `icons.js` | Les icônes |
 | `security.js` | La protection anti-copie |
