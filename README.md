@@ -13,7 +13,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 ## ✨ Fonctionnalités
 
 - **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde : journal de bord, sbires, étapes détaillées… Méchant, base secrète, code de lancement, arme et étapes sont **tirés au hasard** : à chaque fois que tout le code a été tapé (5 000 à 9 000 caractères), un nouveau plan est inventé.
-- **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran.
+- **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran. Les gros mots sont bloqués et remplacés par des jurons de BD (`#@!%`).
 - **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. **3 actes et 11 chapitres** en cinématiques. Chaque chapitre a ses **objectifs** (taper du code, lancer certains effets, terminer une mission, désamorcer une ogive…), affichés en haut à gauche.
   - **12 fragments de mémoire** passent pendant que tu tapes : attrape-les avec `Tab` (ou en les touchant) pour découvrir qui est vraiment ÉCHO.
   - **7 mini-jeux** : séquence à mémoriser, course-poursuite, code à taper, fil à couper, déchiffrement, fréquence à caler et labyrinthe.
@@ -87,6 +87,7 @@ puis ouvre <http://localhost:8000>.
 | `effects.js` | Les 11 effets dramatiques |
 | `story.js` | Le mode histoire et ses cinématiques |
 | `survie.js` | Le jeu secret 🤫 |
+| `filtre.js` | Le filtre anti-gros mots de « Mon code » |
 | `mots.js` | Le grand sac de mots du faux code, classés par thèmes |
 | `snippets.js` | Le générateur de faux code : il assemble les mots qui vont le mieux ensemble (un nouveau plan à chaque tour) |
 | `highlight.js` | La coloration du code |

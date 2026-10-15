@@ -10,7 +10,7 @@ $dist = Join-Path $racine "dist"
 New-Item -ItemType Directory -Force $dist | Out-Null
 
 $fichiers = @(
-  "index.html", "style.css", "security.js", "icons.js", "mots.js", "snippets.js", "highlight.js",
+  "index.html", "style.css", "security.js", "icons.js", "filtre.js", "mots.js", "snippets.js", "highlight.js",
   "effects.js", "story.js", "survie.js", "app.js", "sw.js", "manifest.webmanifest"
 )
 $fichiers += Get-ChildItem (Join-Path $racine "icons") -File | ForEach-Object { "icons/" + $_.Name }

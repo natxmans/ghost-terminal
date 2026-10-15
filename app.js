@@ -91,9 +91,13 @@
 
   // "Mon code" : le joueur peut faire taper son propre code
   const CUSTOM_PLACEHOLDER = "// Colle ton propre code dans les réglages (F9 → Mon code),\n// puis choisis le langage « Mon code ».\n\n";
+  // Renvoie le nombre de gros mots bloqués (voir filtre.js)
   function refreshCustomSnippet() {
-    const code = (settings.customCode || "").replace(/\r\n?/g, "\n");
+    const { texte, nb } = window.HT_FILTRE.nettoyer(settings.customCode || "");
+    settings.customCode = texte;
+    const code = texte.replace(/\r\n?/g, "\n");
     window.SNIPPETS.custom = { name: "Mon code", code: code.trim() ? code.trimEnd() + "\n\n" : CUSTOM_PLACEHOLDER };
+    return nb;
   }
   refreshCustomSnippet();
 
@@ -1441,12 +1445,17 @@
   });
   $("btn-custom-save").addEventListener("click", () => {
     settings.customCode = $("opt-custom").value.slice(0, 30000);
-    refreshCustomSnippet();
+    const bloques = refreshCustomSnippet();
+    $("opt-custom").value = settings.customCode;
     delete langCache.custom;
     if (settings.lang === "custom") pos = 0;
     else setLang("custom");
     applySettings();
     toast(settings.customCode.trim() ? "Ton code est prêt : tape !" : "Code personnalisé effacé", "code");
+    if (bloques) {
+      toast(`${bloques} gros mot${bloques > 1 ? "s" : ""} bloqué${bloques > 1 ? "s" : ""} : remplacé${bloques > 1 ? "s" : ""} par #@!% 🤐`, "lock");
+      log(`Mon code : ${bloques} gros mot${bloques > 1 ? "s" : ""} bloqué${bloques > 1 ? "s" : ""}`);
+    }
     closeModal(settingsEl);
   });
   // Tout réinitialiser (après confirmation)
