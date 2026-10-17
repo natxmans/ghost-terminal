@@ -762,6 +762,7 @@
         api.toast("Ogive désamorcée : le monde est sauvé !", "shield");
         api.speak("Ogive désamorcée. Le monde est sauvé.");
         api.achieve("cool");
+        api.event?.("disarm");
       });
       api.speak("Alerte. Le Consortium a lancé la fin du monde.");
 

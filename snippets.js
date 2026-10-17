@@ -1,6 +1,7 @@
 // Faux code : le plan (totalement fictif et ridicule) d'un super-méchant du Consortium qui veut
-// déclencher la fin du monde. Les noms, codes, sbires et étapes sont tirés au hasard : chaque fois
-// que le code a été entièrement tapé, un nouveau plan est inventé.
+// déclencher la fin du monde. Les étapes du plan sont inventées mot par mot à partir du sac de
+// mots de mots.js : chaque mot est choisi parmi ceux qui vont le mieux avec les précédents.
+// Chaque fois que le code a été entièrement tapé, un nouveau plan est inventé.
 (() => {
   "use strict";
 
@@ -30,24 +31,25 @@
     "Fin du monde terminée à 100 %.",
   ];
 
-  // Étapes du plan : [fonction, titre, message de fin, sous-étapes]
+  // Étapes écrites à la main : [fonction, titre, message de fin, sous-étapes, phase]
+  // Quelques-unes se glissent dans chaque plan, au milieu des étapes inventées.
   const STEPS = [
-    ["preparer_les_sbires", "Préparation des sbires", "Sbires prêts (et motivés)", ["Réveiller les sbires", "Distribuer les casques ridicules", "Compter les sbires (encore)", "Vérifier qu'aucun sbire n'est un espion"]],
-    ["charger_carburant_malefique", "Chargement du carburant maléfique", "Réservoir plein", ["Ouvrir le réservoir", "Verser le carburant maléfique", "Ne pas en renverser sur le tapis", "Refermer le réservoir"]],
-    ["calibrer_rayon_laser", "Calibrage du rayon laser", "Rayon laser calibré", ["Allumer le laser", "Viser le mur (pas le chat)", "Régler la puissance sur ÉNORME", "Prendre une photo souvenir"]],
-    ["desactiver_super_heros", "Neutralisation des super-héros", "Super-héros désactivés", ["Cacher toutes les capes", "Remplacer leurs céréales par des brocolis", "Bloquer les cabines téléphoniques", "Annuler leurs abonnements"]],
-    ["couper_internet_mondial", "Coupure d'internet", "Internet coupé (adieu les memes)", ["Débrancher la box du monde", "Attendre que ça redémarre", "Couper le wifi des voisins", "Vérifier que les memes ont disparu"]],
-    ["nourrir_les_requins", "Repas des requins", "Requins nourris et motivés", ["Ouvrir la trappe de l'aquarium", "Servir les croquettes premium", "Brosser les dents des requins", "Leur souhaiter bonne nuit"]],
-    ["lancer_rire_machiavelique", "Échauffement du rire machiavélique", "MOUAHAHAHA !", ["Mouah", "Mouahaha", "Mouahahaha (plus fort)", "Boire un verre d'eau"]],
-    ["envoyer_ultimatum", "Envoi de l'ultimatum", "Ultimatum envoyé au Conseil des Héros", ["Écrire la lettre de menace", "Ajouter des paillettes", "Corriger les fautes d'orthographe", "Poster la lettre (sans timbre)"]],
-    ["allumer_lumieres_rouges", "Ambiance de base secrète", "Lumières rouges qui clignotent : OK", ["Allumer les lumières rouges", "Activer la sirène", "Lancer la fumée dramatique", "Baisser le chauffage du volcan"]],
-    ["evacuer_le_chat", "Mise à l'abri du chat", "Le chat est en sécurité", ["Trouver le chat", "Ouvrir une boîte de thon", "Installer le chat dans la capsule", "Lancer la capsule vers la Lune"]],
-    ["pirater_les_satellites", "Piratage des satellites", "Satellites sous contrôle", ["Pointer l'antenne vers le ciel", "Taper le mot de passe : 1234", "Tourner les satellites vers la base", "Dire bonjour aux astronautes"]],
-    ["brouiller_les_radars", "Brouillage des radars", "Radars brouillés", ["Lâcher des ballons argentés", "Taper sur une casserole", "Diffuser de la musique d'ascenseur", "Repeindre la base en vert camouflage"]],
-    ["activer_musique_dramatique", "Bande-son dramatique", "Musique dramatique : ON", ["Accorder l'orgue", "Lancer les violons", "Monter le volume à 11", "Ajouter des tambours"]],
-    ["inspecter_bouton_rouge", "Inspection du gros bouton rouge", "Bouton rouge : brillant", ["Dépoussiérer le bouton", "Vérifier qu'il est bien rouge", "Interdire au Pingouin d'y toucher", "Lustrer le bouton"]],
-    ["preparer_sous_marin", "Préparation du sous-marin de fuite", "Sous-marin prêt pour la fuite", ["Faire le plein", "Charger les sandwichs", "Installer le siège du Pingouin", "Tester le klaxon"]],
-    ["installer_compte_a_rebours", "Installation du compte à rebours", "Compte à rebours installé", ["Choisir une police de caractères menaçante", "Régler les chiffres rouges", "Ajouter des bips stressants", "Tester avec 3, 2, 1… non, pas encore"]],
+    ["preparer_les_sbires", "Préparation des sbires", "Sbires prêts (et motivés)", ["Réveiller les sbires", "Distribuer les casques ridicules", "Compter les sbires (encore)", "Vérifier qu'aucun sbire n'est un espion"], 1],
+    ["charger_carburant_malefique", "Chargement du carburant maléfique", "Réservoir plein", ["Ouvrir le réservoir", "Verser le carburant maléfique", "Ne pas en renverser sur le tapis", "Refermer le réservoir"], 2],
+    ["calibrer_rayon_laser", "Calibrage du rayon laser", "Rayon laser calibré", ["Allumer le laser", "Viser le mur (pas le chat)", "Régler la puissance sur ÉNORME", "Prendre une photo souvenir"], 3],
+    ["desactiver_super_heros", "Neutralisation des super-héros", "Super-héros désactivés", ["Cacher toutes les capes", "Remplacer leurs céréales par des brocolis", "Bloquer les cabines téléphoniques", "Annuler leurs abonnements"], 3],
+    ["couper_internet_mondial", "Coupure d'internet", "Internet coupé (adieu les memes)", ["Débrancher la box du monde", "Attendre que ça redémarre", "Couper le wifi des voisins", "Vérifier que les memes ont disparu"], 3],
+    ["nourrir_les_requins", "Repas des requins", "Requins nourris et motivés", ["Ouvrir la trappe de l'aquarium", "Servir les croquettes premium", "Brosser les dents des requins", "Leur souhaiter bonne nuit"], 1],
+    ["lancer_rire_machiavelique", "Échauffement du rire machiavélique", "MOUAHAHAHA !", ["Mouah", "Mouahaha", "Mouahahaha (plus fort)", "Boire un verre d'eau"], 4],
+    ["envoyer_ultimatum", "Envoi de l'ultimatum", "Ultimatum envoyé au Conseil des Héros", ["Écrire la lettre de menace", "Ajouter des paillettes", "Corriger les fautes d'orthographe", "Poster la lettre (sans timbre)"], 4],
+    ["allumer_lumieres_rouges", "Ambiance de base secrète", "Lumières rouges qui clignotent : OK", ["Allumer les lumières rouges", "Activer la sirène", "Lancer la fumée dramatique", "Baisser le chauffage du volcan"], 2],
+    ["evacuer_le_chat", "Mise à l'abri du chat", "Le chat est en sécurité", ["Trouver le chat", "Ouvrir une boîte de thon", "Installer le chat dans la capsule", "Lancer la capsule vers la Lune"], 4],
+    ["pirater_les_satellites", "Piratage des satellites", "Satellites sous contrôle", ["Pointer l'antenne vers le ciel", "Taper le mot de passe : 1234", "Tourner les satellites vers la base", "Dire bonjour aux astronautes"], 3],
+    ["brouiller_les_radars", "Brouillage des radars", "Radars brouillés", ["Lâcher des ballons argentés", "Taper sur une casserole", "Diffuser de la musique d'ascenseur", "Repeindre la base en vert camouflage"], 3],
+    ["activer_musique_dramatique", "Bande-son dramatique", "Musique dramatique : ON", ["Accorder l'orgue", "Lancer les violons", "Monter le volume à 11", "Ajouter des tambours"], 4],
+    ["inspecter_bouton_rouge", "Inspection du gros bouton rouge", "Bouton rouge : brillant", ["Dépoussiérer le bouton", "Vérifier qu'il est bien rouge", "Interdire au Pingouin d'y toucher", "Lustrer le bouton"], 4],
+    ["preparer_sous_marin", "Préparation du sous-marin de fuite", "Sous-marin prêt pour la fuite", ["Faire le plein", "Charger les sandwichs", "Installer le siège du Pingouin", "Tester le klaxon"], 2],
+    ["installer_compte_a_rebours", "Installation du compte à rebours", "Compte à rebours installé", ["Choisir une police de caractères menaçante", "Régler les chiffres rouges", "Ajouter des bips stressants", "Tester avec 3, 2, 1… non, pas encore"], 2],
   ];
 
   const JOURNAL = [
@@ -58,6 +60,8 @@
     [21, "le bouton rouge a été repeint en rouge. Encore plus rouge."],
     [34, "la Comtesse veut une ogive avec des paillettes."],
     [42, "ÉCHO ? Qui est ÉCHO ? (à surveiller)"],
+    [47, "le Général Pingouin a encore vidé le frigo de sardines. Son plat préféré, paraît-il."],
+    [66, "note du Pingouin : pour entrer dans mon repaire secret, tapez au clavier mon plat préféré. Chut. Coin."],
     [55, "l'agent Kane rôde autour de la base. Changer les codes."],
     [68, "le sous-marin de fuite a une fuite. Ironique."],
     [77, "réunion du Consortium. Personne n'a apporté les croissants."],
@@ -67,10 +71,158 @@
   const SBIRES = ["Bob", "Gérard", "Josiane", "Kevin", "Brigitte", "Igor", "Ginette", "Tony la Clé", "Sacha", "Marcel", "Nadia", "Jojo"];
   const ROLES = ["porte-clés", "goûteur de café", "gardien du bouton rouge", "nourrisseur de requins", "comptable du mal", "pilote de sous-marin", "DJ du rire machiavélique", "testeur de pièges", "repasseur de capes", "souffleur de fumée"];
 
+  // ===== Choix des mots (le sac de mots est dans mots.js) =====
+  const MOTS = window.HT_MOTS;
+  const sansDanger = (s) => s.replace(/["\\$`{}%]/g, ""); // le texte part dans du code
+  const themes = (t) => t.split(" ");
+
+  // Masculin / féminin, singulier / pluriel, d'après l'article
+  function genre(txt, g) {
+    if (txt.startsWith("les ")) return { f: g === "f", p: true };
+    if (txt.startsWith("la ")) return { f: true, p: false };
+    return { f: g === "f", p: false };
+  }
+  const VERBES = MOTS.VERBES.map(([inf, pp, nom, t, phase]) => ({ inf, pp, nom, tags: themes(t), phase }));
+  const OBJETS = MOTS.OBJETS.map(([txt, t, g]) => ({ txt: sansDanger(txt), tags: themes(t), ...genre(txt, g) }));
+  const COMPLEMENTS = MOTS.COMPLEMENTS.map(([txt, t]) => ({ txt: sansDanger(txt), tags: themes(t) }));
+  const QUEUES = MOTS.QUEUES.map(([txt, t]) => ({ txt: sansDanger(txt), tags: themes(t) }));
+
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  // « le rayon laser » → « du rayon laser », « les requins » → « des requins », sinon « de … »
+  const de = (txt) => (txt.startsWith("le ") ? "du " + txt.slice(3) : txt.startsWith("les ") ? "des " + txt.slice(4) : "de " + txt);
+  const sansArticle = (txt) => txt.replace(/^(le |la |les |l')/, "");
+  // Accord du participe : calibré, calibrée, calibrés, calibrées
+  const accorder = (pp, o) => {
+    const w = pp + (o.f ? "e" : "");
+    return o.p && !/[sx]$/.test(w) ? w + "s" : w;
+  };
+  // Nom de fonction : sans accents, sans petits mots, en minuscules_avec_tirets
+  const PETITS = new Set(["le", "la", "les", "l", "de", "du", "des", "d", "a", "au", "aux", "en", "pour"]);
+  const slug = (s, max = 3) => s.replace(/œ/g, "oe").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .split(/[^a-z0-9]+/).filter((w) => w && !PETITS.has(w)).slice(0, max).join("_");
+
+  // Note d'un mot : combien de ses thèmes se retrouvent dans le contexte (les mots déjà choisis)
+  function note(mot, ctx) {
+    let s = 0;
+    for (const t of mot.tags) for (const c of ctx) if (t === c) s++;
+    return s;
+  }
+  // Tire un mot au hasard, en favorisant très fortement ceux qui vont le mieux avec le contexte
+  function choisir(liste, ctx, exclus) {
+    let cands = exclus ? liste.filter((m) => !exclus.has(m)) : liste;
+    if (!cands.length) cands = liste;
+    const poids = cands.map((m) => {
+      const s = note(m, ctx);
+      return s ? s ** 3 : m.tags.includes("tout") ? 0.6 : 0;
+    });
+    const total = poids.reduce((a, b) => a + b, 0);
+    if (!total) return pick(cands);
+    let r = Math.random() * total;
+    for (let i = 0; i < cands.length; i++) {
+      r -= poids[i];
+      if (r <= 0) return cands[i];
+    }
+    return cands[cands.length - 1];
+  }
+  // Les objets qu'un verbe peut avoir (un verbe « tout » les accepte tous)
+  const objetsPour = (v) => (v.tags.includes("tout") ? OBJETS : OBJETS.filter((o) => o.tags.some((t) => v.tags.includes(t))));
+
+  // Une étape inventée : un verbe de la bonne phase, un objet qui va avec, puis des sous-étapes
+  // qui tournent autour de cet objet. « avant » = l'étape précédente, pour garder le fil du plan.
+  function etapeInventee(phase, avant, pris) {
+    const fil = avant ? avant.objet.tags : [];
+    const verbe = choisir(VERBES.filter((v) => v.phase === phase), fil, pris.verbes);
+    pris.verbes.add(verbe);
+    const objet = choisir(objetsPour(verbe), [...verbe.tags, ...verbe.tags, ...fil], pris.objets);
+    pris.objets.add(objet);
+    const fnPris = pris.fn;
+
+    let fn = `${slug(verbe.inf, 1)}_${slug(objet.txt)}`;
+    while (fnPris.has(fn)) fn += "_bis";
+    fnPris.add(fn);
+
+    const subs = [];
+    const verbesPris = new Set([verbe]), complementsPris = new Set();
+    for (let i = rnd(4, 7); i > 0; i--) {
+      const sv = choisir(VERBES, objet.tags, verbesPris);
+      verbesPris.add(sv);
+      const possibles = objetsPour(sv);
+      const so = possibles.includes(objet) && Math.random() < 0.5 ? objet : choisir(possibles, [...objet.tags, ...sv.tags]);
+      const comp = Math.random() < 0.75 ? choisir(COMPLEMENTS, [...so.tags, ...sv.tags], complementsPris) : null;
+      if (comp) complementsPris.add(comp);
+      subs.push(`${cap(sv.inf)} ${so.txt}${comp ? " " + comp.txt : ""}`);
+    }
+
+    const queue = Math.random() < 0.4 ? " " + choisir(QUEUES, objet.tags).txt : "";
+    const etape = [
+      fn,
+      `${verbe.nom} ${de(objet.txt)}`,
+      `${cap(objet.txt)} ${objet.p ? "sont" : "est"} ${accorder(verbe.pp, objet)}${queue}`,
+      subs,
+      phase,
+    ];
+    etape.verbe = verbe;
+    etape.objet = objet;
+    return etape;
+  }
+
+  // Le plan complet : 4 phases de 4 étapes inventées, plus 4 étapes écrites à la main
+  const PHASES = ["PRÉPARATION", "CONSTRUCTION", "RÉGLAGES", "LANCEMENT"];
+  function planEtapes() {
+    // Ce qui a déjà servi dans ce plan : chaque verbe et chaque objet principal ne sert qu'une fois
+    const pris = {
+      verbes: new Set(),
+      objets: new Set(),
+      fn: new Set(["armer_ogives", "compte_a_rebours", "fin_du_monde", "appeler_les_sbires", "faire_inventaire", "verifier_identite", "tourner_les_cles", "main"]),
+    };
+    const manuelles = shuffle(STEPS).slice(0, 4);
+    manuelles.forEach((s) => pris.fn.add(s[0]));
+    const plan = [];
+    let avant = null;
+    for (let phase = 1; phase <= PHASES.length; phase++) {
+      const bloc = [];
+      for (let k = 0; k < 4; k++) {
+        avant = etapeInventee(phase, avant, pris);
+        bloc.push(avant);
+      }
+      for (const s of manuelles.filter((m) => m[4] === phase)) bloc.splice(rnd(0, bloc.length), 0, s);
+      plan.push(...bloc);
+    }
+    return plan;
+  }
+
+  // Le journal de bord mélange des notes écrites à la main et des notes sur les étapes du plan
+  function journalDuPlan(steps) {
+    const notes = shuffle(JOURNAL).slice(0, 5);
+    const jours = new Set(notes.map(([j]) => j));
+    for (const e of shuffle(steps.filter((s) => s.objet)).slice(0, 5)) {
+      let j;
+      do j = rnd(2, 89); while (jours.has(j));
+      jours.add(j);
+      const comp = choisir(COMPLEMENTS, [...e.objet.tags, ...e.verbe.tags]);
+      notes.push([j, `${e.objet.txt} ${e.objet.p ? "ont" : "a"} été ${accorder(e.verbe.pp, e.objet)} ${comp.txt}.`]);
+    }
+    return notes.sort((a, b) => a[0] - b[0]);
+  }
+
+  // L'inventaire de la base : des objets qui vont avec les thèmes du plan
+  function inventaireDuPlan(steps) {
+    const ctx = steps.filter((s) => s.objet).flatMap((s) => s.objet.tags);
+    const pris = new Set();
+    const liste = [];
+    for (let i = rnd(10, 13); i > 0; i--) {
+      const o = choisir(OBJETS, ctx, pris);
+      pris.add(o);
+      liste.push([sansArticle(o.txt), o.p ? pick([rnd(2, 12), rnd(13, 99), 42, 1000, 9000]) : pick([1, 1, 1, 2, 3])]);
+    }
+    return liste;
+  }
+
   function model() {
     const [mechant, mechantNom] = pick(MECHANTS);
     const [bombe, bombeNom] = pick(BOMBES);
     const projet = pick(PROJETS);
+    const steps = planEtapes();
     return {
       projet, low: projet.toLowerCase(),
       mechant, mechantNom, bombe, bombeNom,
@@ -80,13 +232,20 @@
       delai: pick([10, 13, 30, 42, 60, 99]),
       puissance: rnd(100, 999),
       version: `${rnd(1, 9)}.${rnd(0, 9)}.${rnd(0, 9)}`,
-      steps: shuffle(STEPS).slice(0, 8),
-      journal: shuffle(JOURNAL).slice(0, 5).sort((a, b) => a[0] - b[0]),
+      steps,
+      journal: journalDuPlan(steps),
+      inventaire: inventaireDuPlan(steps),
       sbires: shuffle(SBIRES).slice(0, 6).map((nom) => [nom, pick(ROLES)]),
       fin: pick(FINS),
       cle: hex(8),
     };
   }
+
+  // Appels des étapes dans le programme principal, avec un commentaire au début de chaque phase
+  const appels = (m, indent, com, appel) => m.steps.map((s, i) => {
+    const titre = i === 0 || m.steps[i - 1][4] !== s[4] ? `${i ? "\n" : ""}${indent}${com} --- Phase ${s[4]} : ${PHASES[s[4] - 1]} ---\n` : "";
+    return `${titre}${indent}${appel(s[0])}\n`;
+  }).join("");
 
   // Journal de bord du méchant, en commentaires (le symbole dépend du langage)
   const journal = (p, m) => [
@@ -133,10 +292,19 @@ typedef struct {
 	const char *role;
 } sbire_t;
 
+typedef struct {
+	const char *objet;
+	int quantite;
+} article_t;
+
 static ogive_t arsenal[NB_OGIVES];
 
 static const sbire_t equipe[NB_SBIRES] = {
 ${m.sbires.map(([n, r]) => `\t{ "${n}", "${r}" },`).join("\n")}
+};
+
+static const article_t inventaire[] = {
+${m.inventaire.map(([o, q]) => `\t{ "${o}", ${q} },`).join("\n")}
 };
 
 static int verifier_identite(const char *nom, const char *code)
@@ -159,6 +327,13 @@ static void appeler_les_sbires(void)
 	puts("[*] Appel des sbires du Consortium...");
 	for (int i = 0; i < NB_SBIRES; i++)
 		printf("    - %-12s : %s\\n", equipe[i].nom, equipe[i].role);
+}
+
+static void faire_inventaire(void)
+{
+	puts("[*] Inventaire de la base...");
+	for (size_t i = 0; i < sizeof(inventaire) / sizeof(inventaire[0]); i++)
+		printf("    %-30s x%d\\n", inventaire[i].objet, inventaire[i].quantite);
 }
 ${m.steps.map(([fn, title, msg, subs]) => `
 static void ${fn}(void)
@@ -209,7 +384,10 @@ int main(void)
 		return 2;
 
 	appeler_les_sbires();
-${m.steps.map(([fn]) => `\t${fn}();\n`).join("")}	armer_ogives();
+	faire_inventaire();
+
+${appels(m, "\t", "//", (fn) => `${fn}();`)}
+	armer_ogives();
 	compte_a_rebours(DELAI_SECONDES);
 	fin_du_monde();
 	return 0;
@@ -236,6 +414,10 @@ CIBLE = "PLANETE_TERRE"
 SBIRES = [
 ${m.sbires.map(([n, r]) => `    ("${n}", "${r}"),`).join("\n")}
 ]
+
+INVENTAIRE = {
+${m.inventaire.map(([o, q]) => `    "${o}": ${q},`).join("\n")}
+}
 
 
 class Ogive:
@@ -264,6 +446,12 @@ def appeler_les_sbires():
     print("[*] Appel des sbires du Consortium...")
     for nom, role in SBIRES:
         print(f"    - {nom:<12} : {role}")
+
+
+def faire_inventaire():
+    print("[*] Inventaire de la base...")
+    for objet, quantite in INVENTAIRE.items():
+        print(f"    {objet:<30} x{quantite}")
 ${m.steps.map(([fn, title, msg, subs]) => `
 
 def ${fn}():
@@ -297,7 +485,10 @@ def main():
     if not tourner_les_cles(True, True):
         return
     appeler_les_sbires()
-${m.steps.map(([fn]) => `    ${fn}()\n`).join("")}    arsenal = [Ogive(i + 1, ${m.puissance}) for i in range(NB_OGIVES)]
+    faire_inventaire()
+
+${appels(m, "    ", "#", (fn) => `${fn}()`)}
+    arsenal = [Ogive(i + 1, ${m.puissance}) for i in range(NB_OGIVES)]
     for ogive in arsenal:
         ogive.armer()
     if input("Êtes-vous VRAIMENT sûr ? (o/n) ") == "o":
@@ -330,6 +521,10 @@ const SBIRES = [
 ${m.sbires.map(([n, r]) => `  ["${n}", "${r}"],`).join("\n")}
 ];
 
+const INVENTAIRE = new Map([
+${m.inventaire.map(([o, q]) => `  ["${o}", ${q}],`).join("\n")}
+]);
+
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class Ogive {
@@ -358,6 +553,11 @@ function tournerLesCles(gauche, droite) {
 function appelerLesSbires() {
   console.log("[*] Appel des sbires du Consortium...");
   for (const [nom, role] of SBIRES) console.log("    - " + nom.padEnd(12) + " : " + role);
+}
+
+function faireInventaire() {
+  console.log("[*] Inventaire de la base...");
+  for (const [objet, quantite] of INVENTAIRE) console.log("    " + objet.padEnd(30) + " x" + quantite);
 }
 ${m.steps.map(([fn, title, msg, subs]) => `
 async function ${camel(fn)}() {
@@ -390,7 +590,10 @@ async function main() {
   if (!verifierIdentite("${m.mechant}", CODE_LANCEMENT)) return;
   if (!tournerLesCles(true, true)) return;
   appelerLesSbires();
-${m.steps.map(([fn]) => `  await ${camel(fn)}();\n`).join("")}  const arsenal = Array.from({ length: NB_OGIVES }, (_, i) => new Ogive(i + 1, ${m.puissance}));
+  faireInventaire();
+
+${appels(m, "  ", "//", (fn) => `await ${camel(fn)}();`)}
+  const arsenal = Array.from({ length: NB_OGIVES }, (_, i) => new Ogive(i + 1, ${m.puissance}));
   arsenal.forEach((ogive) => ogive.armer());
   await BoutonRouge.attendreAppui();
   await compteARebours(DELAI);
@@ -418,6 +621,10 @@ const CIBLE: &str = "PLANETE_TERRE";
 
 const SBIRES: [(&str, &str); ${m.sbires.length}] = [
 ${m.sbires.map(([n, r]) => `    ("${n}", "${r}"),`).join("\n")}
+];
+
+const INVENTAIRE: [(&str, u32); ${m.inventaire.length}] = [
+${m.inventaire.map(([o, q]) => `    ("${o}", ${q}),`).join("\n")}
 ];
 
 #[derive(Debug, PartialEq)]
@@ -455,6 +662,13 @@ fn appeler_les_sbires() {
         println!("    - {:<12} : {}", nom, role);
     }
 }
+
+fn faire_inventaire() {
+    println!("[*] Inventaire de la base...");
+    for (objet, quantite) in INVENTAIRE.iter() {
+        println!("    {:<30} x{}", objet, quantite);
+    }
+}
 ${m.steps.map(([fn, title, msg, subs]) => `
 fn ${fn}() {
     println!("[*] ${title}...");
@@ -490,7 +704,10 @@ fn main() {
     }
     assert!(tourner_les_cles(true, true), "Les clés ne tournent pas !");
     appeler_les_sbires();
-${m.steps.map(([fn]) => `    ${fn}();\n`).join("")}    let mut arsenal: Vec<Ogive> = (1..=NB_OGIVES)
+    faire_inventaire();
+
+${appels(m, "    ", "//", (fn) => `${fn}();`)}
+    let mut arsenal: Vec<Ogive> = (1..=NB_OGIVES)
         .map(|n| Ogive { numero: n, puissance: ${m.puissance}, etat: Etat::EnVeille })
         .collect();
     for ogive in arsenal.iter_mut() {
@@ -528,6 +745,13 @@ var sbires = [][2]string{
 ${m.sbires.map(([n, r]) => `\t{"${n}", "${r}"},`).join("\n")}
 }
 
+var inventaire = []struct {
+	Objet    string
+	Quantite int
+}{
+${m.inventaire.map(([o, q]) => `\t{"${o}", ${q}},`).join("\n")}
+}
+
 type Ogive struct {
 	Numero    int
 	Puissance int
@@ -558,6 +782,13 @@ func appelerLesSbires() {
 	fmt.Println("[*] Appel des sbires du Consortium...")
 	for _, s := range sbires {
 		fmt.Printf("    - %-12s : %s\\n", s[0], s[1])
+	}
+}
+
+func faireInventaire() {
+	fmt.Println("[*] Inventaire de la base...")
+	for _, a := range inventaire {
+		fmt.Printf("    %-30s x%d\\n", a.Objet, a.Quantite)
 	}
 }
 ${m.steps.map(([fn, title, msg, subs]) => `
@@ -597,7 +828,10 @@ func main() {
 		return
 	}
 	appelerLesSbires()
-${m.steps.map(([fn]) => `\t${camel(fn)}()\n`).join("")}	arsenal := make([]*Ogive, NbOgives)
+	faireInventaire()
+
+${appels(m, "\t", "//", (fn) => `${camel(fn)}()`)}
+	arsenal := make([]*Ogive, NbOgives)
 	for i := range arsenal {
 		arsenal[i] = &Ogive{Numero: i + 1, Puissance: ${m.puissance}}
 		arsenal[i].Armer()
@@ -636,7 +870,9 @@ section .data
     len_msg_bienvenue equ $ - msg_bienvenue
     msg_sbires      db "[*] Appel des sbires du Consortium...", 10
     len_msg_sbires  equ $ - msg_sbires
-${m.sbires.map(([n, r], i) => `    sbire_${i + 1}         db "    - ${n} : ${r}", 10\n    len_sbire_${i + 1}     equ $ - sbire_${i + 1}\n`).join("")}${m.steps.map(([, title, msg, subs], k) => `    etape${k + 1}_titre   db "[*] ${title}...", 10
+${m.sbires.map(([n, r], i) => `    sbire_${i + 1}         db "    - ${n} : ${r}", 10\n    len_sbire_${i + 1}     equ $ - sbire_${i + 1}\n`).join("")}    msg_inventaire  db "[*] Inventaire de la base...", 10
+    len_msg_inventaire equ $ - msg_inventaire
+${m.inventaire.map(([o, q], i) => `    inv_${i + 1}           db "    - ${o} x${q}", 10\n    len_inv_${i + 1}       equ $ - inv_${i + 1}\n`).join("")}${m.steps.map(([, title, msg, subs], k) => `    etape${k + 1}_titre   db "[*] ${title}...", 10
     len_etape${k + 1}_titre equ $ - etape${k + 1}_titre
 ${subs.map((s, j) => `    etape${k + 1}_${j + 1}       db "    ${j + 1}. ${s}", 10\n    len_etape${k + 1}_${j + 1}   equ $ - etape${k + 1}_${j + 1}\n`).join("")}    etape${k + 1}_ok      db "[+] ${msg}", 10
     len_etape${k + 1}_ok  equ $ - etape${k + 1}_ok
@@ -658,7 +894,10 @@ _start:
     jz      quitter
 
     AFFICHER msg_sbires
-${m.sbires.map((_, i) => `    AFFICHER sbire_${i + 1}\n`).join("")}${m.steps.map(([, title, , subs], k) => `
+${m.sbires.map((_, i) => `    AFFICHER sbire_${i + 1}\n`).join("")}
+    AFFICHER msg_inventaire
+${m.inventaire.map((_, i) => `    AFFICHER inv_${i + 1}\n`).join("")}${m.steps.map(([, title, , subs, phase], k) => `${k === 0 || m.steps[k - 1][4] !== phase ? `
+    ; ===== Phase ${phase} : ${PHASES[phase - 1]} =====` : ""}
     ; --- ${title} ---
     AFFICHER etape${k + 1}_titre
 ${subs.map((_, j) => `    AFFICHER etape${k + 1}_${j + 1}\n`).join("")}    AFFICHER etape${k + 1}_ok
@@ -718,6 +957,10 @@ SBIRES=(
 ${m.sbires.map(([n, r]) => `  "${n}:${r}"`).join("\n")}
 )
 
+declare -A INVENTAIRE=(
+${m.inventaire.map(([o, q]) => `  ["${o}"]=${q}`).join("\n")}
+)
+
 log() { printf "[%s] %s\\n" "$(date +%H:%M:%S)" "$*"; }
 
 verifier_identite() {
@@ -737,6 +980,13 @@ appeler_les_sbires() {
   log "Appel des sbires du Consortium..."
   for sbire in "\${SBIRES[@]}"; do
     log "  - \${sbire%%:*} : \${sbire#*:}"
+  done
+}
+
+faire_inventaire() {
+  log "Inventaire de la base..."
+  for objet in "\${!INVENTAIRE[@]}"; do
+    log "  - $objet x\${INVENTAIRE[$objet]}"
   done
 }
 ${m.steps.map(([fn, title, msg, subs]) => `
@@ -778,7 +1028,10 @@ main() {
   verifier_identite "${m.mechant}" "$CODE_LANCEMENT" || exit 1
   tourner_les_cles 1 1 || exit 2
   appeler_les_sbires
-${m.steps.map(([fn]) => `  ${fn}\n`).join("")}  armer_ogives
+  faire_inventaire
+
+${appels(m, "  ", "#", (fn) => fn)}
+  armer_ogives
   read -r -p "Êtes-vous VRAIMENT sûr ? (o/n) " reponse
   [ "$reponse" = "o" ] || exit 0
   compte_a_rebours "$DELAI"

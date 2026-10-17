@@ -7,7 +7,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' file: data:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <title>Ghost Terminal</title>
-  <meta name="description" content="Ghost Terminal : tape n'importe quoi sur ton clavier et deviens un hacker de film. Effets dramatiques, missions, succès, mode immersion.">
+  <meta name="description" content="Ghost Terminal : tape n'importe quoi sur ton clavier et deviens un hacker de film. Une histoire en 11 chapitres, des mini-jeux, 3 fins, des effets dramatiques et des secrets.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Ghost Terminal">
   <meta property="og:description" content="Tape n'importe quoi. Deviens un hacker de film.">
@@ -64,6 +64,17 @@
     </div>
     <div class="mission-dots" id="mission-dots"></div>
   </div>
+
+  <!-- Objectifs du chapitre en cours (mode histoire) -->
+  <aside id="quest" hidden aria-label="Objectifs">
+    <button type="button" id="quest-toggle" class="quest-head" title="Réduire / agrandir">
+      <small id="quest-act"></small><b id="quest-title"></b><i>▾</i>
+    </button>
+    <ul id="quest-list"></ul>
+  </aside>
+
+  <!-- Fragment de mémoire d'ÉCHO à attraper (touche Tab) -->
+  <div id="frag" hidden role="button" aria-live="polite"></div>
 
   <!-- Le terminal -->
   <main id="terminal" tabindex="0" aria-label="Terminal">
@@ -166,6 +177,7 @@
             <dt><kbd>F8</kbd></dt><dd>Thème suivant</dd>
             <dt><kbd>F9</kbd></dt><dd>Réglages</dd>
             <dt><kbd>F10</kbd></dt><dd>Mode immersion (zéro interface)</dd>
+            <dt><kbd>Tab</kbd></dt><dd>Attraper un fragment de mémoire</dd>
             <dt><kbd>Retour</kbd></dt><dd>Effacer</dd>
           </dl>
         </section>
@@ -177,9 +189,12 @@
             <li>Le mode mission enchaîne tout seul une opération complète. Parfait pour impressionner.</li>
             <li>Le mode immersion (F10) cache tout : idéal pour faire une blague à quelqu'un.</li>
             <li>Dans les réglages, colle ton propre code pour qu'il s'écrive à l'écran, et active la voix de l'ordinateur.</li>
-            <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀</li>
+            <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀 L'histoire compte 3 actes, 11 chapitres et 3 fins : suis les objectifs affichés en haut à gauche.</li>
             <li>Le panneau « Ton système » affiche ton vrai appareil en direct (rien n'est envoyé nulle part).</li>
-            <li>28 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+            <li>38 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+            <li>Lis bien les plans que tu tapes : ils cachent parfois des secrets. Pour une fois, ce que tu tapes vraiment pourrait compter…</li>
+            <li>Sensible aux flashs ? Active le mode calme dans les réglages (F9). Tu peux aussi ralentir les dialogues de l'histoire.</li>
+            <li>Exporte ta sauvegarde (F9 › Sauvegarde) pour garder ta progression ou la retrouver sur un autre appareil.</li>
           </ul>
         </section>
       </div>
@@ -213,6 +228,7 @@
       <label class="row check"><input type="checkbox" id="opt-hud"><span>Panneau HUD (grand écran)</span></label>
       <label class="row check"><input type="checkbox" id="opt-dock"><span>Barre d'effets</span></label>
       <label class="row check"><input type="checkbox" id="opt-boot"><span>Séquence de démarrage</span></label>
+      <label class="row check"><input type="checkbox" id="opt-calme"><span>Mode calme : moins de flashs et de tremblements</span></label>
 
       <h4 class="group">Son &amp; événements</h4>
       <label class="row check"><input type="checkbox" id="opt-sound"><span>Sons</span></label>
@@ -220,6 +236,28 @@
       <label class="row"><span>Volume <b id="opt-volume-val">60</b>%</span><input type="range" id="opt-volume" min="0" max="100"></label>
       <label class="row check"><input type="checkbox" id="opt-popups"><span>Événements surprises pendant la frappe</span></label>
       <label class="row check"><input type="checkbox" id="opt-story"><span>Mode histoire (cinématiques)</span></label>
+      <label class="row"><span>Vitesse des dialogues</span>
+        <select id="opt-dialogue">
+          <option value="lent">Lente (le temps de lire)</option>
+          <option value="normal">Normale</option>
+          <option value="rapide">Rapide</option>
+        </select>
+      </label>
+
+      <h4 class="group">Sauvegarde</h4>
+      <p class="muted small">Garde une copie de tes succès, de ton histoire et de tes réglages dans un fichier. Tu pourras la réimporter sur un autre appareil ou une autre version du jeu (site, itch.io).</p>
+      <div class="row buttons-row">
+        <button class="btn" id="btn-export" type="button">Exporter ma sauvegarde</button>
+        <button class="btn" id="btn-import" type="button">Importer une sauvegarde</button>
+        <input type="file" id="file-import" accept=".json,application/json" hidden>
+      </div>
+      <div class="import-box" id="import-box" hidden>
+        <p id="import-info"></p>
+        <div class="row buttons-row">
+          <button class="btn" id="btn-import-cancel" type="button">Annuler</button>
+          <button class="btn btn-danger" id="btn-import-ok" type="button">Remplacer ma progression</button>
+        </div>
+      </div>
 
       <h4 class="group danger-group">Zone dangereuse</h4>
       <div class="row">
@@ -243,6 +281,7 @@
       <h2 id="ach-title" class="panel-title">&gt; SUCCÈS</h2>
       <p class="muted" id="ach-summary"></p>
       <div class="ach-bar"><i id="ach-progress"></i></div>
+      <div class="stats-grid" id="ach-stats"></div>
       <div class="ach-grid" id="ach-grid"></div>
       <section class="story-panel" id="story-panel"></section>
       <div class="panel-actions">
@@ -257,11 +296,11 @@
       <h2 id="wipe-title" class="panel-title">&gt; TOUT EFFACER ?</h2>
       <p class="muted">Tu vas perdre définitivement :</p>
       <ul class="tips">
-        <li>tous tes succès (<b id="wipe-ach">0</b>) et le thème secret « Or » ;</li>
+        <li>tous tes succès (<b id="wipe-ach">0</b>) et les thèmes secrets ;</li>
         <li>ta progression dans l'histoire et tes choix ;</li>
         <li>ton code perso, tes réglages et ton compteur de caractères (<b id="wipe-chars">0</b>).</li>
       </ul>
-      <p class="muted small">Cette action est irréversible. Ghost Terminal redémarrera comme au premier jour.</p>
+      <p class="muted small">Cette action est irréversible. Ghost Terminal redémarrera comme au premier jour. Astuce : exporte d'abord ta sauvegarde (Réglages › Sauvegarde) pour pouvoir revenir en arrière.</p>
       <div class="panel-actions">
         <button class="btn btn-primary" data-close type="button">Annuler</button>
         <button class="btn btn-danger" id="btn-wipe-confirm" type="button">Oui, tout effacer</button>
@@ -280,6 +319,8 @@
 
   <script src="security.js"></script>
   <script src="icons.js"></script>
+  <script src="filtre.js"></script>
+  <script src="mots.js"></script>
   <script src="snippets.js"></script>
   <script src="highlight.js"></script>
   <script src="effects.js"></script>

@@ -255,7 +255,7 @@ window.HT_SURVIE = (() => {
       const c = api.colors();
       const P = G.player;
       ctx.save();
-      if (G.shake > 0) ctx.translate(rand(-8, 8) * G.shake * 3, rand(-8, 8) * G.shake * 3);
+      if (G.shake > 0 && !api.calme?.()) ctx.translate(rand(-8, 8) * G.shake * 3, rand(-8, 8) * G.shake * 3);
 
       const sky = ctx.createLinearGradient(0, 0, 0, H);
       sky.addColorStop(0, "#2a0a02");
