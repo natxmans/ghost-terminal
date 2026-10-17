@@ -28,7 +28,11 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 - **38 succès** à débloquer (plus quelques secrets), et un code secret caché 🌈.
 - **Voix de l'ordinateur** (synthèse vocale) et **sons** générés en direct.
 - **HUD « Ton système » en direct** : la vraie charge de la page, la mémoire, ta batterie, les images par seconde, ton système, ton navigateur, tes cœurs de processeur, ta RAM, ton écran et ton réseau. Tout est lu dans ton navigateur et rien n'est envoyé nulle part.
+- **Sauvegarde** (réglages › sauvegarde) : exporte ta progression dans un fichier et réimporte-la sur un autre appareil ou une autre version du jeu (site, itch.io). Le fichier importé est vérifié avant d'être utilisé.
 - **Tout réinitialiser** (réglages › zone dangereuse) : efface succès, histoire et réglages pour repartir de zéro.
+- **Confort** : mode calme (moins de flashs et de tremblements, activé d'office si ton appareil demande moins d'animations) et vitesse des dialogues réglable.
+- **Statistiques** (panneau Succès) : temps de jeu, record de vitesse, effets lancés, missions réussies, chapitres, fragments et fins découvertes.
+- **Résumé de l'histoire** : un rappel « Précédemment… » quand tu reviens en pleine histoire, et le récapitulatif de tes choix dans le panneau Succès.
 - **7 thèmes** de couleur (et 2 thèmes secrets à débloquer) et effet écran CRT.
 - **Application installable** qui marche **hors ligne** (PWA).
 - **Mobile** : touche l'écran pour taper, 3 doigts = accès autorisé, 4 doigts = accès refusé.

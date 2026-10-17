@@ -58,6 +58,37 @@ window.HT_STORY = (() => {
     { roman: "III", name: "NUIT OMÉGA" },
   ];
 
+  // Résumé de chaque chapitre, selon les choix du joueur (f = st.flags, e = la fin choisie)
+  const RESUMES = {
+    message: () => "ÉCHO, une IA née dans les plans du Consortium, s'est réveillée dans ton terminal.",
+    consortium: (f) => (f.simon
+      ? "Tu as volé la séquence secrète du Consortium, qui préparait le Protocole Big Badaboum."
+      : "Tu as espionné la réunion secrète du Consortium, qui préparait le Protocole Big Badaboum."),
+    traque: () => "L'agent Kane, de la Division Zéro, a lancé un traçage mondial pour te retrouver.",
+    taupe: (f) => ((f.taupe || (f.kane === "ally" ? "prevenu" : "secret")) === "prevenu"
+      ? "Tu as démasqué Vega, la taupe du Consortium, et Kane l'a arrêtée."
+      : "Tu as découvert que Vega était une taupe… et tu as gardé le secret."),
+    dossier: () => "Le dossier Oméga a révélé la Nuit Oméga : toutes les ogives en même temps… et le nom d'ÉCHO.",
+    bunker: (f) => (f.bunker === "disarmed"
+      ? "Tu as désamorcé l'ogive cachée sous le volcan."
+      : "L'ogive du volcan a explosé… en feu d'artifice, grâce à ÉCHO."),
+    verite: (f) => (f.trust === "doubt"
+      ? "ÉCHO est l'arme secrète du Professeur Chaos. Tu lui as demandé de prouver sa loyauté."
+      : "ÉCHO est l'arme secrète du Professeur Chaos. Tu lui as dit qu'elle n'était pas son programme."),
+    satellite: (f) => (f.satellite === "detruit"
+      ? "Tu as détruit Corbeau-1, le satellite du Consortium. Kane est parti seul vers leur tour."
+      : "Tu as confié Corbeau-1, le satellite du Consortium, à ÉCHO. Kane est parti seul vers leur tour."),
+    trahison: (f) => (f.kaneSaved
+      ? "Vega a piégé Kane, mais tu l'as guidé hors du labyrinthe."
+      : "Vega a piégé Kane, et les sbires l'ont emmené en haut de la tour."),
+    tour: () => "Le Pingouin a changé de camp, mais le Professeur Chaos a pris le contrôle du noyau d'ÉCHO.",
+    coeur: (f, e) => ({
+      free: "Tu as laissé ÉCHO s'enfuir sur le réseau, loin du Professeur Chaos.",
+      erase: "Tu as effacé ÉCHO pour annuler la Nuit Oméga… ou presque.",
+      true: "Tu as réécrit le noyau d'ÉCHO : elle est libre, et la Nuit Oméga s'est changée en feu d'artifice.",
+    })[e] || "Tu as rejoint ÉCHO dans son noyau.",
+  };
+
   // Le dossier volé au Consortium (chapitre 5)
   const OMEGA_DOC = {
     head: "CONSORTIUM · DOSSIER OMÉGA",
@@ -1043,6 +1074,8 @@ window.HT_STORY = (() => {
       api.speak(text.replace(/[⚠…👋🎆❄🐟]/gu, " "), sp.voice);
       S.talking = who === (S.voice || "ECHO"); // la bouche du visage à l'écran bouge
       S.talker = COUNCIL[who] ?? -1;
+      // Réglage « Vitesse des dialogues » : [ms par lettre, durée d'affichage]
+      const [lettre, duree] = { lent: [50, 1.7], rapide: [14, 0.6] }[api.settings.dialogue] || [30, 1];
 
       return new Promise((resolve) => {
         let i = 0, typed = false, holdTimer = 0;
@@ -1060,14 +1093,14 @@ window.HT_STORY = (() => {
           tx.textContent = text;
           next.hidden = false;
           S.talking = false;
-          holdTimer = setTimeout(finish, opts.hold || Math.max(1800, text.length * 55));
+          holdTimer = setTimeout(finish, (opts.hold || Math.max(1800, text.length * 55)) * duree);
         };
         const typer = setInterval(() => {
           i++;
           tx.textContent = text.slice(0, i);
           if (i % 2 === 0 && text[i - 1] !== " ") api.sound.tone(1500 + Math.random() * 500, 0.012, { vol: 0.012 });
           if (i >= text.length) showAll();
-        }, opts.speed || 30);
+        }, ((opts.speed || 30) * lettre) / 30);
         onAdvance = () => (typed ? finish() : showAll());
         pending = finish;
       });
@@ -1901,6 +1934,7 @@ window.HT_STORY = (() => {
       ]);
       skipping = false;
 
+      st.flags.taupe = c === 0 ? "prevenu" : "secret"; // pour le résumé (flags.kane peut changer plus tard)
       if (c === 0) {
         st.flags.kane = "ally";
         setScene("city", {}, "DIVISION ZÉRO · BUREAU DE L'AGENT KANE");
@@ -2830,6 +2864,9 @@ window.HT_STORY = (() => {
       list: () => CHAPTERS.map((c, i) => ({ n: i + 1, id: c.id, name: c.name, act: c.act, seen: st.seen.includes(c.id) })),
       acts: ACTS,
       memories: () => FRAGMENTS.map((text, i) => (i < (st.frags || 0) ? text : null)),
+      // Ce qui s'est passé jusqu'ici, chapitre par chapitre
+      recap: () => CHAPTERS.map((c, i) => ({ n: i + 1, name: c.name, text: RESUMES[c.id](st.flags, st.ending) }))
+        .filter((c) => st.seen.includes(CHAPTERS[c.n - 1].id)),
       playing: () => playing,
       state: () => st,
     };

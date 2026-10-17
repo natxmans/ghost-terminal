@@ -65,6 +65,9 @@
     highlight: true, crt: true, hud: true, dock: true, boot: true,
     sound: false, voice: false, volume: 60, popups: true, story: true, customCode: "",
     questMin: window.innerWidth < 700, // objectifs repliés par défaut sur téléphone
+    // Mode calme (moins de flashs) activé d'office si l'appareil demande moins d'animations
+    calme: !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+    dialogue: "normal", // vitesse des dialogues : lent, normal ou rapide
   };
   const STORE = "ghostterminal-v1";
   let wiping = false; // « Tout réinitialiser » en cours : on n'enregistre plus rien
@@ -103,6 +106,7 @@
 
   if (!window.SNIPPETS[settings.lang]) settings.lang = DEFAULTS.lang;
   if (!THEMES.some((t) => t.id === settings.theme)) settings.theme = DEFAULTS.theme;
+  if (!["lent", "normal", "rapide"].includes(settings.dialogue)) settings.dialogue = "normal";
 
   let themeColors = {};
   function readColors() {
@@ -328,7 +332,29 @@
     if (!a.secret && allDone()) scheduleFinale(3500);
   }
 
+  // Statistiques du joueur, en haut du panneau Succès
+  function dureeJeu(s) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? `${h} h ${pad(m)} min` : m ? `${m} min` : `${s} s`;
+  }
+  function renderStats() {
+    const chapitres = story.list();
+    const memoires = story.memories();
+    const tuiles = [
+      ["Temps de jeu", dureeJeu((progress.playTime || 0) + secondesJouees)],
+      ["Caractères tapés", fr(progress.lifetime)],
+      ["Record de vitesse", `${fr(progress.bestCpm || 0)} car/min`],
+      ["Effets lancés", fr(progress.effectsRun || 0)],
+      ["Missions réussies", fr(progress.missionsDone || 0)],
+      ["Chapitres vus", `${chapitres.filter((c) => c.seen).length} / ${chapitres.length}`],
+      ["Fragments de mémoire", `${memoires.filter(Boolean).length} / ${memoires.length}`],
+      ["Fins découvertes", `${["free", "erase", "truend"].filter((id) => progress.ach[id]).length} / 3`],
+    ];
+    $("ach-stats").innerHTML = tuiles.map(([k, v]) => `<div class="stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
+  }
+
   function renderAchievements() {
+    renderStats();
     const n = mainDone();
     $("ach-progress").style.width = (n / MAIN_ACH.length) * 100 + "%";
     $("ach-summary").textContent = `${n} / ${MAIN_ACH.length} succès débloqués · ${fr(progress.lifetime)} caractères tapés au total`;
@@ -516,7 +542,7 @@
   }
 
   // ===== Notifications & journal =====
-  function toast(msg, ic = "zap") {
+  function toast(msg, ic = "zap", duree = 2600) {
     const t = document.createElement("div");
     t.className = "toast";
     t.innerHTML = window.icon(ic) + "<span></span>";
@@ -526,7 +552,7 @@
     setTimeout(() => {
       t.classList.add("out");
       setTimeout(() => t.remove(), 300);
-    }, 2600);
+    }, duree);
   }
 
   function log(msg) {
@@ -716,7 +742,11 @@
     if (!fx) return null;
     log(fx.name);
     if (fx.digit !== undefined && remember("effects", id) >= 10) achieve("collector");
-    if (!opts.auto) story.event("effect:" + id); // seuls les effets lancés par le joueur comptent pour les objectifs
+    if (!opts.auto) {
+      story.event("effect:" + id); // seuls les effets lancés par le joueur comptent pour les objectifs
+      progress.effectsRun = (progress.effectsRun || 0) + 1;
+      progressDirty = true;
+    }
     const btn = dockEl.querySelector(`[data-id="${id}"]`);
     if (btn) {
       btn.classList.remove("fired");
@@ -826,6 +856,8 @@
     log("Mission accomplie");
     achieve("mission");
     story.event("mission");
+    progress.missionsDone = (progress.missionsDone || 0) + 1;
+    saveProgress();
     setTimeout(() => Voice.say(`Mission accomplie. ${M.end}`), 1200);
     await sleep(3800);
     if (mission === token) stopMission(false);
@@ -995,10 +1027,28 @@
     } else $("st-time").textContent = "00:00";
     updateHud();
     if (!auto && cpm >= 2000) achieve("speed");
+    if (!auto && cpm > (progress.bestCpm || 0)) {
+      progress.bestCpm = Math.round(cpm);
+      progressDirty = true;
+    }
     if (progressDirty) saveProgress();
   }, 500);
 
+  // Temps de jeu : compté quand la page est visible, enregistré toutes les 10 s
+  let secondesJouees = 0;
+  const noterTempsDeJeu = () => {
+    if (!secondesJouees) return;
+    progress.playTime = (progress.playTime || 0) + secondesJouees;
+    secondesJouees = 0;
+    progressDirty = true;
+  };
+  window.addEventListener("pagehide", () => {
+    noterTempsDeJeu();
+    saveProgress();
+  });
+
   setInterval(() => {
+    if (!document.hidden && ++secondesJouees >= 10) noterTempsDeJeu();
     $("top-clock").textContent = clockStr();
     sparkData.shift();
     sparkData.push(cpmOver(3000));
@@ -1053,6 +1103,7 @@
     body.classList.toggle("no-hl", !settings.highlight);
     body.classList.toggle("hud-on", settings.hud);
     body.classList.toggle("dock-off", !settings.dock);
+    body.classList.toggle("calme", settings.calme);
     document.documentElement.style.setProperty("--font-size", settings.size + "px");
     themeColors = readColors();
     const SHORT = { asm: "ASM", custom: "PERSO", javascript: "JS" };
@@ -1067,7 +1118,8 @@
     $("opt-size-val").textContent = settings.size;
     $("opt-volume").value = settings.volume;
     $("opt-volume-val").textContent = settings.volume;
-    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story"]) $("opt-" + k).checked = settings[k];
+    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story", "calme"]) $("opt-" + k).checked = settings[k];
+    $("opt-dialogue").value = settings.dialogue;
     document.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.theme === settings.theme));
     $("btn-hud").classList.toggle("active", settings.hud);
     $("btn-dock").classList.toggle("active", settings.dock);
@@ -1226,6 +1278,12 @@
     }
     log("Session ouverte");
     renderQuest(true);
+    // Précédemment dans PROTOCOLE ÉCHO : un rappel quand on revient en pleine histoire
+    const recap = settings.story ? story.recap() : [];
+    const Q = story.quest();
+    if (recap.length && Q && !Q.after) {
+      setTimeout(() => toast(`Précédemment : ${recap[recap.length - 1].text}`, "eye", 9000), 1800);
+    }
   }
 
   $("boot").addEventListener("pointerdown", finishBoot);
@@ -1458,6 +1516,110 @@
     }
     closeModal(settingsEl);
   });
+  // ===== Sauvegarde : exporter dans un fichier, importer depuis un fichier =====
+  $("btn-export").addEventListener("click", () => {
+    noterTempsDeJeu();
+    saveProgress();
+    const data = { jeu: "Ghost Terminal", format: 1, date: new Date().toISOString(), settings, progress };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+    a.download = `ghost-terminal-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast("Sauvegarde exportée : garde bien ce fichier !", "download");
+    log("Sauvegarde exportée");
+  });
+
+  // Une sauvegarde importée vient d'un fichier : on ne garde que des valeurs du bon type
+  const nombre = (v) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : 0);
+  const filtrerObjet = (o, ok) => Object.fromEntries(Object.entries(o && typeof o === "object" ? o : {}).filter(([, v]) => ok(v)));
+  function lireHistoire(h) {
+    return {
+      // anciennes sauvegardes à 3 chapitres : un simple compteur « done » (converti par story.js)
+      ...(Array.isArray(h.seen) ? { seen: h.seen.filter((x) => typeof x === "string") } : { done: nombre(h.done) }),
+      since: nombre(h.since),
+      whisper: nombre(h.whisper),
+      ending: ["free", "erase", "true"].includes(h.ending) ? h.ending : null,
+      flags: filtrerObjet(h.flags, (v) => typeof v === "string" || typeof v === "boolean"),
+      obj: filtrerObjet(h.obj, (v) => typeof v === "number" && Number.isFinite(v)),
+      v: nombre(h.v),
+      frags: Math.min(12, Math.floor(nombre(h.frags))),
+      fragAt: typeof h.fragAt === "number" && Number.isFinite(h.fragAt) ? h.fragAt : null,
+      finale: h.finale === true,
+    };
+  }
+  function lireSauvegarde(data) {
+    if (!data || data.jeu !== "Ghost Terminal" || !data.progress || typeof data.progress !== "object") throw new Error("format");
+    const src = data.settings && typeof data.settings === "object" ? data.settings : {};
+    const s = {};
+    for (const [k, def] of Object.entries(DEFAULTS)) {
+      const ok = typeof src[k] === typeof def && (typeof def !== "number" || Number.isFinite(src[k]));
+      s[k] = ok ? src[k] : def;
+    }
+    s.speed = clamp(Math.round(s.speed), 1, 12);
+    s.size = clamp(Math.round(s.size), 11, 28);
+    s.volume = clamp(Math.round(s.volume), 0, 100);
+    s.customCode = s.customCode.slice(0, 30000); // les gros mots seront filtrés au chargement
+
+    const p = data.progress;
+    const out = {
+      ach: filtrerObjet(p.ach, (v) => typeof v === "number"),
+      lifetime: nombre(p.lifetime),
+      effects: [], langs: [], themes: [],
+    };
+    for (const id of Object.keys(out.ach)) if (!ACHIEVEMENTS.some((a) => a.id === id)) delete out.ach[id];
+    for (const k of ["effects", "langs", "themes", "lair"]) {
+      if (Array.isArray(p[k])) out[k] = p[k].filter((x) => typeof x === "string").slice(0, 50);
+    }
+    for (const k of ["survieBest", "playTime", "bestCpm", "effectsRun", "missionsDone"]) if (k in p) out[k] = nombre(p[k]);
+    for (const k of ["gold", "ice", "secretSeen"]) if (p[k] === true) out[k] = true;
+    if (p.story && typeof p.story === "object") out.story = lireHistoire(p.story);
+    return { settings: s, progress: out, date: data.date };
+  }
+
+  let importEnAttente = null;
+  $("btn-import").addEventListener("click", () => $("file-import").click());
+  $("file-import").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      if (file.size > 2000000) throw new Error("trop gros");
+      importEnAttente = lireSauvegarde(JSON.parse(await file.text()));
+    } catch {
+      importEnAttente = null;
+      $("import-box").hidden = true;
+      toast("Ce fichier n'est pas une sauvegarde de Ghost Terminal", "x");
+      return;
+    }
+    const p = importEnAttente.progress;
+    const nAch = MAIN_ACH.filter((a) => p.ach[a.id]).length;
+    const nCh = p.story?.seen?.length || 0;
+    const jour = Date.parse(importEnAttente.date) ? ` du ${new Date(importEnAttente.date).toLocaleDateString("fr-FR")}` : "";
+    $("import-info").textContent = `Sauvegarde${jour} : ${nAch} succès sur ${MAIN_ACH.length}, ${fr(p.lifetime)} caractères tapés, ${nCh} chapitre${nCh > 1 ? "s" : ""} vu${nCh > 1 ? "s" : ""}. Elle va remplacer ta progression actuelle.`;
+    $("import-box").hidden = false;
+  });
+  $("btn-import-cancel").addEventListener("click", () => {
+    importEnAttente = null;
+    $("import-box").hidden = true;
+  });
+  $("btn-import-ok").addEventListener("click", () => {
+    if (!importEnAttente) return;
+    wiping = true; // plus rien ne doit être enregistré par-dessus avant le rechargement
+    try {
+      localStorage.setItem(STORE, JSON.stringify(importEnAttente.settings));
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(importEnAttente.progress));
+      localStorage.setItem("ghostterminal-seen", "1");
+    } catch {
+      wiping = false;
+      toast("Impossible d'importer : le stockage du navigateur est bloqué", "x");
+      return;
+    }
+    location.reload();
+  });
+
   // Tout réinitialiser (après confirmation)
   $("btn-wipe").addEventListener("click", () => {
     $("wipe-ach").textContent = Object.keys(progress.ach).length;
@@ -1493,13 +1655,17 @@
   $("opt-speed").addEventListener("input", (e) => { settings.speed = +e.target.value; applySettings(); });
   $("opt-size").addEventListener("input", (e) => { settings.size = +e.target.value; applySettings(); });
   $("opt-volume").addEventListener("input", (e) => { settings.volume = +e.target.value; applySettings(); });
-  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story"]) {
+  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story", "calme"]) {
     $("opt-" + k).addEventListener("change", (e) => {
       settings[k] = e.target.checked;
       applySettings();
       if (k === "story") renderQuest(true);
     });
   }
+  $("opt-dialogue").addEventListener("change", (e) => {
+    settings.dialogue = e.target.value;
+    applySettings();
+  });
   $("opt-voice").addEventListener("change", (e) => {
     settings.voice = e.target.checked;
     applySettings();
@@ -1547,6 +1713,7 @@
     sound: Sound,
     speak: (text) => Voice.say(text),
     colors: () => themeColors,
+    calme: () => settings.calme,
   });
 
   async function startSecretGame() {
@@ -1649,6 +1816,7 @@
   // ===== Objectifs du chapitre en cours (panneau en haut à gauche) =====
   const questEl = $("quest");
   let questDrawn = 0;
+  let questVu = null; // objectifs déjà remplis au dernier affichage
 
   function goalLabel(key) {
     if (key === "chars") return "Taper du code";
@@ -1678,6 +1846,16 @@
       $("quest-act").textContent = `ACTE ${Q.act.roman} · ${Q.act.name}`;
       $("quest-title").textContent = `Chapitre ${Q.n} : objectifs`;
       goals = Q.goals;
+      // Annonce les objectifs qui viennent d'être remplis
+      const faits = new Set(goals.filter((g) => g.have >= g.need).map((g) => g.key));
+      if (questVu && questVu.n === Q.n && !story.playing()) {
+        for (const g of goals) {
+          if (!faits.has(g.key) || questVu.faits.has(g.key)) continue;
+          toast(`Objectif rempli : ${goalLabel(g.key)}`, "target");
+          [988, 1319].forEach((f, i) => Sound.tone(f, 0.1, { type: "triangle", vol: 0.04, when: i * 0.08 }));
+        }
+      }
+      questVu = { n: Q.n, faits };
     }
     const list = $("quest-list");
     list.innerHTML = goals.map((g) => `
@@ -1715,6 +1893,7 @@
     const best = progress.survieBest ? ` · record : ${Math.floor(progress.survieBest / 60)} min ${progress.survieBest % 60} s` : "";
     const memories = story.memories();
     const got = memories.filter(Boolean).length;
+    const recap = story.recap();
     $("story-panel").innerHTML = `
       <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire · 3 actes · 3 fins</small></h3>
       <p class="muted small">${esc(status)}</p>
@@ -1723,6 +1902,10 @@
         <div class="story-btns">
           ${chapters.filter((c) => c.act === ai).map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
         </div>`).join("")}
+      ${recap.length ? `<details class="memories recap">
+        <summary>${window.icon("eye")} Ce qui s'est passé · ${recap.length} chapitre${recap.length > 1 ? "s" : ""}</summary>
+        <ol>${recap.map((r) => `<li value="${r.n}"><b>${esc(r.name)}</b> : ${esc(r.text)}</li>`).join("")}</ol>
+      </details>` : ""}
       <details class="memories">
         <summary>${window.icon("database")} Mémoires d'ÉCHO · ${got}/${memories.length}</summary>
         <ol>${memories.map((m) => `<li class="${m ? "" : "locked"}">${m ? esc(m) : "Fragment pas encore retrouvé…"}</li>`).join("")}</ol>
