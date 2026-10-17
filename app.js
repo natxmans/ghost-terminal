@@ -1889,7 +1889,7 @@
         ? "Continue de taper… quelque chose se réveille dans le terminal."
         : `${seen} chapitre${seen > 1 ? "s" : ""} sur ${chapters.length} · les objectifs du chapitre ${Q.n} sont affichés en haut à gauche.`;
     const finaleOpen = s.finale || allDone();
-    const secretOpen = !!s.finale;
+    const jeuSurvieOuvert = !!s.finale;
     const best = progress.survieBest ? ` · record : ${Math.floor(progress.survieBest / 60)} min ${progress.survieBest % 60} s` : "";
     const memories = story.memories();
     const got = memories.filter(Boolean).length;
@@ -1913,7 +1913,7 @@
       <div class="story-act">BONUS</div>
       <div class="story-btns">
         <button type="button" class="btn story-finale" ${finaleOpen ? "" : "disabled"}>${finaleOpen ? "▶ Épilogue secret" : "🔒 Épilogue (100 % des succès)"}</button>
-        <button type="button" class="btn story-secret" ${secretOpen ? "" : "disabled"}>${secretOpen ? `▶ Jeu secret : survie${esc(best)}` : "🔒 Jeu secret (après l'épilogue)"}</button>
+        <button type="button" class="btn story-secret" ${jeuSurvieOuvert ? "" : "disabled"}>${jeuSurvieOuvert ? `▶ Jeu secret : survie${esc(best)}` : "🔒 Jeu secret (après l'épilogue)"}</button>
         ${progress.lair ? `<button type="button" class="btn story-lair">▶ Repaire du Pingouin</button>` : ""}
         <button type="button" class="btn story-reset" ${seen ? "" : "disabled"}>Recommencer l'histoire</button>
       </div>`;
