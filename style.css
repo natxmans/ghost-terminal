@@ -1261,7 +1261,7 @@ body.immersive #btn-exit-immersive:hover, body.immersive #btn-exit-immersive:foc
 .game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
 .game-pause {
   position: absolute;
-  top: 64px; right: 14px;
+  top: calc(10px + var(--safe-t)); right: max(10px, var(--safe-r));
   width: 36px; height: 36px;
   font-weight: 700;
   color: #fff;
@@ -1289,7 +1289,37 @@ body.immersive #btn-exit-immersive:hover, body.immersive #btn-exit-immersive:foc
 .game-title { margin: 0 0 10px; font-family: var(--display); font-size: 28px; letter-spacing: 4px; color: var(--fg); text-shadow: 0 0 16px var(--glow); }
 .game-title.bad { color: var(--danger); text-shadow: 0 0 16px rgba(255, 51, 85, 0.6); }
 .game-panel p { margin: 6px 0; font-size: 13px; line-height: 1.5; }
+.game-panel { max-height: calc(100% - 24px); overflow-y: auto; }
 .game-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+/* Explications du début */
+.game-aide { margin: 12px 0 4px; padding: 0; list-style: none; text-align: left; font-size: 13px; line-height: 1.5; }
+.game-aide li { padding: 5px 8px; border-radius: 6px; }
+.game-aide li:nth-child(odd) { background: rgba(255,255,255,0.05); }
+/* Rang final : S, A, B ou C */
+.game-rang { margin: 6px auto 10px; width: 74px; height: 74px; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 46px; border: 3px solid currentColor; border-radius: 50%; animation: pop 0.4s ease-out; }
+.rang-S { color: #ffd34d; text-shadow: 0 0 20px #ffd34d; box-shadow: 0 0 30px rgba(255, 211, 77, 0.5); }
+.rang-A { color: #7dffb0; }
+.rang-B { color: #7fd8ff; }
+.rang-C { color: #c9a0ff; }
+/* Bouton d'esquive (écran tactile) */
+.game-dash {
+  position: absolute;
+  right: max(22px, var(--safe-r));
+  bottom: calc(26px + var(--safe-b));
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #fff;
+  background: rgba(0,0,0,0.45);
+  border: 2px solid rgba(255,255,255,0.3);
+  opacity: 0.55;
+  touch-action: none;
+  transition: opacity 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.game-dash.pret { opacity: 1; border-color: var(--fg); box-shadow: 0 0 20px var(--glow); }
 .ach.secret.got { border-color: #ffcc33; }
 .ach.secret.got b { color: #ffcc33; }
 

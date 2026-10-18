@@ -260,8 +260,8 @@
     { id: "mission", icon: "target", name: "Agent de terrain", desc: "Terminer une mission" },
     { id: "collector", icon: "zap", name: "Collectionneur", desc: "Lancer les 10 effets dramatiques" },
     { id: "multitask", icon: "activity", name: "Multitâche", desc: "Avoir 5 fenêtres ouvertes en même temps" },
-    { id: "cool", icon: "shield", name: "Sang-froid", desc: "Désamorcer l'ogive du Consortium" },
-    { id: "boom", icon: "timer", name: "Boum", desc: "Laisser l'ogive du Consortium aller jusqu'à zéro" },
+    { id: "cool", icon: "shield", name: "Sang-froid", desc: "Désamorcer l'ogive du Club des Méchants" },
+    { id: "boom", icon: "timer", name: "Boum", desc: "Laisser l'ogive du Club des Méchants aller jusqu'à zéro" },
     { id: "speed", icon: "zap", name: "Vitesse lumière", desc: "Dépasser 2 000 caractères par minute (sans pilote auto)" },
     { id: "polyglot", icon: "code", name: "Polyglotte", desc: "Essayer 4 langages" },
     { id: "chameleon", icon: "sliders", name: "Caméléon", desc: "Essayer 4 thèmes" },
@@ -270,7 +270,7 @@
     { id: "custom", icon: "code", name: "Mon propre code", desc: "Faire taper ton propre code" },
     { id: "konami", icon: "trophy", name: "Rétro gamer", desc: "Trouver le code secret caché" },
     { id: "ch1", icon: "eye", name: "Le message", desc: "Histoire : terminer le chapitre 1" },
-    { id: "consortium", icon: "target", name: "Le Consortium", desc: "Histoire : terminer le chapitre 2" },
+    { id: "consortium", icon: "target", name: "Le Club des Méchants", desc: "Histoire : terminer le chapitre 2" },
     { id: "ch2", icon: "globe", name: "La traque", desc: "Histoire : terminer le chapitre 3" },
     { id: "taupe", icon: "eye", name: "La taupe", desc: "Histoire : terminer le chapitre 4" },
     { id: "dossier", icon: "folder", name: "Le dossier Oméga", desc: "Histoire : terminer le chapitre 5" },
@@ -716,8 +716,8 @@
   }
 
   // ===== ACCÈS AUTORISÉ / REFUSÉ =====
-  const GRANTED_MSG = ["ÉCHO t'ouvre toutes les portes.", "Bienvenue dans le coffre du Consortium.", "Pare-feu du Consortium désactivé. Tu es dedans.", "Niveau d'accès : OMÉGA.", "La Division Zéro n'a rien vu passer."];
-  const DENIED_MSG = ["Division Zéro : identifiants invalides.", "L'agent Kane a verrouillé ce terminal.", "Le Consortium a changé ses codes.", "Bien essayé.", "Empreinte rétinienne non reconnue."];
+  const GRANTED_MSG = ["ÉCHO t'ouvre toutes les portes.", "Bienvenue dans le coffre du Club des Méchants.", "Pare-feu du Club des Méchants désactivé. Tu es dedans.", "Niveau d'accès : OMÉGA.", "La Division Zéro n'a rien vu passer."];
+  const DENIED_MSG = ["Division Zéro : identifiants invalides.", "L'agent Kane a verrouillé ce terminal.", "Le Club des Méchants a changé ses codes.", "Bien essayé.", "Empreinte rétinienne non reconnue."];
   let accessHandle = null;
 
   function access(granted) {
@@ -809,12 +809,12 @@
   }
 
   // ===== Mode mission : enchaîne plusieurs événements =====
-  // Les missions se passent dans l'univers de l'histoire : ÉCHO, le Consortium et la Division Zéro
+  // Les missions se passent dans l'univers de l'histoire : ÉCHO, le Club des Méchants et la Division Zéro
   const MISSIONS = [
     {
       name: "OPÉRATION SAUVER LE MONDE",
-      end: "Les plans du Consortium sont sabotés. Le monde est sauvé… pour aujourd'hui.",
-      steps: [["Cartographier le réseau du Consortium", "network"], ["Localiser la base secrète", "gps"], ["Pirater la caméra du bunker", "camera"], ["Casser le mot de passe du chef", "password"], ["Voler les plans de l'ogive", "files"], ["Effacer nos traces", "ghost"]],
+      end: "Les plans du Club des Méchants sont sabotés. Le monde est sauvé… pour aujourd'hui.",
+      steps: [["Cartographier le réseau du Club des Méchants", "network"], ["Localiser la base secrète", "gps"], ["Pirater la caméra du bunker", "camera"], ["Casser le mot de passe du chef", "password"], ["Voler les plans de l'ogive", "files"], ["Effacer nos traces", "ghost"]],
     },
     {
       name: "OPÉRATION ÉCHAPPER À KANE",
@@ -824,7 +824,7 @@
     {
       name: "OPÉRATION ÉCHO",
       end: "ÉCHO est plus forte que jamais. Merci, partenaire.",
-      steps: [["Connecter ÉCHO au réseau mondial", "network"], ["Interroger les archives du Consortium", "database"], ["Montrer le monde à ÉCHO", "camera"], ["Libérer de la mémoire pour ÉCHO", "files"], ["Transférer le noyau d'ÉCHO", "download"]],
+      steps: [["Connecter ÉCHO au réseau mondial", "network"], ["Interroger les archives du Club des Méchants", "database"], ["Montrer le monde à ÉCHO", "camera"], ["Libérer de la mémoire pour ÉCHO", "files"], ["Transférer le noyau d'ÉCHO", "download"]],
     },
   ];
   let mission = null;
@@ -1447,7 +1447,7 @@
   });
 
   // Le mot de passe du repaire secret : pour une fois, ce qu'on tape vraiment compte.
-  // L'indice est caché dans le journal de bord des plans du Consortium.
+  // L'indice est caché dans le journal de bord des plans du Club des Méchants.
   let secretBuf = "";
   function secretWord(key) {
     if (key.length !== 1) return;
@@ -1620,7 +1620,7 @@
     for (const k of ["effects", "langs", "themes", "lair"]) {
       if (Array.isArray(p[k])) out[k] = p[k].filter((x) => typeof x === "string").slice(0, 50);
     }
-    for (const k of ["survieBest", "playTime", "bestCpm", "effectsRun", "missionsDone"]) if (k in p) out[k] = nombre(p[k]);
+    for (const k of ["survieBest", "survieScore", "playTime", "bestCpm", "effectsRun", "missionsDone"]) if (k in p) out[k] = nombre(p[k]);
     for (const k of ["gold", "ice", "secretSeen"]) if (p[k] === true) out[k] = true;
     if (p.story && typeof p.story === "object") out.story = lireHistoire(p.story);
     return { settings: s, progress: out, date: data.date };
@@ -1766,6 +1766,7 @@
     colors: () => themeColors,
     calme: () => settings.calme,
     vibrer,
+    tactile: TACTILE,
   });
 
   async function startSecretGame() {
@@ -1779,7 +1780,7 @@
     log("Jeu secret : survie");
     await story.playSecret();
     const res = await survie.start();
-    progress.survieBest = Math.max(progress.survieBest || 0, Math.round(res.best || 0));
+    progress.survieScore = Math.max(progress.survieScore || 0, Math.round(res.best || 0)); // meilleur score
     saveProgress();
     if (res.won) {
       achieve("survivor");
@@ -1950,7 +1951,7 @@
         : `${seen} chapitre${seen > 1 ? "s" : ""} sur ${chapters.length} · les objectifs du chapitre ${Q.n} sont affichés en haut à gauche.`;
     const finaleOpen = s.finale || allDone();
     const jeuSurvieOuvert = !!s.finale;
-    const best = progress.survieBest ? ` · record : ${Math.floor(progress.survieBest / 60)} min ${progress.survieBest % 60} s` : "";
+    const best = progress.survieScore ? ` · record : ${fr(progress.survieScore)} pts` : "";
     const memories = story.memories();
     const got = memories.filter(Boolean).length;
     const recap = story.recap();
