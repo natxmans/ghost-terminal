@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#000000">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' file: data:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
@@ -43,6 +43,7 @@
     </div>
 
     <nav class="actions">
+      <button class="tbtn tactile-only" id="btn-clavier" data-icon="keyboard" title="Ouvrir / fermer le clavier du téléphone" aria-label="Clavier"></button>
       <button class="tbtn" id="btn-dock" data-icon="zap" title="Afficher / cacher les effets"><span class="label">Effets</span></button>
       <button class="tbtn" id="btn-mission" data-icon="target" title="Mode mission (F3)"><span class="label">Mission</span></button>
       <button class="tbtn" id="btn-auto" data-icon="play" title="Pilote automatique (F6)"><span class="label">Auto</span></button>
@@ -151,6 +152,19 @@
       <p class="muted">Tape n'importe quoi sur ton clavier : du vrai code de hacker s'écrit tout seul. Sur téléphone, touche simplement l'écran.</p>
 
       <div class="help-grid">
+        <section class="card tactile-only">
+          <h3>SUR TÉLÉPHONE ET TABLETTE</h3>
+          <dl class="keys">
+            <dt>👆 Toucher</dt><dd>Écrire du code</dd>
+            <dt>⌨ (en haut)</dt><dd>Ouvrir le vrai clavier</dd>
+            <dt>Barre du bas</dt><dd>Effets dramatiques</dd>
+            <dt>👆 3 doigts</dt><dd>Accès autorisé</dd>
+            <dt>👆 4 doigts</dt><dd>Accès refusé</dd>
+            <dt>Fragment</dt><dd>Touche-le pour l'attraper</dd>
+            <dt>Cinématique</dt><dd>Touche pour avancer</dd>
+          </dl>
+        </section>
+
         <section class="card">
           <h3>ACCÈS</h3>
           <dl class="keys">
@@ -192,6 +206,7 @@
             <li>Continue de taper longtemps… quelque chose finira par se réveiller dans le terminal. 👀 L'histoire compte 3 actes, 11 chapitres et 3 fins : suis les objectifs affichés en haut à gauche.</li>
             <li>Le panneau « Ton système » affiche ton vrai appareil en direct (rien n'est envoyé nulle part).</li>
             <li>38 succès sont à débloquer. Il paraît qu'un très vieux code de triche de jeu vidéo cache une surprise…</li>
+            <li class="tactile-only">… et sur un écran tactile, ce vieux code se dessine du bout du doigt, en glissant sur l'écran.</li>
             <li>Lis bien les plans que tu tapes : ils cachent parfois des secrets. Pour une fois, ce que tu tapes vraiment pourrait compter…</li>
             <li>Sensible aux flashs ? Active le mode calme dans les réglages (F9). Tu peux aussi ralentir les dialogues de l'histoire.</li>
             <li>Exporte ta sauvegarde (F9 › Sauvegarde) pour garder ta progression ou la retrouver sur un autre appareil.</li>
@@ -234,6 +249,7 @@
       <label class="row check"><input type="checkbox" id="opt-sound"><span>Sons</span></label>
       <label class="row check"><input type="checkbox" id="opt-voice"><span>Voix de l'ordinateur (synthèse vocale)</span></label>
       <label class="row"><span>Volume <b id="opt-volume-val">60</b>%</span><input type="range" id="opt-volume" min="0" max="100"></label>
+      <label class="row check tactile-only"><input type="checkbox" id="opt-vibrations"><span>Vibrations (téléphone)</span></label>
       <label class="row check"><input type="checkbox" id="opt-popups"><span>Événements surprises pendant la frappe</span></label>
       <label class="row check"><input type="checkbox" id="opt-story"><span>Mode histoire (cinématiques)</span></label>
       <label class="row"><span>Vitesse des dialogues</span>

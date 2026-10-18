@@ -35,7 +35,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 - **Résumé de l'histoire** : un rappel « Précédemment… » quand tu reviens en pleine histoire, et le récapitulatif de tes choix dans le panneau Succès.
 - **7 thèmes** de couleur (et 2 thèmes secrets à débloquer) et effet écran CRT.
 - **Application installable** qui marche **hors ligne** (PWA).
-- **Mobile** : touche l'écran pour taper, 3 doigts = accès autorisé, 4 doigts = accès refusé.
+- **Téléphone et tablette** : touche l'écran pour écrire du code (le bouton ⌨ ouvre le vrai clavier si tu veux), 3 doigts = accès autorisé, 4 doigts = accès refusé. Les consignes, les objectifs et les mini-jeux s'adaptent à l'écran tactile, la page s'ajuste aux encoches et au mode paysage, et le téléphone vibre aux moments forts (désactivable). Même le code de triche secret se dessine au doigt.
 
 ## ⌨️ Raccourcis
 

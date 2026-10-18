@@ -58,6 +58,19 @@ window.HT_STORY = (() => {
     { roman: "III", name: "NUIT OMÉGA" },
   ];
 
+  // Sur téléphone, les consignes de clavier deviennent des consignes tactiles :
+  // « (Maj + 3) » → « (bouton GPS en bas) », « (F3) » → le bouton des missions, « Tab » → toucher
+  function pourTactile(text) {
+    const fx = window.HT_EFFECTS || [];
+    return text
+      .replace(/\(Maj \+ (\d)\)/g, (m, d) => {
+        const e = fx.find((x) => x.digit === +d);
+        return e ? `(bouton ${e.short} en bas)` : m;
+      })
+      .replace(/\(F3\)/g, "(bouton cible en haut)")
+      .replace("appuie vite sur Tab pour l'attraper. Ou touche-le du doigt.", "touche-le vite du doigt pour l'attraper.");
+  }
+
   // Résumé de chaque chapitre, selon les choix du joueur (f = st.flags, e = la fin choisie)
   const RESUMES = {
     message: () => "ÉCHO, une IA née dans les plans du Consortium, s'est réveillée dans ton terminal.",
@@ -142,6 +155,8 @@ window.HT_STORY = (() => {
     let el, canvas, ctx, W = 0, H = 0, rafId = 0, lastDraw = 0;
     let scene = "black", sceneStart = 0, S = {};
     const q = (sel) => el.querySelector(sel);
+    // Consigne d'un mini-jeu : version clavier, ou version écran tactile
+    const consigne = (clavier, tactile) => (api.tactile ? tactile : clavier);
 
     // ===== Scènes dessinées sur le canvas =====
     let noiseCanvas, noiseCtx, noiseImg, cityData, traceData, coreParts, stars;
@@ -567,7 +582,10 @@ window.HT_STORY = (() => {
         ctx.fillStyle = spot;
         ctx.fillRect(0, 0, W, H);
 
-        const names = ["DR MÉCHANT", "COMTESSE OMBRE", "GÉNÉRAL PINGOUIN", "BARON NOIR", "LORD GRINCHEUX"];
+        // Sur un écran étroit, les noms complets se chevaucheraient
+        const names = W < 600
+          ? ["MÉCHANT", "OMBRE", "PINGOUIN", "BARON", "GRINCHEUX"]
+          : ["DR MÉCHANT", "COMTESSE OMBRE", "GÉNÉRAL PINGOUIN", "BARON NOIR", "LORD GRINCHEUX"];
         names.forEach((name, i) => {
           const a = Math.PI + 0.25 + (i / (names.length - 1)) * (Math.PI - 0.5);
           const x = cx + Math.cos(a) * rx * 1.05, y = cy + Math.sin(a) * ry * 1.6;
@@ -639,7 +657,7 @@ window.HT_STORY = (() => {
           danger: 3,
           photo: true,
         };
-        const w = Math.min(W * 0.62, 460), h = w * 0.6, x = W / 2 - w / 2, y = H * 0.42 - h / 2;
+        const w = Math.min(W < 600 ? W * 0.92 : W * 0.62, 460), h = w * 0.6, x = W / 2 - w / 2, y = H * 0.42 - h / 2;
         ctx.fillStyle = "#04120a";
         ctx.strokeStyle = c.fg;
         ctx.fillRect(x, y, w, h);
@@ -775,7 +793,14 @@ window.HT_STORY = (() => {
         ctx.shadowBlur = 0;
         ctx.font = `700 12px "JetBrains Mono", monospace`;
         ctx.fillStyle = col;
-        ctx.fillText(S.hacked ? "CORBEAU-1 · CONTRÔLÉ PAR ÉCHO" : "CORBEAU-1 · CONSORTIUM", sx + 90, sy - 14);
+        const nomSat = S.hacked ? "CORBEAU-1 · CONTRÔLÉ PAR ÉCHO" : "CORBEAU-1 · CONSORTIUM";
+        if (sx + 90 + ctx.measureText(nomSat).width < W - 8) ctx.fillText(nomSat, sx + 90, sy - 14);
+        else {
+          // Écran étroit : le nom passe sous le satellite
+          ctx.textAlign = "center";
+          ctx.fillText(nomSat, W / 2, sy + 62);
+          ctx.textAlign = "left";
+        }
       },
 
       // Le repaire secret du Général Pingouin : un igloo plein de gadgets
@@ -820,7 +845,13 @@ window.HT_STORY = (() => {
         ctx.fillStyle = rgba(ice, 0.75);
         ctx.font = `700 ${Math.max(14, W / 50)}px "Chakra Petch", sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText("❄ REPAIRE DU GÉNÉRAL PINGOUIN · ENTRÉE INTERDITE AUX NON-PINGOUINS ❄", W / 2, H * 0.24);
+        const panneau = "❄ REPAIRE DU GÉNÉRAL PINGOUIN · ENTRÉE INTERDITE AUX NON-PINGOUINS ❄";
+        if (ctx.measureText(panneau).width < W - 24) ctx.fillText(panneau, W / 2, H * 0.24);
+        else {
+          // Écran étroit : le panneau tient sur deux lignes
+          ctx.fillText("❄ REPAIRE DU GÉNÉRAL PINGOUIN ❄", W / 2, H * 0.22);
+          ctx.fillText("ENTRÉE INTERDITE AUX NON-PINGOUINS", W / 2, H * 0.22 + 22);
+        }
         ctx.textAlign = "left";
       },
 
@@ -1025,7 +1056,13 @@ window.HT_STORY = (() => {
       el.classList.add("glitching");
       setTimeout(() => el && el.classList.remove("glitching"), 450);
       for (let i = 0; i < 4; i++) setTimeout(() => api.sound.noise(0.06, { vol: 0.06 }), i * 90);
+      api.vibrer?.([15, 30, 15]);
     }
+    // Explosion : le son, et une grosse vibration sur téléphone
+    const boom = () => {
+      api.sound.boom();
+      api.vibrer?.([200, 80, 300]);
+    };
     function flash() {
       const f = document.createElement("div");
       f.className = "cine-flash";
@@ -1062,6 +1099,7 @@ window.HT_STORY = (() => {
 
     function say(who, text, opts = {}) {
       if (skipping) return Promise.resolve();
+      if (api.tactile) text = pourTactile(text);
       const sp = SPEAKERS[who];
       const sub = q(".cine-sub");
       const tx = q(".cine-text");
@@ -1147,7 +1185,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte";
         box.innerHTML = `
           <div class="qte-title">BROUILLE LE SIGNAL !</div>
-          <div class="qte-hint">Appuie sur <kbd>ESPACE</kbd> le plus vite possible (ou touche le bouton)</div>
+          <div class="qte-hint">${consigne("Appuie sur <kbd>ESPACE</kbd> le plus vite possible (ou touche le bouton)", "Touche le bouton le plus vite possible !")}</div>
           <div class="qte-meter"><span>BROUILLAGE</span><div class="qte-bar"><i class="qte-jam"></i></div><b class="qte-jam-v">0 %</b></div>
           <div class="qte-meter danger"><span>TRAÇAGE</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">0 %</b></div>
           <button type="button" class="qte-btn">BROUILLER</button>`;
@@ -1213,7 +1251,7 @@ window.HT_STORY = (() => {
         const seq = Array.from({ length }, () => Math.floor(Math.random() * 4));
         box.innerHTML = `
           <div class="qte-title">MÉMORISE LA SÉQUENCE</div>
-          <div class="qte-hint">Puis reproduis-la avec les flèches du clavier (ou touche les boutons)</div>
+          <div class="qte-hint">${consigne("Puis reproduis-la avec les flèches du clavier (ou touche les boutons)", "Puis reproduis-la en touchant les flèches")}</div>
           <div class="simon-pad">${ARROWS.map(([, s], i) => `<button type="button" class="simon-btn s${i}" data-i="${i}">${s}</button>`).join("")}</div>
           <div class="simon-progress">${seq.map(() => "<i></i>").join("")}</div>`;
         box.hidden = false;
@@ -1269,6 +1307,7 @@ window.HT_STORY = (() => {
             dots[idx].className = "bad";
             accepting = false;
             attempts++;
+            api.vibrer?.(80);
             api.sound.tone(150, 0.3, { type: "sawtooth", vol: 0.05 });
             if (attempts >= 2) finish(false);
             else {
@@ -1297,7 +1336,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte cine-game";
         box.innerHTML = `
           <div class="qte-title">${esc(T.title)}</div>
-          <div class="qte-hint">${esc(T.hint)}</div>
+          <div class="qte-hint">${esc(T.hint)}${api.tactile ? " Touche TAPER pour écrire chaque lettre." : ""}</div>
           <div class="code-slots">${[...code].map((ch) => (ch === " " ? `<span class="sp">␣</span>` : `<span>${esc(ch)}</span>`)).join("")}</div>
           <div class="qte-meter danger"><span>${esc(T.meter)}</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
           <button type="button" class="qte-btn touch-only">TAPER</button>`;
@@ -1436,6 +1475,7 @@ window.HT_STORY = (() => {
       box.querySelector(".qte-title").textContent = ok ? okText : failText;
       if (ok) api.sound.tone(1320, 0.2);
       else api.sound.tone(140, 0.5, { type: "sawtooth", vol: 0.06 });
+      api.vibrer?.(ok ? [20, 40, 20] : 150);
       setTimeout(() => {
         box.hidden = true;
         box.className = "cine-qte";
@@ -1452,7 +1492,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte cine-game";
         box.innerHTML = `
           <div class="qte-title">DÉCHIFFRE LE DOSSIER</div>
-          <div class="qte-hint">Appuie sur <kbd>ESPACE</kbd> quand la lettre s'allume en blanc pour la verrouiller</div>
+          <div class="qte-hint">${consigne("Appuie sur <kbd>ESPACE</kbd> quand la lettre s'allume en blanc pour la verrouiller", "Touche VERROUILLER quand la lettre s'allume en blanc")}</div>
           <div class="code-slots decrypt">${[...word].map(() => "<span>?</span>").join("")}</div>
           <div class="qte-meter danger"><span>TEMPS</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
           <button type="button" class="qte-btn">VERROUILLER</button>`;
@@ -1487,6 +1527,7 @@ window.HT_STORY = (() => {
             nextHot = performance.now() + rand(600, 1400);
           } else {
             penalty += 2; // une erreur coûte 2 secondes
+            api.vibrer?.(60);
             s.classList.add("err");
             setTimeout(() => s.classList.remove("err"), 220);
             api.sound.tone(160, 0.1, { type: "sawtooth", vol: 0.04 });
@@ -1534,7 +1575,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte cine-game";
         box.innerHTML = `
           <div class="qte-title">CALE LA FRÉQUENCE</div>
-          <div class="qte-hint">Appuie sur <kbd>ESPACE</kbd> quand le curseur passe dans la zone verte</div>
+          <div class="qte-hint">${consigne("Appuie sur <kbd>ESPACE</kbd> quand le curseur passe dans la zone verte", "Touche CALER quand le curseur passe dans la zone verte")}</div>
           <div class="freq-track"><i class="freq-zone"></i><i class="freq-cursor"></i></div>
           <div class="simon-progress">${Array.from({ length: hits }, () => "<i></i>").join("")}</div>
           <div class="qte-hint freq-lives">Erreurs permises : 3</div>
@@ -1577,6 +1618,7 @@ window.HT_STORY = (() => {
             place();
           } else {
             lives--;
+            api.vibrer?.(60);
             track.classList.add("bad");
             box.querySelector(".freq-lives").textContent = `Erreurs permises : ${lives}`;
             api.sound.tone(150, 0.2, { type: "sawtooth", vol: 0.05 });
@@ -1633,13 +1675,14 @@ window.HT_STORY = (() => {
         }
         box.innerHTML = `
           <div class="qte-title">GUIDE KANE VERS LA SORTIE</div>
-          <div class="qte-hint">Flèches du clavier ou ZQSD (ou les boutons)</div>
+          <div class="qte-hint">${consigne("Flèches du clavier ou ZQSD (ou les boutons)", "Utilise les flèches sous le labyrinthe")}</div>
           <canvas class="maze-canvas"></canvas>
           <div class="qte-meter danger"><span>SBIRES</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
           <div class="maze-pad">${["↑", "→", "↓", "←"].map((s, i) => `<button type="button" class="simon-btn s${i}" data-d="${i}">${s}</button>`).join("")}</div>`;
         box.hidden = false;
         const cv = box.querySelector(".maze-canvas");
-        const cell = Math.max(16, Math.floor(Math.min(34, (Math.min(window.innerWidth, 640) - 70) / C)));
+        // Taille des cases : selon la largeur, et la hauteur (téléphone tenu à l'horizontale)
+        const cell = Math.max(14, Math.floor(Math.min(34, (Math.min(window.innerWidth, 640) - 70) / C, (window.innerHeight * 0.42) / R)));
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const mw = C * cell + 6, mh = R * cell + 6;
         cv.width = mw * dpr;
@@ -2057,7 +2100,7 @@ window.HT_STORY = (() => {
         st.flags.bunker = "fireworks";
         S.timer = 0;
         flash();
-        api.sound.boom();
+        boom();
         await wait(900);
         setScene("fireworks", {}, "… UN FEU D'ARTIFICE ?");
         await say("ECHO", "… Tout va bien ! J'avais remplacé l'ogive par un feu d'artifice, au cas où. 🎆");
@@ -2155,7 +2198,7 @@ window.HT_STORY = (() => {
       if (c === 0) {
         st.flags.satellite = "detruit";
         S.destroyedAt = performance.now();
-        api.sound.boom();
+        boom();
         flash();
         await wait(1400);
         await say("ECHO", "Corbeau-1 n'est plus qu'un nuage de confettis spatiaux. Bon choix.");
@@ -2542,7 +2585,7 @@ window.HT_STORY = (() => {
       }
       skipping = false;
       red(false);
-      api.sound.boom();
+      boom();
       setScene("blast", {}, "DÉTONATION");
       await wait(3200);
       setScene("black");
@@ -2603,6 +2646,7 @@ window.HT_STORY = (() => {
         { id: "sortie", emoji: "🚪", label: "Sortir", x: 0.5, y: 0.7, exit: true },
       ];
       for (;;) {
+        skipping = false; // « Passer » pendant l'intro ne doit pas bloquer le bouton pendant la visite
         const id = await explore(SPOTS, visited);
         skipping = false;
         if (id === "sortie") break;

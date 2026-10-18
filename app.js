@@ -17,6 +17,11 @@
   const EFFECTS = window.HT_EFFECTS;
   const effectById = Object.fromEntries(EFFECTS.map((e) => [e.id, e]));
 
+  // Téléphone ou tablette : écran tactile comme moyen principal (les textes et boutons s'adaptent)
+  const TACTILE = !!window.matchMedia?.("(pointer: coarse)").matches;
+  body.classList.toggle("tactile", TACTILE);
+  if (TACTILE) document.querySelector(".boot-press").firstChild.textContent = "Touche l'écran pour commencer";
+
   // ===== Outils =====
   const rand = (a, b) => a + Math.random() * (b - a);
   const randInt = (a, b) => Math.floor(rand(a, b + 1));
@@ -61,13 +66,16 @@
     { id: "ice", name: "Banquise (secret)", secret: "ice" },
   ];
   const DEFAULTS = {
-    lang: "c", theme: "green", speed: 3, size: 15,
+    lang: "c", theme: "green", speed: 3,
+    size: window.innerWidth < 500 ? 13 : 15, // texte un peu plus petit sur téléphone
     highlight: true, crt: true, hud: true, dock: true, boot: true,
     sound: false, voice: false, volume: 60, popups: true, story: true, customCode: "",
     questMin: window.innerWidth < 700, // objectifs repliés par défaut sur téléphone
     // Mode calme (moins de flashs) activé d'office si l'appareil demande moins d'animations
     calme: !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
     dialogue: "normal", // vitesse des dialogues : lent, normal ou rapide
+    vibrations: true, // téléphone : petites vibrations (accès refusé, explosion…)
+    clavierMobile: false, // téléphone : toucher l'écran ouvre aussi le vrai clavier
   };
   const STORE = "ghostterminal-v1";
   let wiping = false; // « Tout réinitialiser » en cours : on n'enregistre plus rien
@@ -91,6 +99,11 @@
   }
 
   const settings = loadSettings();
+
+  // Petites vibrations sur téléphone (Android ; les iPhone les ignorent)
+  const vibrer = (motif) => {
+    if (TACTILE && settings.vibrations && !document.hidden) navigator.vibrate?.(motif);
+  };
 
   // "Mon code" : le joueur peut faire taper son propre code
   const CUSTOM_PLACEHOLDER = "// Colle ton propre code dans les réglages (F9 → Mon code),\n// puis choisis le langage « Mon code ».\n\n";
@@ -317,6 +330,7 @@
     progress.ach[id] = Date.now();
     saveProgress();
     updateAchCount();
+    vibrer([20, 40, 20]);
     const t = document.createElement("div");
     t.className = "toast toast-ach";
     t.innerHTML = `${window.icon("trophy")}<div><small>SUCCÈS DÉBLOQUÉ</small><b></b></div>`;
@@ -680,6 +694,7 @@
   }
 
   function shake(ms = 500) {
+    vibrer(Math.min(400, ms / 2));
     body.style.setProperty("--shake-time", ms + "ms");
     body.classList.remove("shake");
     void body.offsetWidth;
@@ -718,8 +733,10 @@
           <div class="access-sub">${esc(pick(granted ? GRANTED_MSG : DENIED_MSG))}</div>
         </div>
       </div>`, { cls: "fx-access", duration: 3400 });
-    if (granted) Sound.granted();
-    else {
+    if (granted) {
+      Sound.granted();
+      vibrer([30, 60, 30]);
+    } else {
       Sound.denied();
       shake(500);
     }
@@ -1118,11 +1135,12 @@
     $("opt-size-val").textContent = settings.size;
     $("opt-volume").value = settings.volume;
     $("opt-volume-val").textContent = settings.volume;
-    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story", "calme"]) $("opt-" + k).checked = settings[k];
+    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story", "calme", "vibrations"]) $("opt-" + k).checked = settings[k];
     $("opt-dialogue").value = settings.dialogue;
     document.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.theme === settings.theme));
     $("btn-hud").classList.toggle("active", settings.hud);
     $("btn-dock").classList.toggle("active", settings.dock);
+    $("btn-clavier").classList.toggle("active", settings.clavierMobile);
     saveSettings();
     if (hudVisible()) drawSpark();
   }
@@ -1274,7 +1292,7 @@
       storeFlag("ghostterminal-seen", "1");
       setTimeout(() => openModal(helpEl), 350);
     } else {
-      toast("Maj+1…0 : effets · F1 : aide", "zap");
+      toast(TACTILE ? "Touche l'écran pour écrire · effets dans la barre du bas" : "Maj+1…0 : effets · F1 : aide", "zap");
     }
     log("Session ouverte");
     renderQuest(true);
@@ -1454,22 +1472,51 @@
   mobileInput.value = SENTINEL;
   let maxTouches = 0;
 
+  // Code Konami au doigt : glisser ↑ ↑ ↓ ↓ ← → ← →, puis deux petits touchers (B et A)
+  let geste = null;
+  function finGeste(e) {
+    const t = e.changedTouches[0];
+    if (!geste || !t) return;
+    const dx = t.clientX - geste.x, dy = t.clientY - geste.y;
+    const court = Date.now() - geste.t < 400;
+    geste = null;
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && court) konami(kIdx === 8 ? "b" : kIdx === 9 ? "a" : "toucher");
+    else if (Math.max(Math.abs(dx), Math.abs(dy)) > 40) {
+      konami(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "ArrowRight" : "ArrowLeft") : dy > 0 ? "ArrowDown" : "ArrowUp");
+    }
+  }
+
   document.addEventListener("touchstart", (e) => {
     if (booting || modalOpen() || story.playing() || survie.playing()) return;
     maxTouches = Math.max(maxTouches, e.touches.length);
+    if (e.touches.length === 1 && e.target.closest("#terminal")) {
+      geste = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }
     if (e.touches.length > 1) {
       e.preventDefault();
       return;
     }
     if (e.target.closest("#terminal")) {
-      mobileInput.focus({ preventScroll: true });
+      // Par défaut, toucher l'écran suffit : le vrai clavier ne s'ouvre qu'avec le bouton ⌨
+      if (settings.clavierMobile) mobileInput.focus({ preventScroll: true });
       typeChars(settings.speed);
     }
   }, { passive: false });
 
+  // Bouton ⌨ (téléphone, tablette) : ouvre ou ferme le vrai clavier
+  $("btn-clavier").addEventListener("click", () => {
+    settings.clavierMobile = !settings.clavierMobile;
+    applySettings();
+    if (settings.clavierMobile) mobileInput.focus({ preventScroll: true });
+    else mobileInput.blur();
+    toast(settings.clavierMobile ? "Clavier ouvert : chaque touche écrit du code" : "Clavier fermé : touche l'écran pour écrire", "keyboard");
+  });
+
   document.addEventListener("touchend", (e) => {
     if (e.touches.length) return;
-    if (story.playing() || survie.playing()) { maxTouches = 0; return; }
+    if (story.playing() || survie.playing()) { maxTouches = 0; geste = null; return; }
+    if (maxTouches === 1) finGeste(e);
+    else geste = null;
     if (maxTouches === 3) access(true);
     else if (maxTouches >= 4) access(false);
     maxTouches = 0;
@@ -1641,6 +1688,8 @@
     if (document.fullscreenElement) document.exitFullscreen?.();
     else document.documentElement.requestFullscreen?.().catch(() => {});
   });
+  // Pas de plein écran sur iPhone : on ne montre pas un bouton qui ne fait rien
+  $("btn-fullscreen").hidden = !document.fullscreenEnabled;
   $("btn-clear").addEventListener("click", () => { clearScreen(); closeModal(settingsEl); });
   $("btn-reset").addEventListener("click", () => {
     Object.assign(settings, DEFAULTS);
@@ -1655,7 +1704,7 @@
   $("opt-speed").addEventListener("input", (e) => { settings.speed = +e.target.value; applySettings(); });
   $("opt-size").addEventListener("input", (e) => { settings.size = +e.target.value; applySettings(); });
   $("opt-volume").addEventListener("input", (e) => { settings.volume = +e.target.value; applySettings(); });
-  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story", "calme"]) {
+  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story", "calme", "vibrations"]) {
     $("opt-" + k).addEventListener("change", (e) => {
       settings[k] = e.target.checked;
       applySettings();
@@ -1696,6 +1745,8 @@
     offerFragment, onFragment,
     onQuest: () => renderQuest(true),
     unlockTheme,
+    vibrer,
+    tactile: TACTILE,
     onFinale: () => {
       unlockGold();
       // La première fois : le jeu secret démarre juste après l'épilogue
@@ -1714,6 +1765,7 @@
     speak: (text) => Voice.say(text),
     colors: () => themeColors,
     calme: () => settings.calme,
+    vibrer,
   });
 
   async function startSecretGame() {
@@ -1771,8 +1823,10 @@
     return new Promise((resolve) => {
       clearTimeout(fragHide);
       fragEl.className = "frag offer";
-      fragEl.innerHTML = `${window.icon("database")}<div><small>FRAGMENT DE MÉMOIRE ${n}/${total}</small><b>Vite ! <kbd>Tab</kbd> ou clic pour l'attraper</b></div><i class="frag-timer"></i>`;
+      const consigne = TACTILE ? "Vite ! Touche-le pour l'attraper" : "Vite ! <kbd>Tab</kbd> ou clic pour l'attraper";
+      fragEl.innerHTML = `${window.icon("database")}<div><small>FRAGMENT DE MÉMOIRE ${n}/${total}</small><b>${consigne}</b></div><i class="frag-timer"></i>`;
       fragEl.hidden = false;
+      vibrer(40);
       [880, 1175, 1568].forEach((f, i) => Sound.tone(f, 0.12, { type: "triangle", vol: 0.04, when: i * 0.08 }));
       const timer = setTimeout(() => done(false), 7000);
       function done(caught) {
@@ -1799,6 +1853,7 @@
     fragEl.hidden = false;
     fragHide = setTimeout(() => (fragEl.hidden = true), 8000);
     [523, 784, 1047].forEach((f, i) => Sound.tone(f, 0.18, { type: "triangle", vol: 0.05, when: i * 0.1 }));
+    vibrer([20, 40, 20]);
     Voice.say(text, { pitch: 1.35, rate: 1 });
     log(`Fragment de mémoire ${count}/${total}`);
     if (count >= total) achieve("fragments");
@@ -1818,13 +1873,15 @@
   let questDrawn = 0;
   let questVu = null; // objectifs déjà remplis au dernier affichage
 
+  // Sur un écran tactile, on nomme les boutons au lieu des touches du clavier
   function goalLabel(key) {
-    if (key === "chars") return "Taper du code";
-    if (key === "fragments") return "Attraper des fragments de mémoire (Tab)";
-    if (key === "mission") return "Terminer une mission (F3)";
-    if (key === "disarm") return "Désamorcer une ogive (Maj + 8)";
+    if (key === "chars") return TACTILE ? "Écrire du code (touche l'écran)" : "Taper du code";
+    if (key === "fragments") return `Attraper des fragments de mémoire (${TACTILE ? "touche-les" : "Tab"})`;
+    if (key === "mission") return `Terminer une mission (${TACTILE ? "bouton cible en haut" : "F3"})`;
+    if (key === "disarm") return `Désamorcer une ogive (${TACTILE ? "bouton Ogive en bas" : "Maj + 8"})`;
     const fx = effectById[key.replace("effect:", "")];
-    return fx ? `Lancer « ${fx.name} » (Maj + ${fx.digit})` : key;
+    if (!fx) return key;
+    return `Lancer « ${fx.name} » (${TACTILE ? `bouton ${fx.short} en bas` : `Maj + ${fx.digit}`})`;
   }
 
   function renderQuest(force = false) {
@@ -1835,6 +1892,7 @@
     // Caché avant le chapitre 1 : le réveil d'ÉCHO doit rester une surprise
     const show = !!Q && story.state().seen.length > 0;
     questEl.hidden = !show;
+    body.classList.toggle("quest-on", show);
     if (!show) return;
     questEl.classList.toggle("min", settings.questMin);
     let goals;
@@ -1869,6 +1927,8 @@
       const g = goals.filter((x) => x.need > 1)[i];
       u.style.width = (g.have / g.need) * 100 + "%";
     });
+    // Le terminal commence sous le panneau, pour qu'il ne cache pas le code
+    body.style.setProperty("--quest-h", questEl.offsetHeight + "px");
   }
 
   $("quest-toggle").addEventListener("click", () => {

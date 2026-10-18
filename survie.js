@@ -86,6 +86,7 @@ window.HT_SURVIE = (() => {
       G.hp -= amount;
       G.player.inv = 1;
       G.shake = 0.35;
+      api.vibrer?.(120);
       api.sound.tone(140, 0.2, { type: "sawtooth", vol: 0.07 });
       if (G.hp <= 0) gameOver(cause);
     }

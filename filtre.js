@@ -9,7 +9,7 @@ window.HT_FILTRE = (() => {
   // seulement des mots qu'on ne trouve dans aucun mot normal
   const PARTOUT = [
     "fuck", "shit", "bitch", "asshole", "cunt",
-    "putain", "merde", "encul", "salope", "salaud", "connard", "connasse", "batard",
+    "putain", "merde", "encul", "salope", "salaud", "connard", "connasse", "batard", "paff",
     "petasse", "enfoire", "pouffiasse", "couill", "branleur",
   ];
 
