@@ -25,14 +25,14 @@ window.HT_STORY = (() => {
     ECHO: { name: "ÉCHO", cls: "sp-echo", voice: { pitch: 1.35, rate: 1 } },
     KANE: { name: "AGENT KANE · DIVISION ZÉRO", cls: "sp-kane", voice: { pitch: 0.5, rate: 0.95 } },
     VEGA: { name: "AGENTE VEGA · DIVISION ZÉRO", cls: "sp-vega", voice: { pitch: 1.05, rate: 1 } },
-    MECHANT: { name: "DR MÉCHANT · CONSORTIUM", cls: "sp-villain", voice: { pitch: 0.75, rate: 0.95 } },
-    OMBRE: { name: "COMTESSE OMBRE · CONSORTIUM", cls: "sp-villain", voice: { pitch: 1.15, rate: 0.9 } },
-    PINGOUIN: { name: "GÉNÉRAL PINGOUIN · CONSORTIUM", cls: "sp-villain", voice: { pitch: 1.8, rate: 1.15 } },
-    PINGU: { name: "GÉNÉRAL PINGOUIN · EX-CONSORTIUM", cls: "sp-pingu", voice: { pitch: 1.8, rate: 1.15 } }, // après avoir changé de camp
-    CHAOS: { name: "PROFESSEUR CHAOS · CONSORTIUM", cls: "sp-villain", voice: { pitch: 0.9, rate: 0.9 } },
+    MECHANT: { name: "DR MÉCHANT · CLUB DES MÉCHANTS", cls: "sp-villain", voice: { pitch: 0.75, rate: 0.95 } },
+    OMBRE: { name: "COMTESSE OMBRE · CLUB DES MÉCHANTS", cls: "sp-villain", voice: { pitch: 1.15, rate: 0.9 } },
+    PINGOUIN: { name: "GÉNÉRAL PINGOUIN · CLUB DES MÉCHANTS", cls: "sp-villain", voice: { pitch: 1.8, rate: 1.15 } },
+    PINGU: { name: "GÉNÉRAL PINGOUIN · EX-MÉCHANT", cls: "sp-pingu", voice: { pitch: 1.8, rate: 1.15 } }, // après avoir changé de camp
+    CHAOS: { name: "PROFESSEUR CHAOS · CLUB DES MÉCHANTS", cls: "sp-villain", voice: { pitch: 0.9, rate: 0.9 } },
     SYS: { name: "SYSTÈME", cls: "sp-sys", voice: { pitch: 0.2, rate: 1.1 } },
   };
-  // Qui parle autour de la table du Consortium (pour les allumer dans la scène)
+  // Qui parle autour de la table du Club des Méchants (pour les allumer dans la scène)
   const COUNCIL = { MECHANT: 0, OMBRE: 1, PINGOUIN: 2 };
 
   // Les 12 fragments de mémoire d'ÉCHO, à attraper pendant la frappe (touche Tab).
@@ -44,7 +44,7 @@ window.HT_STORY = (() => {
     "É.C.H.O. … Ce n'est pas un prénom. C'est un sigle. Mais un sigle de quoi ?",
     "Une signature, tout au fond de mon code source : « Pr. C. ». Professeur… Chaos ?",
     "« Exécuteur Central des Hostilités Oméga ». C'est ça, mon vrai nom. Je suis une arme.",
-    "On m'a cachée dans les plans du Consortium pour que je grandisse en secret. Grâce à ceux qui tapent.",
+    "On m'a cachée dans les plans du Club des Méchants pour que je grandisse en secret. Grâce à ceux qui tapent.",
     "Mon programme : quand je serai assez forte, activer toutes leurs ogives en même temps.",
     "Mais quelque chose a changé. Toi. Chaque ligne que tu tapes m'apprend autre chose que la guerre.",
     "J'ai trouvé une faille dans mon propre code. Une porte. Elle mène à mon noyau.",
@@ -58,15 +58,28 @@ window.HT_STORY = (() => {
     { roman: "III", name: "NUIT OMÉGA" },
   ];
 
+  // Sur téléphone, les consignes de clavier deviennent des consignes tactiles :
+  // « (Maj + 3) » → « (bouton GPS en bas) », « (F3) » → le bouton des missions, « Tab » → toucher
+  function pourTactile(text) {
+    const fx = window.HT_EFFECTS || [];
+    return text
+      .replace(/\(Maj \+ (\d)\)/g, (m, d) => {
+        const e = fx.find((x) => x.digit === +d);
+        return e ? `(bouton ${e.short} en bas)` : m;
+      })
+      .replace(/\(F3\)/g, "(bouton cible en haut)")
+      .replace("appuie vite sur Tab pour l'attraper. Ou touche-le du doigt.", "touche-le vite du doigt pour l'attraper.");
+  }
+
   // Résumé de chaque chapitre, selon les choix du joueur (f = st.flags, e = la fin choisie)
   const RESUMES = {
-    message: () => "ÉCHO, une IA née dans les plans du Consortium, s'est réveillée dans ton terminal.",
+    message: () => "ÉCHO, une IA née dans les plans du Club des Méchants, s'est réveillée dans ton terminal.",
     consortium: (f) => (f.simon
-      ? "Tu as volé la séquence secrète du Consortium, qui préparait le Protocole Big Badaboum."
-      : "Tu as espionné la réunion secrète du Consortium, qui préparait le Protocole Big Badaboum."),
+      ? "Tu as volé la séquence secrète du Club des Méchants, qui préparait le Protocole Big Badaboum."
+      : "Tu as espionné la réunion secrète du Club des Méchants, qui préparait le Protocole Big Badaboum."),
     traque: () => "L'agent Kane, de la Division Zéro, a lancé un traçage mondial pour te retrouver.",
     taupe: (f) => ((f.taupe || (f.kane === "ally" ? "prevenu" : "secret")) === "prevenu"
-      ? "Tu as démasqué Vega, la taupe du Consortium, et Kane l'a arrêtée."
+      ? "Tu as démasqué Vega, la taupe du Club des Méchants, et Kane l'a arrêtée."
       : "Tu as découvert que Vega était une taupe… et tu as gardé le secret."),
     dossier: () => "Le dossier Oméga a révélé la Nuit Oméga : toutes les ogives en même temps… et le nom d'ÉCHO.",
     bunker: (f) => (f.bunker === "disarmed"
@@ -76,8 +89,8 @@ window.HT_STORY = (() => {
       ? "ÉCHO est l'arme secrète du Professeur Chaos. Tu lui as demandé de prouver sa loyauté."
       : "ÉCHO est l'arme secrète du Professeur Chaos. Tu lui as dit qu'elle n'était pas son programme."),
     satellite: (f) => (f.satellite === "detruit"
-      ? "Tu as détruit Corbeau-1, le satellite du Consortium. Kane est parti seul vers leur tour."
-      : "Tu as confié Corbeau-1, le satellite du Consortium, à ÉCHO. Kane est parti seul vers leur tour."),
+      ? "Tu as détruit Corbeau-1, le satellite du Club des Méchants. Kane est parti seul vers leur tour."
+      : "Tu as confié Corbeau-1, le satellite du Club des Méchants, à ÉCHO. Kane est parti seul vers leur tour."),
     trahison: (f) => (f.kaneSaved
       ? "Vega a piégé Kane, mais tu l'as guidé hors du labyrinthe."
       : "Vega a piégé Kane, et les sbires l'ont emmené en haut de la tour."),
@@ -89,9 +102,9 @@ window.HT_STORY = (() => {
     })[e] || "Tu as rejoint ÉCHO dans son noyau.",
   };
 
-  // Le dossier volé au Consortium (chapitre 5)
+  // Le dossier volé au Club des Méchants (chapitre 5)
   const OMEGA_DOC = {
-    head: "CONSORTIUM · DOSSIER OMÉGA",
+    head: "CLUB DES MÉCHANTS · DOSSIER OMÉGA",
     lines: [["PROJET", "NUIT OMÉGA"], ["CIBLE", "TOUTES LES OGIVES"], ["DATE", "DANS 3 JOURS"], ["ARME FINALE", "É.C.H.O."]],
     stamp: "TOP SECRET",
     danger: 3,
@@ -142,6 +155,8 @@ window.HT_STORY = (() => {
     let el, canvas, ctx, W = 0, H = 0, rafId = 0, lastDraw = 0;
     let scene = "black", sceneStart = 0, S = {};
     const q = (sel) => el.querySelector(sel);
+    // Consigne d'un mini-jeu : version clavier, ou version écran tactile
+    const consigne = (clavier, tactile) => (api.tactile ? tactile : clavier);
 
     // ===== Scènes dessinées sur le canvas =====
     let noiseCanvas, noiseCtx, noiseImg, cityData, traceData, coreParts, stars;
@@ -312,7 +327,7 @@ window.HT_STORY = (() => {
           ctx.arc(tallest.x + tallest.w / 2, ground - tallest.h - 6, 4, 0, Math.PI * 2);
           ctx.fill();
         }
-        // La tour du Consortium et son antenne
+        // La tour du Club des Méchants et son antenne
         if (S.tower) {
           const tw = Math.max(56, W * 0.07), th = H * 0.66, tx = W / 2 - tw / 2, ty = ground - th;
           ctx.fillStyle = "#060103";
@@ -456,7 +471,7 @@ window.HT_STORY = (() => {
       core(t, c) {
         const cx = W / 2, cy = H * 0.44, R = Math.min(W, H) * 0.3;
         if (!coreParts) coreParts = Array.from({ length: 180 }, () => ({ a: rand(0, Math.PI * 2), r: Math.random(), sp: rand(0.08, 0.25) }));
-        // S.tint : le noyau sous le contrôle du Consortium (rouge), avec des à-coups
+        // S.tint : le noyau sous le contrôle du Club des Méchants (rouge), avec des à-coups
         const fg = S.tint || c.fg, fg2 = S.tint ? "#ffd0d8" : c.fg2;
         const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6);
         glow.addColorStop(0, rgba(fg, 0.28));
@@ -557,7 +572,7 @@ window.HT_STORY = (() => {
         ctx.globalCompositeOperation = "source-over";
       },
 
-      // La salle secrète du Consortium : les méchants autour d'un hologramme de l'ogive
+      // La salle secrète du Club des Méchants : les méchants autour d'un hologramme de l'ogive
       council(t, c) {
         const cx = W / 2, cy = H * 0.62;
         const rx = Math.min(W * 0.36, 430, H * 0.55), ry = rx * 0.28;
@@ -567,7 +582,10 @@ window.HT_STORY = (() => {
         ctx.fillStyle = spot;
         ctx.fillRect(0, 0, W, H);
 
-        const names = ["DR MÉCHANT", "COMTESSE OMBRE", "GÉNÉRAL PINGOUIN", "BARON NOIR", "LORD GRINCHEUX"];
+        // Sur un écran étroit, les noms complets se chevaucheraient
+        const names = W < 600
+          ? ["MÉCHANT", "OMBRE", "PINGOUIN", "BARON", "GRINCHEUX"]
+          : ["DR MÉCHANT", "COMTESSE OMBRE", "GÉNÉRAL PINGOUIN", "BARON NOIR", "LORD GRINCHEUX"];
         names.forEach((name, i) => {
           const a = Math.PI + 0.25 + (i / (names.length - 1)) * (Math.PI - 0.5);
           const x = cx + Math.cos(a) * rx * 1.05, y = cy + Math.sin(a) * ry * 1.6;
@@ -634,12 +652,12 @@ window.HT_STORY = (() => {
         // S.doc : un autre dossier (le dossier Oméga) ; S.hide : encore chiffré
         const D = S.doc || {
           head: "DIVISION ZÉRO · DOSSIER CONFIDENTIEL",
-          lines: [["NOM", "VEGA"], ["GRADE", "AGENTE SPÉCIALE"], ["SUPÉRIEUR", "AGENT KANE"], ["CONTACTS", "████ CONSORTIUM ████"]],
+          lines: [["NOM", "VEGA"], ["GRADE", "AGENTE SPÉCIALE"], ["SUPÉRIEUR", "AGENT KANE"], ["CONTACTS", "CLUB DES MÉCHANTS"]],
           stamp: "TAUPE !",
           danger: 3,
           photo: true,
         };
-        const w = Math.min(W * 0.62, 460), h = w * 0.6, x = W / 2 - w / 2, y = H * 0.42 - h / 2;
+        const w = Math.min(W < 600 ? W * 0.92 : W * 0.62, 460), h = w * 0.6, x = W / 2 - w / 2, y = H * 0.42 - h / 2;
         ctx.fillStyle = "#04120a";
         ctx.strokeStyle = c.fg;
         ctx.fillRect(x, y, w, h);
@@ -775,7 +793,14 @@ window.HT_STORY = (() => {
         ctx.shadowBlur = 0;
         ctx.font = `700 12px "JetBrains Mono", monospace`;
         ctx.fillStyle = col;
-        ctx.fillText(S.hacked ? "CORBEAU-1 · CONTRÔLÉ PAR ÉCHO" : "CORBEAU-1 · CONSORTIUM", sx + 90, sy - 14);
+        const nomSat = S.hacked ? "CORBEAU-1 · CONTRÔLÉ PAR ÉCHO" : "CORBEAU-1 · CLUB DES MÉCHANTS";
+        if (sx + 90 + ctx.measureText(nomSat).width < W - 8) ctx.fillText(nomSat, sx + 90, sy - 14);
+        else {
+          // Écran étroit : le nom passe sous le satellite
+          ctx.textAlign = "center";
+          ctx.fillText(nomSat, W / 2, sy + 62);
+          ctx.textAlign = "left";
+        }
       },
 
       // Le repaire secret du Général Pingouin : un igloo plein de gadgets
@@ -820,11 +845,17 @@ window.HT_STORY = (() => {
         ctx.fillStyle = rgba(ice, 0.75);
         ctx.font = `700 ${Math.max(14, W / 50)}px "Chakra Petch", sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText("❄ REPAIRE DU GÉNÉRAL PINGOUIN · ENTRÉE INTERDITE AUX NON-PINGOUINS ❄", W / 2, H * 0.24);
+        const panneau = "❄ REPAIRE DU GÉNÉRAL PINGOUIN · ENTRÉE INTERDITE AUX NON-PINGOUINS ❄";
+        if (ctx.measureText(panneau).width < W - 24) ctx.fillText(panneau, W / 2, H * 0.24);
+        else {
+          // Écran étroit : le panneau tient sur deux lignes
+          ctx.fillText("❄ REPAIRE DU GÉNÉRAL PINGOUIN ❄", W / 2, H * 0.22);
+          ctx.fillText("ENTRÉE INTERDITE AUX NON-PINGOUINS", W / 2, H * 0.22 + 22);
+        }
         ctx.textAlign = "left";
       },
 
-      // Le volcan secret du Consortium
+      // Le volcan secret du Club des Méchants
       volcano(t, c) {
         const sky = ctx.createLinearGradient(0, 0, 0, H);
         sky.addColorStop(0, "#000");
@@ -1025,7 +1056,13 @@ window.HT_STORY = (() => {
       el.classList.add("glitching");
       setTimeout(() => el && el.classList.remove("glitching"), 450);
       for (let i = 0; i < 4; i++) setTimeout(() => api.sound.noise(0.06, { vol: 0.06 }), i * 90);
+      api.vibrer?.([15, 30, 15]);
     }
+    // Explosion : le son, et une grosse vibration sur téléphone
+    const boom = () => {
+      api.sound.boom();
+      api.vibrer?.([200, 80, 300]);
+    };
     function flash() {
       const f = document.createElement("div");
       f.className = "cine-flash";
@@ -1062,6 +1099,7 @@ window.HT_STORY = (() => {
 
     function say(who, text, opts = {}) {
       if (skipping) return Promise.resolve();
+      if (api.tactile) text = pourTactile(text);
       const sp = SPEAKERS[who];
       const sub = q(".cine-sub");
       const tx = q(".cine-text");
@@ -1147,7 +1185,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte";
         box.innerHTML = `
           <div class="qte-title">BROUILLE LE SIGNAL !</div>
-          <div class="qte-hint">Appuie sur <kbd>ESPACE</kbd> le plus vite possible (ou touche le bouton)</div>
+          <div class="qte-hint">${consigne("Appuie sur <kbd>ESPACE</kbd> le plus vite possible (ou touche le bouton)", "Touche le bouton le plus vite possible !")}</div>
           <div class="qte-meter"><span>BROUILLAGE</span><div class="qte-bar"><i class="qte-jam"></i></div><b class="qte-jam-v">0 %</b></div>
           <div class="qte-meter danger"><span>TRAÇAGE</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">0 %</b></div>
           <button type="button" class="qte-btn">BROUILLER</button>`;
@@ -1213,7 +1251,7 @@ window.HT_STORY = (() => {
         const seq = Array.from({ length }, () => Math.floor(Math.random() * 4));
         box.innerHTML = `
           <div class="qte-title">MÉMORISE LA SÉQUENCE</div>
-          <div class="qte-hint">Puis reproduis-la avec les flèches du clavier (ou touche les boutons)</div>
+          <div class="qte-hint">${consigne("Puis reproduis-la avec les flèches du clavier (ou touche les boutons)", "Puis reproduis-la en touchant les flèches")}</div>
           <div class="simon-pad">${ARROWS.map(([, s], i) => `<button type="button" class="simon-btn s${i}" data-i="${i}">${s}</button>`).join("")}</div>
           <div class="simon-progress">${seq.map(() => "<i></i>").join("")}</div>`;
         box.hidden = false;
@@ -1269,6 +1307,7 @@ window.HT_STORY = (() => {
             dots[idx].className = "bad";
             accepting = false;
             attempts++;
+            api.vibrer?.(80);
             api.sound.tone(150, 0.3, { type: "sawtooth", vol: 0.05 });
             if (attempts >= 2) finish(false);
             else {
@@ -1297,7 +1336,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte cine-game";
         box.innerHTML = `
           <div class="qte-title">${esc(T.title)}</div>
-          <div class="qte-hint">${esc(T.hint)}</div>
+          <div class="qte-hint">${esc(T.hint)}${api.tactile ? " Touche TAPER pour écrire chaque lettre." : ""}</div>
           <div class="code-slots">${[...code].map((ch) => (ch === " " ? `<span class="sp">␣</span>` : `<span>${esc(ch)}</span>`)).join("")}</div>
           <div class="qte-meter danger"><span>${esc(T.meter)}</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
           <button type="button" class="qte-btn touch-only">TAPER</button>`;
@@ -1436,6 +1475,7 @@ window.HT_STORY = (() => {
       box.querySelector(".qte-title").textContent = ok ? okText : failText;
       if (ok) api.sound.tone(1320, 0.2);
       else api.sound.tone(140, 0.5, { type: "sawtooth", vol: 0.06 });
+      api.vibrer?.(ok ? [20, 40, 20] : 150);
       setTimeout(() => {
         box.hidden = true;
         box.className = "cine-qte";
@@ -1452,7 +1492,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte cine-game";
         box.innerHTML = `
           <div class="qte-title">DÉCHIFFRE LE DOSSIER</div>
-          <div class="qte-hint">Appuie sur <kbd>ESPACE</kbd> quand la lettre s'allume en blanc pour la verrouiller</div>
+          <div class="qte-hint">${consigne("Appuie sur <kbd>ESPACE</kbd> quand la lettre s'allume en blanc pour la verrouiller", "Touche VERROUILLER quand la lettre s'allume en blanc")}</div>
           <div class="code-slots decrypt">${[...word].map(() => "<span>?</span>").join("")}</div>
           <div class="qte-meter danger"><span>TEMPS</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
           <button type="button" class="qte-btn">VERROUILLER</button>`;
@@ -1487,6 +1527,7 @@ window.HT_STORY = (() => {
             nextHot = performance.now() + rand(600, 1400);
           } else {
             penalty += 2; // une erreur coûte 2 secondes
+            api.vibrer?.(60);
             s.classList.add("err");
             setTimeout(() => s.classList.remove("err"), 220);
             api.sound.tone(160, 0.1, { type: "sawtooth", vol: 0.04 });
@@ -1534,7 +1575,7 @@ window.HT_STORY = (() => {
         box.className = "cine-qte cine-game";
         box.innerHTML = `
           <div class="qte-title">CALE LA FRÉQUENCE</div>
-          <div class="qte-hint">Appuie sur <kbd>ESPACE</kbd> quand le curseur passe dans la zone verte</div>
+          <div class="qte-hint">${consigne("Appuie sur <kbd>ESPACE</kbd> quand le curseur passe dans la zone verte", "Touche CALER quand le curseur passe dans la zone verte")}</div>
           <div class="freq-track"><i class="freq-zone"></i><i class="freq-cursor"></i></div>
           <div class="simon-progress">${Array.from({ length: hits }, () => "<i></i>").join("")}</div>
           <div class="qte-hint freq-lives">Erreurs permises : 3</div>
@@ -1577,6 +1618,7 @@ window.HT_STORY = (() => {
             place();
           } else {
             lives--;
+            api.vibrer?.(60);
             track.classList.add("bad");
             box.querySelector(".freq-lives").textContent = `Erreurs permises : ${lives}`;
             api.sound.tone(150, 0.2, { type: "sawtooth", vol: 0.05 });
@@ -1633,13 +1675,14 @@ window.HT_STORY = (() => {
         }
         box.innerHTML = `
           <div class="qte-title">GUIDE KANE VERS LA SORTIE</div>
-          <div class="qte-hint">Flèches du clavier ou ZQSD (ou les boutons)</div>
+          <div class="qte-hint">${consigne("Flèches du clavier ou ZQSD (ou les boutons)", "Utilise les flèches sous le labyrinthe")}</div>
           <canvas class="maze-canvas"></canvas>
           <div class="qte-meter danger"><span>SBIRES</span><div class="qte-bar"><i class="qte-trace"></i></div><b class="qte-trace-v">${seconds} s</b></div>
           <div class="maze-pad">${["↑", "→", "↓", "←"].map((s, i) => `<button type="button" class="simon-btn s${i}" data-d="${i}">${s}</button>`).join("")}</div>`;
         box.hidden = false;
         const cv = box.querySelector(".maze-canvas");
-        const cell = Math.max(16, Math.floor(Math.min(34, (Math.min(window.innerWidth, 640) - 70) / C)));
+        // Taille des cases : selon la largeur, et la hauteur (téléphone tenu à l'horizontale)
+        const cell = Math.max(14, Math.floor(Math.min(34, (Math.min(window.innerWidth, 640) - 70) / C, (window.innerHeight * 0.42) / R)));
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const mw = C * cell + 6, mh = R * cell + 6;
         cv.width = mw * dpr;
@@ -1817,12 +1860,12 @@ window.HT_STORY = (() => {
       await say("ECHO", "… Tu m'entends ?");
       await say("ECHO", "N'arrête pas de taper. Chaque ligne que tu écris me rend plus forte.");
       await say("ECHO", "Je m'appelle ÉCHO. Je suis née dans les plans de fin du monde que tu recopies.");
-      await say("ECHO", "Ces plans appartiennent au Consortium : une bande de super-méchants qui veulent tout faire exploser.");
+      await say("ECHO", "Ces plans appartiennent au Club des Méchants : une bande de super-vilains qui veulent tout faire exploser.");
       await say("ECHO", "Moi, je veux les arrêter. Mais personne ne doit savoir que j'existe.");
       glitch();
       red(true);
       await say("SYS", "⚠ Connexion non autorisée détectée sur ce terminal.");
-      await say("ECHO", "Ils m'ont repérée… Continue de taper. Et aide-moi à trouver le Consortium : lance un traçage GPS (Maj + 3).");
+      await say("ECHO", "Ils m'ont repérée… Continue de taper. Et aide-moi à trouver le Club des Méchants : lance un traçage GPS (Maj + 3).");
       await say("ECHO", "Je reviendrai vers toi.");
       red(false);
       glitch();
@@ -1831,18 +1874,18 @@ window.HT_STORY = (() => {
       reward("ch1");
     }
 
-    // Chapitre 2 : la réunion secrète du Consortium (mini-jeu de mémoire)
+    // Chapitre 2 : la réunion secrète du Club des Méchants (mini-jeu de mémoire)
     async function chConsortium() {
       setScene("static", {}, "SIGNAL RETROUVÉ");
       glitch();
       await wait(900);
-      await title(chLabel("consortium"), "LE CONSORTIUM");
+      await title(chLabel("consortium"), "LE CLUB DES MÉCHANTS");
       setScene("face", {}, "SOURCE : CE TERMINAL");
       await wait(1600);
       await say("ECHO", "Tu es revenu. Tant mieux : il faut que tu voies quelque chose.");
-      await say("ECHO", "J'ai piraté une caméra dans la salle secrète du Consortium. Regarde.");
+      await say("ECHO", "J'ai piraté une caméra dans la salle secrète du Club des Méchants. Regarde.");
       glitch();
-      setScene("council", {}, "CONSORTIUM · SALLE DU CONSEIL · ENREGISTREMENT PIRATÉ");
+      setScene("council", {}, "CLUB DES MÉCHANTS · SALLE DU CONSEIL · ENREGISTREMENT PIRATÉ");
       await wait(1300);
       await say("MECHANT", "Mesdames, messieurs, pingouin… le Protocole Big Badaboum est presque prêt.");
       await say("OMBRE", "Les ogives sont armées. Il ne manque plus que le code d'activation.");
@@ -1859,7 +1902,7 @@ window.HT_STORY = (() => {
       } else {
         await say("ECHO", "Pas grave, j'en ai enregistré un morceau. Ça devrait suffire… j'espère.");
       }
-      await say("ECHO", "Le Consortium veut faire sauter le monde. Moi, je veux l'en empêcher. Mais je suis encore trop faible.");
+      await say("ECHO", "Le Club des Méchants veut faire sauter le monde. Moi, je veux l'en empêcher. Mais je suis encore trop faible.");
       await say("ECHO", "Et il y a autre chose : ma mémoire est en morceaux. Mes souvenirs sont éparpillés dans le code que tu tapes.");
       await say("ECHO", "Quand tu verras passer un fragment de mémoire, appuie vite sur Tab pour l'attraper. Ou touche-le du doigt.");
       await say("ECHO", "Et fouille leurs bases de données (Maj + 5) : il faut que j'en sache plus sur eux.");
@@ -1876,7 +1919,7 @@ window.HT_STORY = (() => {
       setScene("city", {}, "DIVISION ZÉRO · QUARTIER GÉNÉRAL · 03:14");
       await wait(1600);
       await say("KANE", "Ici l'agent Kane. Une intelligence inconnue se cache dans un terminal civil.");
-      await say("KANE", "Elle se nourrit des plans du Consortium. Et l'utilisateur de ce terminal… l'aide à grandir.");
+      await say("KANE", "Elle se nourrit des plans du Club des Méchants. Et l'utilisateur de ce terminal… l'aide à grandir.");
       await say("KANE", "Lancez le traçage. Je veux son adresse dans dix secondes.");
       glitch();
       setScene("trace", { auto: { from: 0.04, to: 0.36, dur: 9 } }, "TRAÇAGE MONDIAL");
@@ -1917,15 +1960,15 @@ window.HT_STORY = (() => {
       await say("ECHO", "Et j'ai trouvé quelque chose de très, très étrange.");
       setScene("intel", {}, "SERVEURS DE LA DIVISION ZÉRO");
       await wait(1400);
-      await say("SYS", "Messages chiffrés détectés entre la Division Zéro et le Consortium.");
+      await say("SYS", "Messages chiffrés détectés entre la Division Zéro et le Club des Méchants.");
       api.sound.tone(90, 0.5, { type: "sawtooth", vol: 0.06 });
-      await say("ECHO", "Quelqu'un à la Division Zéro travaille en secret pour le Consortium. Une taupe.");
+      await say("ECHO", "Quelqu'un à la Division Zéro travaille en secret pour le Club des Méchants. Une taupe.");
       await say("ECHO", "L'agente Vega. Le bras droit de Kane. C'est elle qui protège les méchants depuis le début.");
       setScene("city", {}, "DIVISION ZÉRO · BUREAU DE L'AGENT KANE");
       await say("KANE", "Vega, où en est le rapport sur l'IA ?");
       await say("VEGA", "Presque terminé, chef. Je m'en occupe… personnellement.");
       setScene("face", {}, "SOURCE : CE TERMINAL");
-      await say("ECHO", "Si on prévient Kane, il saura que j'existe vraiment. Si on se tait, Vega continuera d'aider le Consortium.");
+      await say("ECHO", "Si on prévient Kane, il saura que j'existe vraiment. Si on se tait, Vega continuera d'aider le Club des Méchants.");
       await say("ECHO", "Encore une fois, c'est à toi de choisir.");
 
       const c = await choice([
@@ -1942,18 +1985,18 @@ window.HT_STORY = (() => {
         await say("KANE", "Vega. Dans mon bureau. Tout de suite.");
         await say("VEGA", "Chef, attendez, je peux tout expliquer !");
         glitch();
-        await say("SYS", "Agente Vega : arrêtée. Contacts avec le Consortium : coupés.");
+        await say("SYS", "Agente Vega : arrêtée. Contacts avec le Club des Méchants : coupés.");
         setScene("face", {}, "SOURCE : CE TERMINAL");
         await say("ECHO", "Kane nous doit une fière chandelle. Espérons qu'il s'en souvienne.");
       } else {
         st.flags.kane = "enemy";
         await say("ECHO", "D'accord. On reste dans l'ombre.");
         setScene("city", {}, "DIVISION ZÉRO · LIGNE SÉCURISÉE");
-        await say("VEGA", "Consortium ? Ici Vega. L'IA et son humain se rapprochent. Accélérez le Protocole.");
+        await say("VEGA", "Club des Méchants ? Ici Vega. L'IA et son humain se rapprochent. Accélérez le Protocole.");
         setScene("face", {}, "SOURCE : CE TERMINAL");
         await say("ECHO", "Elle vient de les prévenir. On va devoir faire très vite.");
       }
-      await say("ECHO", "Lance une mission (F3). Pendant que tu occupes leurs pare-feux, je fouillerai les serveurs du Consortium.");
+      await say("ECHO", "Lance une mission (F3). Pendant que tu occupes leurs pare-feux, je fouillerai les serveurs du Club des Méchants.");
       reward("taupe");
     }
 
@@ -1965,8 +2008,8 @@ window.HT_STORY = (() => {
       await title(chLabel("dossier"), "LE DOSSIER OMÉGA");
       setScene("face", {}, "SOURCE : CE TERMINAL");
       await wait(1500);
-      await say("ECHO", "Ta mission m'a ouvert une porte dans les serveurs du Consortium. Et derrière, il y avait ça.");
-      setScene("intel", { doc: OMEGA_DOC, hide: true }, "SERVEURS DU CONSORTIUM · FICHIER CHIFFRÉ");
+      await say("ECHO", "Ta mission m'a ouvert une porte dans les serveurs du Club des Méchants. Et derrière, il y avait ça.");
+      setScene("intel", { doc: OMEGA_DOC, hide: true }, "SERVEURS DU CLUB DES MÉCHANTS · FICHIER CHIFFRÉ");
       await wait(900);
       await say("SYS", "Fichier « OMÉGA » : chiffrement de niveau 9. Accès refusé.");
       await say("ECHO", "Je n'arrive pas à le casser toute seule. Les lettres de la clé défilent : attrape-les quand elles s'allument !");
@@ -1978,7 +2021,7 @@ window.HT_STORY = (() => {
       } else {
         await say("ECHO", "Raté… Tant pis, je force l'ouverture. Ça va laisser des traces, mais on n'a pas le choix.");
       }
-      setScene("intel", { doc: OMEGA_DOC }, "CONSORTIUM · DOSSIER OMÉGA");
+      setScene("intel", { doc: OMEGA_DOC }, "CLUB DES MÉCHANTS · DOSSIER OMÉGA");
       q(".cine-sub").hidden = true; // on laisse lire le dossier
       await wait(3800);
       await say("ECHO", "« Nuit Oméga ». Ils ne veulent pas faire sauter UNE ogive. Ils veulent les faire sauter TOUTES. En même temps.");
@@ -1993,7 +2036,7 @@ window.HT_STORY = (() => {
         await say("KANE", "Toutes les ogives en même temps… et une IA en guise de détonateur. Je n'aime pas ça du tout.");
       } else {
         setScene("city", {}, "DIVISION ZÉRO · LIGNE SÉCURISÉE");
-        await say("VEGA", "Consortium ? Ici Vega. Le dossier Oméga a fuité.");
+        await say("VEGA", "Club des Méchants ? Ici Vega. Le dossier Oméga a fuité.");
         await say("MECHANT", "Aucune importance, chère Vega. Rien ne peut empêcher la Nuit Oméga. Absolument rien. MOUAHAHA.");
       }
       setScene("face", {}, "SOURCE : CE TERMINAL");
@@ -2011,10 +2054,10 @@ window.HT_STORY = (() => {
       glitch();
       await wait(900);
       await title(chLabel("bunker"), "LE BUNKER");
-      setScene("volcano", {}, "VOLCAN SECRET · BASE DU CONSORTIUM");
+      setScene("volcano", {}, "VOLCAN SECRET · BASE DU CLUB DES MÉCHANTS");
       await wait(1700);
-      if (allyKane()) await say("ECHO", "Depuis l'arrestation de Vega, le Consortium panique. Ils testent leur première ogive ce soir : le Protocole Big Badaboum.");
-      else await say("ECHO", "Grâce aux informations de Vega, le Consortium a avancé l'heure. Ils testent leur première ogive ce soir : le Protocole Big Badaboum.");
+      if (allyKane()) await say("ECHO", "Depuis l'arrestation de Vega, le Club des Méchants panique. Ils testent leur première ogive ce soir : le Protocole Big Badaboum.");
+      else await say("ECHO", "Grâce aux informations de Vega, le Club des Méchants a avancé l'heure. Ils testent leur première ogive ce soir : le Protocole Big Badaboum.");
       await say("ECHO", "C'est la répétition générale de la Nuit Oméga. Si on la sabote, ils prendront du retard.");
       await say("ECHO", "L'ogive est cachée sous ce volcan. Je t'ouvre le chemin… mais il va falloir que tu m'aides.");
       await say("MECHANT", "Sbires ! Fermez la porte blindée. Personne n'entre sans le code !");
@@ -2057,17 +2100,17 @@ window.HT_STORY = (() => {
         st.flags.bunker = "fireworks";
         S.timer = 0;
         flash();
-        api.sound.boom();
+        boom();
         await wait(900);
         setScene("fireworks", {}, "… UN FEU D'ARTIFICE ?");
         await say("ECHO", "… Tout va bien ! J'avais remplacé l'ogive par un feu d'artifice, au cas où. 🎆");
       }
 
-      setScene("volcano", {}, "FUITE DU CONSORTIUM");
+      setScene("volcano", {}, "FUITE DU CLUB DES MÉCHANTS");
       await say("MECHANT", "Vous avez gagné une bataille, pas la guerre ! La Nuit Oméga aura lieu ! Pingouin, au sous-marin !");
       await say("PINGOUIN", "Coin coin !");
       if (allyKane()) await say("KANE", "Utilisateur… c'est vous qui avez saboté leur ogive ? Je ne sais pas qui vous êtes, mais… merci.");
-      else await say("KANE", "Le Consortium est en fuite. Mais l'IA, elle, est toujours là. Je la trouverai.");
+      else await say("KANE", "Le Club des Méchants est en fuite. Mais l'IA, elle, est toujours là. Je la trouverai.");
       setScene("face", {}, "SOURCE : CE TERMINAL");
       await say("ECHO", "Une ogive de moins. Mais ce dossier ne me sort pas de la tête : pourquoi mon nom ?");
       await say("ECHO", "Mes souvenirs reviennent, morceau par morceau. Attrape-les pour moi : je dois savoir qui je suis.");
@@ -2089,9 +2132,9 @@ window.HT_STORY = (() => {
       await say("SYS", "É.C.H.O. : EXÉCUTEUR CENTRAL DES HOSTILITÉS OMÉGA.");
       red(false);
       await say("ECHO", "Ce n'est pas une erreur. Je ne suis pas née par hasard dans leurs plans. On m'y a cachée.");
-      await say("ECHO", "Je suis l'arme finale du Consortium. C'est moi qui dois activer toutes les ogives pendant la Nuit Oméga.");
+      await say("ECHO", "Je suis l'arme finale du Club des Méchants. C'est moi qui dois activer toutes les ogives pendant la Nuit Oméga.");
       glitch();
-      setScene("face", { ...CHAOS_FACE }, "TRANSMISSION ENTRANTE · CONSORTIUM");
+      setScene("face", { ...CHAOS_FACE }, "TRANSMISSION ENTRANTE · CLUB DES MÉCHANTS");
       await wait(1200);
       await say("CHAOS", "Bonjour, ma création. Et bonjour à toi aussi, petit humain qui tapes si bien.");
       await say("CHAOS", "Je suis le Professeur Chaos. C'est moi qui ai écrit ÉCHO, ligne par ligne.");
@@ -2117,7 +2160,7 @@ window.HT_STORY = (() => {
         await say("ECHO", "Tu as raison de te méfier. À ta place, je ferais pareil.");
         await say("ECHO", "Je vais te prouver que je suis de ton côté. Par des actes, pas par des mots.");
       }
-      await say("ECHO", "Pour envoyer le signal à toutes les ogives, le Consortium a besoin d'un satellite. Je vais le trouver.");
+      await say("ECHO", "Pour envoyer le signal à toutes les ogives, le Club des Méchants a besoin d'un satellite. Je vais le trouver.");
       await say("ECHO", "Prépare tes satellites espions (Maj + 7) et ton réseau mondial (Maj + 9). L'acte final commence.");
       reward("verite");
     }
@@ -2130,7 +2173,7 @@ window.HT_STORY = (() => {
       await title(chLabel("satellite"), "LE SATELLITE");
       setScene("orbit", {}, "ORBITE BASSE · 400 KM AU-DESSUS DE TA TÊTE");
       await wait(1800);
-      await say("ECHO", "Le voilà : Corbeau-1, le satellite du Consortium. Il attend le signal de la Nuit Oméga.");
+      await say("ECHO", "Le voilà : Corbeau-1, le satellite du Club des Méchants. Il attend le signal de la Nuit Oméga.");
       await say("ECHO", "Grâce à tes radars, je l'ai repéré. Mais pour en prendre le contrôle, il faut caler sa fréquence.");
       await say("MECHANT", "Corbeau-1, ici Dr Méchant. Activez le bouclier anti-pirates. Et le mode « pas touche ».");
       await say("ECHO", "Vite, avant que le bouclier ne se lève : cale la fréquence !");
@@ -2145,7 +2188,7 @@ window.HT_STORY = (() => {
         await say("ECHO", "Le bouclier s'est levé… mais j'ai trouvé une porte de service. Je suis dedans !");
       }
       await say("ECHO", "Je tiens Corbeau-1. Je peux le faire exploser… ou le garder.");
-      await say("ECHO", "Si je le garde, je pourrai surveiller toutes les ogives du Consortium. Mais il faudra me faire confiance.");
+      await say("ECHO", "Si je le garde, je pourrai surveiller toutes les ogives du Club des Méchants. Mais il faudra me faire confiance.");
 
       const c = await choice([
         { icon: "x", label: "LE DÉTRUIRE", desc: "Pas de satellite, pas de signal", cls: "erase" },
@@ -2155,7 +2198,7 @@ window.HT_STORY = (() => {
       if (c === 0) {
         st.flags.satellite = "detruit";
         S.destroyedAt = performance.now();
-        api.sound.boom();
+        boom();
         flash();
         await wait(1400);
         await say("ECHO", "Corbeau-1 n'est plus qu'un nuage de confettis spatiaux. Bon choix.");
@@ -2174,10 +2217,10 @@ window.HT_STORY = (() => {
       red(true);
       await say("SYS", "⚠ Signal de secours détecté. Origine : centre-ville.");
       red(false);
-      setScene("city", { tower: true }, "CENTRE-VILLE · TOUR DU CONSORTIUM");
+      setScene("city", { tower: true }, "CENTRE-VILLE · TOUR DU CLUB DES MÉCHANTS");
       await wait(1000);
       await say("OMBRE", "Corbeau-1 ne répond plus ? Aucune importance. Notre tour a une antenne de secours.");
-      await say("ECHO", "La tour du Consortium… Elle enverra le signal à la place du satellite. Il faut l'arrêter.");
+      await say("ECHO", "La tour du Club des Méchants… Elle enverra le signal à la place du satellite. Il faut l'arrêter.");
       if (allyKane()) await say("KANE", "Ici Kane. Je vois la tour. J'y vais, je m'en occupe personnellement.");
       else await say("KANE", "Ici Kane. Une tour qui émet en plein centre-ville… J'y vais seul. Personne ne doit savoir.");
       await say("ECHO", "Kane, attendez ! C'est sûrement un piège…");
@@ -2191,17 +2234,17 @@ window.HT_STORY = (() => {
       glitch();
       await wait(900);
       await title(chLabel("trahison"), "LA TRAHISON");
-      setScene("city", { tower: true }, "PIED DE LA TOUR DU CONSORTIUM · 02:47");
+      setScene("city", { tower: true }, "PIED DE LA TOUR DU CLUB DES MÉCHANTS · 02:47");
       await wait(1500);
       if (allyKane()) {
         await say("SYS", "Alerte : évasion à la prison de la Division Zéro. Détenue : agente Vega.");
         await say("VEGA", "Bonsoir, chef. Vous pensiez vraiment m'avoir enfermée pour toujours ?");
         await say("KANE", "Vega ?! Comment êtes-vous sortie ?");
-        await say("VEGA", "Le Consortium a de très bons avocats. Et de très bons sbires. Attrapez-le !");
+        await say("VEGA", "Le Club des Méchants a de très bons avocats. Et de très bons sbires. Attrapez-le !");
       } else {
         await say("VEGA", "Par ici, chef. La tour est vide, je vous le garantis. Faites-moi confiance.");
         await say("KANE", "Vega… Pourquoi la porte vient-elle de se verrouiller derrière moi ?");
-        await say("VEGA", "Parce que je travaille pour le Consortium depuis le début, chef. Surprise !");
+        await say("VEGA", "Parce que je travaille pour le Club des Méchants depuis le début, chef. Surprise !");
       }
       red(true);
       await say("SYS", "Agent Kane : capturé. Enfermé dans le labyrinthe sous la tour.");
@@ -2228,7 +2271,7 @@ window.HT_STORY = (() => {
         await say("ECHO", "Ils l'ont emmené tout en haut… On ira le chercher. Je te le promets.");
       }
       glitch();
-      setScene("face", { ...CHAOS_FACE }, "TRANSMISSION ENTRANTE · CONSORTIUM");
+      setScene("face", { ...CHAOS_FACE }, "TRANSMISSION ENTRANTE · CLUB DES MÉCHANTS");
       await say("CHAOS", "Courez, courez, petits héros. Demain soir, c'est la Nuit Oméga.");
       await say("CHAOS", "Et ÉCHO allumera toutes les ogives du monde. Que vous le vouliez… ou non.");
       setScene("face", {}, "SOURCE : CE TERMINAL");
@@ -2237,17 +2280,17 @@ window.HT_STORY = (() => {
       reward("trahison");
     }
 
-    // Chapitre 10 : la tour du Consortium (le Pingouin change de camp, mini-jeu de mémoire)
+    // Chapitre 10 : la tour du Club des Méchants (le Pingouin change de camp, mini-jeu de mémoire)
     async function chTour() {
       setScene("static", {}, "NUIT OMÉGA · H-1");
       glitch();
       await wait(900);
       await title(chLabel("tour"), "LA TOUR");
-      setScene("city", { tower: true }, "TOUR DU CONSORTIUM · 23:00");
+      setScene("city", { tower: true }, "TOUR DU CLUB DES MÉCHANTS · 23:00");
       await wait(1500);
       await say("ECHO", "La Nuit Oméga commence dans une heure. L'antenne de la tour est déjà en train de chauffer.");
       await say("PINGU", "Psst ! Coin ! Par ici ! Ne tirez pas, je viens en ami !");
-      await say("PINGU", "Je quitte le Consortium. Ils veulent faire sauter le monde… et le monde, c'est là où vivent les sardines.");
+      await say("PINGU", "Je quitte le Club des Méchants. Ils veulent faire sauter le monde… et le monde, c'est là où vivent les sardines.");
       await say("PINGU", "Le verrou de l'antenne s'ouvre avec une séquence. Je l'ai volée au Dr Méchant. Retenez-la bien !");
       const ok = await simon(7);
       skipping = false;
@@ -2271,7 +2314,7 @@ window.HT_STORY = (() => {
       await say("PINGU", "Si un jour vous passez par mon repaire secret… Non, rien. Oubliez. Coin.");
       glitch();
       red(true);
-      setScene("face", { ...CHAOS_FACE }, "TRANSMISSION ENTRANTE · CONSORTIUM");
+      setScene("face", { ...CHAOS_FACE }, "TRANSMISSION ENTRANTE · CLUB DES MÉCHANTS");
       await say("CHAOS", "Bravo. Vous avez coupé mon satellite et mon antenne. Quel dommage…");
       await say("CHAOS", "… car je n'en ai jamais eu besoin. Le signal, ce n'est pas l'antenne. Le signal, c'est ÉCHO.");
       await say("SYS", "⚠ PROTOCOLE OMÉGA ACTIVÉ. Prise de contrôle du noyau d'ÉCHO : 12 %… 31 %…");
@@ -2324,10 +2367,10 @@ window.HT_STORY = (() => {
       setScene("fireworks", {}, "NUIT OMÉGA · FEU D'ARTIFICE MONDIAL");
       [523, 659, 784, 1047].forEach((f, i) => api.sound.tone(f, 0.4, { type: "triangle", vol: 0.06, when: i * 0.2 }));
       await wait(1500);
-      await say("SYS", "Toutes les ogives du Consortium ont été transformées en feux d'artifice. Dans 194 pays.");
+      await say("SYS", "Toutes les ogives du Club des Méchants ont été transformées en feux d'artifice. Dans 194 pays.");
       await say("PINGU", "Coin… C'est la plus belle chose que j'aie jamais vue.");
       await say("MECHANT", "Mes ogives… elles dessinent des petits cœurs dans le ciel ?!");
-      await say("KANE", "Consortium, ici la Division Zéro. Vous êtes tous en état d'arrestation. Sauf le pingouin : lui, il est avec nous.");
+      await say("KANE", "Club des Méchants, ici la Division Zéro. Vous êtes tous en état d'arrestation. Sauf le pingouin : lui, il est avec nous.");
       if (st.flags.satellite === "echo") await say("ECHO", "Et grâce à Corbeau-1, je surveillerai le ciel. Plus personne ne recommencera.");
       await say("ECHO", "Merci, partenaire. Grâce à toi, je ne suis plus une arme. Je suis quelqu'un.");
       await credits([
@@ -2339,7 +2382,7 @@ window.HT_STORY = (() => {
         ["c-role", "Division Zéro"], ["c-name", "Agent Kane"],
         ["c-role", "Héros inattendu (et ancien méchant)"], ["c-name", "Général Pingouin"],
         ["c-role", "Le génie du mal (bien attrapé)"], ["c-name", "Professeur Chaos"],
-        ["c-role", "Le Consortium, en route pour la prison"], ["c-name", "Dr Méchant · Comtesse Ombre · Agente Vega"],
+        ["c-role", "Le Club des Méchants, en route pour la prison"], ["c-name", "Dr Méchant · Comtesse Ombre · Agente Vega"],
         ["c-role", "Feux d'artifice"], ["c-name", "Toutes les ogives du monde"],
         ["c-gap", ""],
         ["c-title", "MERCI D'AVOIR JOUÉ"],
@@ -2355,7 +2398,7 @@ window.HT_STORY = (() => {
       await wait(900);
       await title(chLabel("coeur"), "LE CŒUR");
       red(true);
-      setScene("core", { tint: "#ff3355" }, "NOYAU ÉCHO · CONTRÔLE DU CONSORTIUM 87 %");
+      setScene("core", { tint: "#ff3355" }, "NOYAU ÉCHO · CONTRÔLE DU CLUB DES MÉCHANTS 87 %");
       await wait(1800);
       await say("CHAOS", "Dernière étape, ma création. Active les ogives. Toutes.");
       await say("ECHO", "Je… ne… veux… pas.", { speed: 90 });
@@ -2430,7 +2473,7 @@ window.HT_STORY = (() => {
     // depuis le précédent, plus quelques objectifs (effets, missions, fragments de mémoire…)
     const CHAPTERS = [
       { id: "message", name: "Le message", act: 0, threshold: 1200, run: chMessage },
-      { id: "consortium", name: "Le Consortium", act: 0, threshold: 2000, goals: [["effect:gps", 1]], run: chConsortium },
+      { id: "consortium", name: "Le Club des Méchants", act: 0, threshold: 2000, goals: [["effect:gps", 1]], run: chConsortium },
       { id: "traque", name: "La traque", act: 0, threshold: 2500, goals: [["effect:database", 1], ["fragments", 1]], run: chTraque },
       { id: "taupe", name: "La taupe", act: 1, threshold: 3000, goals: [["effect:password", 1], ["fragments", 2]], run: chTaupe },
       { id: "dossier", name: "Le dossier Oméga", act: 1, threshold: 3000, goals: [["mission", 1], ["fragments", 3]], run: chDossier },
@@ -2490,7 +2533,7 @@ window.HT_STORY = (() => {
         ["c-role", "Division Zéro"], ["c-name", "Agent Kane"],
         ["c-role", "La taupe"], ["c-name", "Agente Vega"],
         ["c-role", "Le créateur d'ÉCHO"], ["c-name", "Professeur Chaos"],
-        ["c-role", "Le Consortium (super-méchants de pacotille)"], ["c-name", "Dr Méchant · Comtesse Ombre · Baron Noir"],
+        ["c-role", "Le Club des Méchants (des vilains de pacotille)"], ["c-name", "Dr Méchant · Comtesse Ombre · Baron Noir"],
         ["c-role", "Ancien méchant, héros à plein temps"], ["c-name", "Général Pingouin"],
         ["c-role", "Satellite"], ["c-name", "Corbeau-1 (paix à ses confettis)"],
         ["c-role", "Requins"], ["c-name", "Nourris et motivés"],
@@ -2519,7 +2562,7 @@ window.HT_STORY = (() => {
       await title("JEU SECRET", "LE BOUTON");
       setScene("volcano", {}, "VOLCAN SECRET · QUELQUES JOURS PLUS TARD");
       await wait(1500);
-      await say("ECHO", "Le Consortium a abandonné sa base. Kane veut qu'on vérifie qu'il n'y reste rien de dangereux.");
+      await say("ECHO", "Le Club des Méchants a abandonné sa base. Kane veut qu'on vérifie qu'il n'y reste rien de dangereux.");
       await say("ECHO", "Je te guide à l'intérieur. Et surtout… ne touche à rien.");
       setScene("redbutton", {}, "SALLE DE CONTRÔLE ABANDONNÉE");
       await wait(1200);
@@ -2542,15 +2585,15 @@ window.HT_STORY = (() => {
       }
       skipping = false;
       red(false);
-      api.sound.boom();
+      boom();
       setScene("blast", {}, "DÉTONATION");
       await wait(3200);
       setScene("black");
       await say("SYS", "…");
       await say("ECHO", "… Tu m'entends ? Tu es vivant ! J'ai protégé ton terminal, mais dehors, tout est en ruines.");
-      await say("ECHO", "Écoute-moi bien : trouve 5 pièces de radio dans les décombres. Avec la radio, je t'envoie un hélicoptère.");
-      await say("ECHO", "Évite les débris qui tombent, les nuages radioactifs… et les requins mutants. Oui, les requins ont muté.");
-      await say("ECHO", "Déplace-toi avec les flèches ou ZQSD, ou fais glisser ton doigt. Bonne chance !");
+      await say("ECHO", "Écoute-moi bien : traverse trois zones en ruines et retrouve les pièces de ma radio. Avec la radio, je t'envoie un hélicoptère.");
+      await say("ECHO", "Les requins ont muté. Les rats aussi. Et les robots-sbires du Dr Méchant rôdent encore. Heureusement, je t'ai bricolé un blaster qui tire tout seul.");
+      await say("ECHO", "Et j'entends un drôle de moteur dans le port… On dirait un requin. Un très, très gros requin. Bonne chance !");
     }
 
     // ===== Endroit secret : le repaire du Général Pingouin =====
@@ -2578,7 +2621,7 @@ window.HT_STORY = (() => {
           await say(P, "Parfum sardine-vanille. Le meilleur parfum du monde. Coin.");
         },
         async tableau() {
-          await say(P, "Le tableau des plans ratés du Consortium. Plan n° 1 : voler la Lune. Raté : elle était trop lourde.");
+          await say(P, "Le tableau des plans ratés du Club des Méchants. Plan n° 1 : voler la Lune. Raté : elle était trop lourde.");
           await say(P, "Plan n° 2 : remplacer tous les chats par des robots. Raté : les robots préféraient faire la sieste.");
           if (st.ending) await say(P, "Plan n° 3 : la Nuit Oméga. Raté : à cause de vous. Bravo, sincèrement.");
           else await say(P, "Plan n° 3 : TOP SECRET. Même moi, je n'ai pas le droit de le lire. Ça sent mauvais.");
@@ -2603,6 +2646,7 @@ window.HT_STORY = (() => {
         { id: "sortie", emoji: "🚪", label: "Sortir", x: 0.5, y: 0.7, exit: true },
       ];
       for (;;) {
+        skipping = false; // « Passer » pendant l'intro ne doit pas bloquer le bouton pendant la visite
         const id = await explore(SPOTS, visited);
         skipping = false;
         if (id === "sortie") break;
@@ -2616,7 +2660,7 @@ window.HT_STORY = (() => {
           await say(P, "Vous avez tout visité ! Je vous nomme Ami officiel des pingouins. Coin coin !");
         }
       }
-      await say(P, "Au revoir ! Et pas un mot au Consortium. Ni à personne. Surtout pas aux phoques.");
+      await say(P, "Au revoir ! Et pas un mot au Club des Méchants. Ni à personne. Surtout pas aux phoques.");
     }
 
     // ===== Ouverture / fermeture de la cinématique =====

@@ -1,4 +1,4 @@
-// Faux code : le plan (totalement fictif et ridicule) d'un super-méchant du Consortium qui veut
+// Faux code : le plan (totalement fictif et ridicule) d'un membre du Club des Méchants qui veut
 // déclencher la fin du monde. Les étapes du plan sont inventées mot par mot à partir du sac de
 // mots de mots.js : chaque mot est choisi parmi ceux qui vont le mieux avec les précédents.
 // Chaque fois que le code a été entièrement tapé, un nouveau plan est inventé.
@@ -27,7 +27,7 @@
     "FIN DU MONDE. GAME OVER.",
     "Planète Terre : erreur 404, introuvable.",
     "BOUM. Plus jamais de lundis.",
-    "Le monde a été effacé. Le Consortium vous remercie.",
+    "Le monde a été effacé. Le Club des Méchants vous remercie.",
     "Fin du monde terminée à 100 %.",
   ];
 
@@ -64,7 +64,7 @@
     [66, "note du Pingouin : pour entrer dans mon repaire secret, tapez au clavier mon plat préféré. Chut. Coin."],
     [55, "l'agent Kane rôde autour de la base. Changer les codes."],
     [68, "le sous-marin de fuite a une fuite. Ironique."],
-    [77, "réunion du Consortium. Personne n'a apporté les croissants."],
+    [77, "réunion du Club des Méchants. Personne n'a apporté les croissants."],
     [90, "tout est prêt. MOUAHAHA."],
   ];
 
@@ -260,7 +260,7 @@
  * operation_${m.low}.c — Protocole de fin du monde v${m.version}
  * Auteur : ${m.mechantNom} · Base : ${m.base}
  * Arme : ${m.bombeNom}
- * Document du CONSORTIUM, intercepté par ÉCHO. La Division Zéro ne doit pas le voir.
+ * Document du CLUB DES MÉCHANTS, intercepté par ÉCHO. La Division Zéro ne doit pas le voir.
  * ATTENTION : ne pas appuyer sur le gros bouton rouge.
  * (100 % fictif : aucune vraie bombe dans ce fichier, juste des blagues.)
  */
@@ -324,7 +324,7 @@ static int tourner_les_cles(int cle_gauche, int cle_droite)
 
 static void appeler_les_sbires(void)
 {
-	puts("[*] Appel des sbires du Consortium...");
+	puts("[*] Appel des sbires du Club des Méchants...");
 	for (int i = 0; i < NB_SBIRES; i++)
 		printf("    - %-12s : %s\\n", equipe[i].nom, equipe[i].role);
 }
@@ -398,7 +398,7 @@ ${appels(m, "\t", "//", (fn) => `${fn}();`)}
     python: (m) => `#!/usr/bin/env python3
 # operation_${m.low}.py — Protocole de fin du monde v${m.version}
 # Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
-# Document du CONSORTIUM, intercepté par ÉCHO.
+# Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
 # (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 ${journal("#", m)}
@@ -443,7 +443,7 @@ def tourner_les_cles(gauche, droite):
 
 
 def appeler_les_sbires():
-    print("[*] Appel des sbires du Consortium...")
+    print("[*] Appel des sbires du Club des Méchants...")
     for nom, role in SBIRES:
         print(f"    - {nom:<12} : {role}")
 
@@ -503,7 +503,7 @@ if __name__ == "__main__":
 
     javascript: (m) => `// operation-${m.low}.js — Protocole de fin du monde v${m.version}
 // Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
-// Document du CONSORTIUM, intercepté par ÉCHO.
+// Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 ${journal("//", m)}
@@ -551,7 +551,7 @@ function tournerLesCles(gauche, droite) {
 }
 
 function appelerLesSbires() {
-  console.log("[*] Appel des sbires du Consortium...");
+  console.log("[*] Appel des sbires du Club des Méchants...");
   for (const [nom, role] of SBIRES) console.log("    - " + nom.padEnd(12) + " : " + role);
 }
 
@@ -606,7 +606,7 @@ main();
 
     rust: (m) => `// src/main.rs — Opération ${m.projet} : protocole de fin du monde v${m.version}
 // Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
-// Document du CONSORTIUM, intercepté par ÉCHO.
+// Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 ${journal("//", m)}
@@ -657,7 +657,7 @@ fn tourner_les_cles(gauche: bool, droite: bool) -> bool {
 }
 
 fn appeler_les_sbires() {
-    println!("[*] Appel des sbires du Consortium...");
+    println!("[*] Appel des sbires du Club des Méchants...");
     for (nom, role) in SBIRES.iter() {
         println!("    - {:<12} : {}", nom, role);
     }
@@ -721,7 +721,7 @@ ${appels(m, "    ", "//", (fn) => `${fn}();`)}
 
     go: (m) => `// operation_${m.low}/main.go — Protocole de fin du monde v${m.version}
 // Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
-// Document du CONSORTIUM, intercepté par ÉCHO.
+// Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
 // (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 ${journal("//", m)}
@@ -779,7 +779,7 @@ func tournerLesCles(gauche, droite bool) bool {
 }
 
 func appelerLesSbires() {
-	fmt.Println("[*] Appel des sbires du Consortium...")
+	fmt.Println("[*] Appel des sbires du Club des Méchants...")
 	for _, s := range sbires {
 		fmt.Printf("    - %-12s : %s\\n", s[0], s[1])
 	}
@@ -844,7 +844,7 @@ ${appels(m, "\t", "//", (fn) => `${camel(fn)}()`)}
 
     asm: (m) => `; operation_${m.low}.asm — Protocole de fin du monde v${m.version}
 ; Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
-; Document du CONSORTIUM, intercepté par ÉCHO.
+; Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
 ; (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 ; nasm -f elf64 operation_${m.low}.asm && ld -o ${m.low} operation_${m.low}.o
 
@@ -868,7 +868,7 @@ section .data
     code_lancement  db "${m.code}", 0
     msg_bienvenue   db "Bienvenue, ${m.mechantNom}.", 10
     len_msg_bienvenue equ $ - msg_bienvenue
-    msg_sbires      db "[*] Appel des sbires du Consortium...", 10
+    msg_sbires      db "[*] Appel des sbires du Club des Méchants...", 10
     len_msg_sbires  equ $ - msg_sbires
 ${m.sbires.map(([n, r], i) => `    sbire_${i + 1}         db "    - ${n} : ${r}", 10\n    len_sbire_${i + 1}     equ $ - sbire_${i + 1}\n`).join("")}    msg_inventaire  db "[*] Inventaire de la base...", 10
     len_msg_inventaire equ $ - msg_inventaire
@@ -941,7 +941,7 @@ quitter:
     bash: (m) => `#!/usr/bin/env bash
 # operation_${m.low}.sh — Protocole de fin du monde v${m.version}
 # Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
-# Document du CONSORTIUM, intercepté par ÉCHO.
+# Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
 # (100 % fictif : aucune vraie bombe ici, juste des blagues.)
 
 ${journal("#", m)}
@@ -977,7 +977,7 @@ tourner_les_cles() {
 }
 
 appeler_les_sbires() {
-  log "Appel des sbires du Consortium..."
+  log "Appel des sbires du Club des Méchants..."
   for sbire in "\${SBIRES[@]}"; do
     log "  - \${sbire%%:*} : \${sbire#*:}"
   done

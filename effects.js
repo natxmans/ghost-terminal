@@ -190,7 +190,7 @@
   ];
   const fmtSize = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1).replace(".", ",")} Go` : `${fr(mb)} Mo`);
 
-  // L'univers de l'histoire (défini dans snippets.js) : le Consortium, ses bases, ses armes
+  // L'univers de l'histoire (défini dans snippets.js) : le Club des Méchants, ses bases, ses armes
   const LORE = window.HT_LORE || { MECHANTS: ["Dr Méchant"], BASES: ["volcan_secret"], BOMBES: ["Ogive Oméga"], CODES: ["FROMAGE-42"] };
   const mechant = () => pick(LORE.MECHANTS);
   const base = () => pick(LORE.BASES);
@@ -238,7 +238,7 @@
       const spot = pick([
         { title: `CAM-01 · BUNKER DE ${villain.toUpperCase()}`, label: "CAM-01 · BUNKER · IR", subject: `SUJET : ${villain.toUpperCase()}` },
         { title: "CAM-07 · QG DE LA DIVISION ZÉRO", label: "CAM-07 · DIVISION ZÉRO", subject: "SUJET : AGENT KANE" },
-        { title: `CAM-13 · BASE ${base().toUpperCase().replace(/_/g, " ")}`, label: "CAM-13 · CONSORTIUM", subject: "SUJET : SBIRE DU CONSORTIUM" },
+        { title: `CAM-13 · BASE ${base().toUpperCase().replace(/_/g, " ")}`, label: "CAM-13 · CLUB DES MÉCHANTS", subject: "SUJET : SBIRE DU CLUB DES MÉCHANTS" },
       ]);
       const w = api.createWindow({
         title: spot.title, icon: "camera", width: 420, cls: "win-cam",
@@ -354,7 +354,7 @@
       const W = 440, H = 210;
       const cible = base().replace(/_/g, " ");
       const w = api.createWindow({
-        title: "LOCALISATION D'UNE BASE DU CONSORTIUM", icon: "crosshair", width: 470, cls: "win-map",
+        title: "LOCALISATION D'UNE BASE DU CLUB DES MÉCHANTS", icon: "crosshair", width: 470, cls: "win-map",
         html: `
           <div class="map-wrap"><canvas class="map-canvas"></canvas><div class="map-status">RECHERCHE : ${esc(cible.toUpperCase())}…</div></div>
           <div class="geo-grid">
@@ -422,7 +422,7 @@
             w.el.classList.add("done");
             api.sound.tone(1200, 0.12);
             api.sound.tone(1600, 0.2, { when: 0.13 });
-            api.speak("Base du Consortium localisée.");
+            api.speak("Base du Club des Méchants localisée.");
           }
           for (let k = 0; k < 3; k++) {
             const rr = (t * 28 + k * 18) % 54;
@@ -450,9 +450,9 @@
     id: "files", digit: 4, icon: "folder", name: "Fichiers", short: "Fichiers",
     run(api, opts = {}) {
       const w = api.createWindow({
-        title: "COFFRE-FORT DU CONSORTIUM", icon: "folder", width: 470, cls: "win-fs",
+        title: "COFFRE-FORT DU CLUB DES MÉCHANTS", icon: "folder", width: 470, cls: "win-fs",
         html: `
-          <div class="fs-cmd"><span class="fs-prompt">echo@consortium</span><span class="fs-path">:/coffre#</span> <span class="fs-typed"></span><i class="fs-caret"></i></div>
+          <div class="fs-cmd"><span class="fs-prompt">echo@club-des-mechants</span><span class="fs-path">:/coffre#</span> <span class="fs-typed"></span><i class="fs-caret"></i></div>
           <div class="fs-list"></div>
           <div class="fs-foot">
             <div class="bar"><i></i></div>
@@ -506,7 +506,7 @@
         }
         q(".fs-current").textContent = "✓ PLANS ENVOYÉS À ÉCHO";
         w.el.classList.add("done");
-        api.speak("Plans du Consortium envoyés à Écho.");
+        api.speak("Plans du Club des Méchants envoyés à Écho.");
         api.sound.tone(880, 0.1);
         api.sound.tone(1320, 0.15, { when: 0.1 });
         if (opts.auto) setTimeout(() => w.close(), 2500);
@@ -527,8 +527,8 @@
           rows: () => [["001", "KANE", "10", "TRAQUE ÉCHO"], ...shuffle(CODENAMES).slice(0, 7).map((n) => [String(randInt(100, 999)), n, String(randInt(5, 9)), pick(["EN SURVEILLANCE", "INFILTRÉ", "EN MISSION", "EN VEILLE"])])],
         },
         {
-          db: "CONSORTIUM",
-          sql: "SELECT mechant, base, arme, statut FROM consortium WHERE plan = 'fin_du_monde' LIMIT 8;",
+          db: "CLUB_DES_MECHANTS",
+          sql: "SELECT mechant, base, arme, statut FROM club_des_mechants WHERE plan = 'fin_du_monde' LIMIT 8;",
           cols: ["MÉCHANT", "BASE", "ARME", "STATUT"],
           rows: () => shuffle(LORE.MECHANTS).map((n) => [n, base(), pick(LORE.BOMBES), pick(["EN PRÉPARATION", "ARMÉE", "SABOTÉE PAR ÉCHO", "EN PAUSE CAFÉ"])]),
         },
@@ -536,13 +536,13 @@
           db: "DIVISION_ZERO",
           sql: "SELECT nom, orbite_km, cible, signal FROM satellites_espions WHERE actif = TRUE LIMIT 8;",
           cols: ["SATELLITE", "ORBITE", "CIBLE", "SIGNAL"],
-          rows: () => shuffle(["ORION", "VEGA", "ATLAS", "HÉLIOS", "ZÉPHYR", "TITAN", "NOVA", "LYRA", "SIRIUS"]).slice(0, 8).map((n) => [`SAT-${n}-${randInt(1, 9)}`, `${fr(randInt(380, 36000))} km`, pick(["ÉCHO", "TON TERMINAL", "CONSORTIUM", base()]), `${randInt(40, 99)}%`]),
+          rows: () => shuffle(["ORION", "VEGA", "ATLAS", "HÉLIOS", "ZÉPHYR", "TITAN", "NOVA", "LYRA", "SIRIUS"]).slice(0, 8).map((n) => [`SAT-${n}-${randInt(1, 9)}`, `${fr(randInt(380, 36000))} km`, pick(["ÉCHO", "TON TERMINAL", "CLUB DES MÉCHANTS", base()]), `${randInt(40, 99)}%`]),
         },
       ];
       const Q = pick(QUERIES);
 
       const w = api.createWindow({
-        title: `BASE DE DONNÉES · ${Q.db === "CONSORTIUM" ? "CONSORTIUM" : "DIVISION ZÉRO"}`, icon: "database", width: 520, cls: "win-db",
+        title: `BASE DE DONNÉES · ${Q.db === "CLUB_DES_MECHANTS" ? "CLUB DES MÉCHANTS" : "DIVISION ZÉRO"}`, icon: "database", width: 520, cls: "win-db",
         html: `
           <div class="db-head"><span class="db-pill">${Q.db}</span><span class="db-conn"><i></i>connecté via ÉCHO</span></div>
           <pre class="db-query"></pre>
@@ -607,7 +607,7 @@
       const w = api.createWindow({
         title: "ÉCHO CASSE UN MOT DE PASSE", icon: "key", width: 430, cls: "win-pw",
         html: `
-          <div class="pw-target"><span>CIBLE</span><b>${esc(pick([`${mail(mechant())}@consortium.local`, "kane@division-zero.local", `${mail(mechant())}@consortium.local`]))}</b></div>
+          <div class="pw-target"><span>CIBLE</span><b>${esc(pick([`${mail(mechant())}@club-des-mechants.local`, "kane@division-zero.local", `${mail(mechant())}@club-des-mechants.local`]))}</b></div>
           <div class="pw-slots">${[...pw].map(() => `<span class="pw-slot">?</span>`).join("")}</div>
           <div class="pw-stats">
             <div><span>TENTATIVES</span><b class="pw-tries">0</b></div>
@@ -732,9 +732,9 @@
     },
   });
 
-  // ----- 8. Lancement de l'ogive du Consortium -----
+  // ----- 8. Lancement de l'ogive du Club des Méchants -----
   EFFECTS.push({
-    id: "countdown", digit: 8, icon: "timer", name: "Ogive du Consortium", short: "Ogive",
+    id: "countdown", digit: 8, icon: "timer", name: "Ogive du Club des Méchants", short: "Ogive",
     run(api) {
       const arme = pick(LORE.BOMBES).toUpperCase();
       const h = api.fullscreen(`
@@ -764,7 +764,7 @@
         api.achieve("cool");
         api.event?.("disarm");
       });
-      api.speak("Alerte. Le Consortium a lancé la fin du monde.");
+      api.speak("Alerte. Le Club des Méchants a lancé la fin du monde.");
 
       let n = 10;
       const tick = () => {
@@ -928,7 +928,7 @@
     id: "download", key: "F2", icon: "download", name: "Téléchargement", short: "Télécharg.",
     run(api) {
       const [title, file] = pick([
-        ["VOL DES PLANS DU CONSORTIUM", "plans_fin_du_monde.zip"],
+        ["VOL DES PLANS DU CLUB DES MÉCHANTS", "plans_fin_du_monde.zip"],
         ["COPIE DU NOYAU D'ÉCHO", "noyau_echo.bin"],
         ["VOL DES CODES DE LANCEMENT", "codes_lancement.txt"],
         ["PIRATAGE DU DOSSIER DE KANE", "dossier_kane.pdf"],

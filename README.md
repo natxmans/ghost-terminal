@@ -20,7 +20,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
   - **Des choix qui comptent** (prévenir Kane ou non, faire confiance à ÉCHO ou non, détruire le satellite ou le lui confier…) et **3 fins**, dont une vraie fin réservée à ceux qui ont retrouvé toute la mémoire d'ÉCHO.
   - Un épilogue secret pour ceux qui débloquent 100 % des succès, et un **jeu secret** pour les plus acharnés. Surtout, ne touchez pas au gros bouton rouge.
 - **Un endroit secret** 🐧 : lis bien les plans que tu tapes. Pour une fois, ce que tu tapes vraiment pourrait ouvrir une porte…
-- **Un seul univers** : le faux code, les effets et les missions racontent tous la même histoire. Une IA nommée ÉCHO, les super-méchants du Consortium et l'agent Kane de la Division Zéro.
+- **Un seul univers** : le faux code, les effets et les missions racontent tous la même histoire. Une IA nommée ÉCHO, les vilains du Club des Méchants et l'agent Kane de la Division Zéro.
 - **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables.
 - **Mode mission** : une opération complète qui enchaîne plusieurs effets toute seule.
 - **Pilote automatique** : le code s'écrit sans toucher au clavier.
@@ -35,7 +35,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 - **Résumé de l'histoire** : un rappel « Précédemment… » quand tu reviens en pleine histoire, et le récapitulatif de tes choix dans le panneau Succès.
 - **7 thèmes** de couleur (et 2 thèmes secrets à débloquer) et effet écran CRT.
 - **Application installable** qui marche **hors ligne** (PWA).
-- **Mobile** : touche l'écran pour taper, 3 doigts = accès autorisé, 4 doigts = accès refusé.
+- **Téléphone et tablette** : touche l'écran pour écrire du code (le bouton ⌨ ouvre le vrai clavier si tu veux), 3 doigts = accès autorisé, 4 doigts = accès refusé. Les consignes, les objectifs et les mini-jeux s'adaptent à l'écran tactile, la page s'ajuste aux encoches et au mode paysage, et le téléphone vibre aux moments forts (désactivable). Même le code de triche secret se dessine au doigt.
 
 ## ⌨️ Raccourcis
 
@@ -51,7 +51,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 | `Maj` + `5` | Requête base de données |
 | `Maj` + `6` | Cassage de mot de passe |
 | `Maj` + `7` | Balayage satellite |
-| `Maj` + `8` | Ogive du Consortium (à désamorcer !) |
+| `Maj` + `8` | Ogive du Club des Méchants (à désamorcer !) |
 | `Maj` + `9` | Réseau mondial |
 | `Maj` + `0` | Mode fantôme |
 | `F1` | Aide |

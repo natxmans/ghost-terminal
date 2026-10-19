@@ -225,7 +225,7 @@ window.HT_MOTS = (() => {
     // Secrets et trésors
     ["le coffre-fort", "secret tresor"],
     ["les plans secrets", "secret info"],
-    ["le trésor du Consortium", "tresor secret"],
+    ["le trésor du Club des Méchants", "tresor secret"],
     ["la carte au trésor", "tresor secret"],
     ["les lingots en chocolat", "tresor cuisine"],
   ];
