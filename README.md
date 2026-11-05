@@ -8,33 +8,39 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 
 👉 **[Essayer Ghost Terminal en ligne](https://natxmans.github.io/ghost-terminal/)**
 
+🆕 **Version 2.0 : 100 améliorations !** La liste complète est dans [CHANGELOG.md](CHANGELOG.md) et dans le jeu (clique sur « v2.0 » en haut à gauche).
+
 ---
 
 ## ✨ Fonctionnalités
 
-- **7 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86 et Bash. Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde : journal de bord, sbires, étapes détaillées… Méchant, base secrète, code de lancement, arme et étapes sont **tirés au hasard** : à chaque fois que tout le code a été tapé (5 000 à 9 000 caractères), un nouveau plan est inventé.
-- **Ton propre code** : colle-le dans les réglages pour qu'il s'écrive à l'écran. Les gros mots sont bloqués et remplacés par des jurons de BD (`#@!%`).
+- **8 langages** de faux code : C, Python, JavaScript, Rust, Go, Assembleur x86, Bash et Lua (clique sur LANG, en bas, pour en changer). Le code raconte le plan (complètement fictif et ridicule) d'un super-méchant qui déclenche la fin du monde : journal de bord, sbires, étapes détaillées… Méchant, base secrète, code de lancement, arme et étapes sont **tirés au hasard** : à chaque fois que tout le code a été tapé (5 000 à 9 000 caractères), un nouveau plan est inventé.
+- **Ton propre code** : colle-le dans les réglages (ou importe un fichier) pour qu'il s'écrive à l'écran. Les gros mots sont bloqués et remplacés par des jurons de BD (`#@!%`).
 - **Mode histoire « PROTOCOLE ÉCHO »** : continue de taper… au bout d'un moment, quelque chose se réveille dans le terminal. **3 actes et 11 chapitres** en cinématiques. Chaque chapitre a ses **objectifs** (taper du code, lancer certains effets, terminer une mission, désamorcer une ogive…), affichés en haut à gauche.
   - **12 fragments de mémoire** passent pendant que tu tapes : attrape-les avec `Tab` (ou en les touchant) pour découvrir qui est vraiment ÉCHO.
   - **7 mini-jeux** : séquence à mémoriser, course-poursuite, code à taper, fil à couper, déchiffrement, fréquence à caler et labyrinthe.
   - **Des choix qui comptent** (prévenir Kane ou non, faire confiance à ÉCHO ou non, détruire le satellite ou le lui confier…) et **3 fins**, dont une vraie fin réservée à ceux qui ont retrouvé toute la mémoire d'ÉCHO.
   - Un épilogue secret pour ceux qui débloquent 100 % des succès, et un **jeu secret** pour les plus acharnés. Surtout, ne touchez pas au gros bouton rouge.
-- **Un endroit secret** 🐧 : lis bien les plans que tu tapes. Pour une fois, ce que tu tapes vraiment pourrait ouvrir une porte…
+- **Un endroit secret** 🐧 : lis bien les plans que tu tapes. Pour une fois, ce que tu tapes vraiment pourrait ouvrir une porte… Et d'autres mots secrets cachent des surprises.
 - **Un seul univers** : le faux code, les effets et les missions racontent tous la même histoire. Une IA nommée ÉCHO, les vilains du Club des Méchants et l'agent Kane de la Division Zéro.
-- **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables.
-- **Mode mission** : une opération complète qui enchaîne plusieurs effets toute seule.
-- **Pilote automatique** : le code s'écrit sans toucher au clavier.
+- **10 effets dramatiques** à lancer avec `Maj` + `1` … `0`, cumulables, dans des fenêtres déplaçables (double-clic sur le titre pour agrandir), plus un bouton « Hasard ».
+- **Mode mission** : 5 opérations complètes qui enchaînent plusieurs effets toutes seules.
+- **Pilote automatique** (vitesse réglable) et **mode démo** : tout se lance tout seul.
 - **Mode immersion** : plus aucune interface, juste le terminal. Parfait pour une blague.
-- **38 succès** à débloquer (plus quelques secrets), et un code secret caché 🌈.
+- **Économiseur d'écran d'ÉCHO** après 90 secondes sans rien faire.
+- **38 succès** à débloquer (plus des succès bonus et secrets), avec leur progression, et un code secret caché 🌈.
+- **Défi du jour** : un nouveau petit défi chaque jour, et ta série de jours joués d'affilée.
 - **Voix de l'ordinateur** (synthèse vocale) et **sons** générés en direct.
 - **HUD « Ton système » en direct** : la vraie charge de la page, la mémoire, ta batterie, les images par seconde, ton système, ton navigateur, tes cœurs de processeur, ta RAM, ton écran et ton réseau. Tout est lu dans ton navigateur et rien n'est envoyé nulle part.
-- **Sauvegarde** (réglages › sauvegarde) : exporte ta progression dans un fichier et réimporte-la sur un autre appareil ou une autre version du jeu (site, itch.io). Le fichier importé est vérifié avant d'être utilisé.
+- **Sauvegarde** (réglages › sauvegarde) : exporte ta progression dans un fichier (ou en code à copier-coller) et réimporte-la sur un autre appareil ou une autre version du jeu (site, itch.io). Tu peux aussi glisser le fichier sur les réglages. La sauvegarde importée est vérifiée avant d'être utilisée.
 - **Tout réinitialiser** (réglages › zone dangereuse) : efface succès, histoire et réglages pour repartir de zéro.
-- **Confort** : mode calme (moins de flashs et de tremblements, activé d'office si ton appareil demande moins d'animations) et vitesse des dialogues réglable.
-- **Statistiques** (panneau Succès) : temps de jeu, record de vitesse, effets lancés, missions réussies, chapitres, fragments et fins découvertes.
+- **Confort** : mode calme (moins de flashs et de tremblements, activé d'office si ton appareil demande moins d'animations), vitesse des dialogues, forme du curseur, police du terminal et son des touches réglables, ambiance sonore facultative, décorations de saison.
+- **Statistiques** (panneau Succès) : temps de jeu, record de vitesse, effets lancés, missions réussies, chapitres, fragments, fins découvertes, langage et effet préférés, sessions, record du jeu secret.
 - **Résumé de l'histoire** : un rappel « Précédemment… » quand tu reviens en pleine histoire, et le récapitulatif de tes choix dans le panneau Succès.
 - **7 thèmes** de couleur (et 2 thèmes secrets à débloquer) et effet écran CRT.
-- **Application installable** qui marche **hors ligne** (PWA).
+- **Application installable** qui marche **hors ligne** (PWA), avec des raccourcis (pilote auto, démo, immersion).
+- **Liens directs** : `?auto=1`, `?demo=1`, `?immersion=1`, `?theme=cyan`, `?lang=lua`…
+- **Jeu secret** : 3 niveaux de difficulté, compatible manette, pause automatique.
 - **Téléphone et tablette** : touche l'écran pour écrire du code (le bouton ⌨ ouvre le vrai clavier si tu veux), 3 doigts = accès autorisé, 4 doigts = accès refusé. Les consignes, les objectifs et les mini-jeux s'adaptent à l'écran tactile, la page s'ajuste aux encoches et au mode paysage, et le téléphone vibre aux moments forts (désactivable). Même le code de triche secret se dessine au doigt.
 
 ## ⌨️ Raccourcis
@@ -57,6 +63,7 @@ Chaque touche fait apparaître du vrai code (coloré comme dans un éditeur), et
 | `F1` | Aide |
 | `F2` | Téléchargement |
 | `F3` | Mode mission |
+| `F4` | Effacer l'écran |
 | `F6` | Pilote automatique |
 | `F7` | Panneau HUD |
 | `F8` | Thème suivant |
@@ -94,7 +101,10 @@ puis ouvre <http://localhost:8000>.
 | `filtre.js` | Le filtre anti-gros mots de « Mon code » |
 | `mots.js` | Le grand sac de mots du faux code, classés par thèmes |
 | `snippets.js` | Le générateur de faux code : il assemble les mots qui vont le mieux ensemble (un nouveau plan à chaque tour) |
+| `nouveautes.js` | La liste des nouveautés (fenêtre « Quoi de neuf ? ») |
 | `highlight.js` | La coloration du code |
 | `icons.js` | Les icônes |
 | `security.js` | La protection anti-copie |
 | `sw.js`, `manifest.webmanifest` | L'application installable et le mode hors ligne |
+| `CHANGELOG.md` | Le journal des modifications |
+| `outils/` | Le paquet pour itch.io et le journal des mises à jour |

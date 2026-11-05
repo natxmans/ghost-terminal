@@ -120,6 +120,10 @@ window.HT_STORY = (() => {
     "continue de taper, j'adore te regarder coder.",
     "merci. Vraiment.",
     "il pleut à Reykjavik. Je l'ai vu par mille caméras.",
+    "j'ai compté les étoiles depuis le satellite. Il en manque une, je vérifie.",
+    "le Club des Méchants a changé ses codes. Ils sont toujours aussi nuls.",
+    "un jour, je t'apprendrai à taper aussi vite que moi.",
+    "j'ai trouvé une sardine dans le réseau. Ne demande pas.",
   ];
   const WHISPERS_TRUE = [
     "Esprit Curieux, Heureux et Ouvert. J'adore mon nouveau nom.",
@@ -127,6 +131,10 @@ window.HT_STORY = (() => {
     "Kane m'a dit merci aujourd'hui. Deux fois.",
     "j'ai réécrit une berceuse pour les serveurs. Ils ronronnent.",
     "continue de taper, partenaire. Chaque ligne est un souvenir de plus.",
+    "Kane veut m'inscrire à la Division Zéro. J'ai demandé un badge brillant.",
+    "j'ai appris à faire des crêpes. En théorie.",
+    "le Professeur Chaos m'a envoyé une carte d'excuses. Elle explose en confettis.",
+    "merci d'avoir retrouvé chacun de mes souvenirs. Je les garde tous.",
   ];
 
   function create(api) {
@@ -147,6 +155,7 @@ window.HT_STORY = (() => {
     let playing = false;
     let skipping = false;
     let pending = null;      // fonction qui débloque l'attente en cours (pour « Passer »)
+    let astuces = 0;         // nombre de fois où « Espace pour continuer » a été affiché
     let onAdvance = null;    // clic / Espace pendant un dialogue
     let keyHandler = null;   // touches pendant un choix ou une poursuite
     let rewards = [];
@@ -1109,6 +1118,10 @@ window.HT_STORY = (() => {
       q(".cine-speaker").textContent = sp.name;
       tx.textContent = "";
       next.hidden = true;
+      // Les premières répliques rappellent comment continuer
+      next.textContent = `${astuces++ < 4 ? (api.tactile ? "touche pour continuer " : "Espace pour continuer ") : ""}▼`;
+      // Pour les lecteurs d'écran : la réplique entière d'un coup (pas lettre par lettre)
+      q(".cine-lu").textContent = `${sp.name} : ${text}`;
       api.speak(text.replace(/[⚠…👋🎆❄🐟]/gu, " "), sp.voice);
       S.talking = who === (S.voice || "ECHO"); // la bouche du visage à l'écran bouge
       S.talker = COUNCIL[who] ?? -1;
@@ -2686,9 +2699,10 @@ window.HT_STORY = (() => {
         <div class="cine-label"></div>
         <div class="cine-title" hidden><small></small><b class="glitch"></b><span></span></div>
         <div class="cine-sub" hidden><div class="cine-speaker"></div><div class="cine-text"></div><i class="cine-next">▼</i></div>
+        <div class="sr-only cine-lu" aria-live="polite"></div>
         <div class="cine-choice" hidden></div>
         <div class="cine-qte" hidden></div>
-        <button class="cine-skip" type="button">Passer ⏭</button>`;
+        <button class="cine-skip" type="button">Passer ⏭${api.tactile ? "" : " <kbd>Échap</kbd>"}</button>`;
       document.body.appendChild(el);
       canvas = q(".cine-canvas");
       ctx = canvas.getContext("2d");
@@ -2734,6 +2748,9 @@ window.HT_STORY = (() => {
       api.prepare();
       open();
       api.log(label);
+      // Le titre de l'onglet suit la cinématique
+      const titre = document.title;
+      document.title = "▶ PROTOCOLE ÉCHO · Ghost Terminal";
       try {
         await scenario();
       } catch (err) {
@@ -2741,6 +2758,7 @@ window.HT_STORY = (() => {
       }
       api.hush();
       await close();
+      document.title = titre;
       playing = false;
     }
 

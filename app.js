@@ -76,7 +76,12 @@
     dialogue: "normal", // vitesse des dialogues : lent, normal ou rapide
     vibrations: true, // téléphone : petites vibrations (accès refusé, explosion…)
     clavierMobile: false, // téléphone : toucher l'écran ouvre aussi le vrai clavier
+    // Version 2.0
+    curseur: "bloc", police: "jetbrains", sonTouches: "clic", autoVitesse: "normal",
+    veille: true, saison: true, ambiance: false, survieDiff: "normal",
   };
+  // Liens directs : ?theme=cyan, ?lang=lua, ?auto=1, ?immersion=1, ?demo=1 (et ?saison=neige pour tester)
+  const PARAMS = new URLSearchParams(location.search);
   const STORE = "ghostterminal-v1";
   let wiping = false; // « Tout réinitialiser » en cours : on n'enregistre plus rien
 
@@ -119,12 +124,33 @@
 
   if (!window.SNIPPETS[settings.lang]) settings.lang = DEFAULTS.lang;
   if (!THEMES.some((t) => t.id === settings.theme)) settings.theme = DEFAULTS.theme;
-  if (!["lent", "normal", "rapide"].includes(settings.dialogue)) settings.dialogue = "normal";
+  // Réglages à choix : une valeur inconnue (vieille sauvegarde, fichier importé) reprend la valeur par défaut
+  const CHOIX = {
+    dialogue: ["lent", "normal", "rapide"],
+    autoVitesse: ["lent", "normal", "rapide"],
+    curseur: ["bloc", "barre", "souligne"],
+    police: ["jetbrains", "systeme", "machine"],
+    sonTouches: ["clic", "machine", "bip", "muet"],
+    survieDiff: ["facile", "normal", "difficile"],
+  };
+  for (const [k, ok] of Object.entries(CHOIX)) if (!ok.includes(settings[k])) settings[k] = DEFAULTS[k];
+  const POLICES = {
+    jetbrains: '"JetBrains Mono", "Cascadia Mono", Consolas, monospace',
+    systeme: '"Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace',
+    machine: '"Courier New", Courier, monospace',
+  };
+  const BASE_THEMES = THEMES.filter((t) => !t.secret).map((t) => t.id);
+  const LANGS_FAUX = () => Object.keys(window.SNIPPETS).filter((k) => k !== "custom");
 
   let themeColors = {};
+  // Les couleurs du thème, toujours en #rrggbb (les canvas leur ajoutent une transparence : « #3dff7a55 »)
+  function enHex(c) {
+    const m = /^rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(c);
+    return m ? "#" + m.slice(1, 4).map((x) => (+x).toString(16).padStart(2, "0")).join("") : c;
+  }
   function readColors() {
     const cs = getComputedStyle(body);
-    const v = (n) => cs.getPropertyValue(n).trim();
+    const v = (n) => enHex(cs.getPropertyValue(n).trim());
     return { fg: v("--fg") || "#3dff7a", fg2: v("--fg2") || "#c6ff4d", fg3: v("--fg3") || "#3de8ff", danger: v("--danger") || "#ff3355" };
   }
 
@@ -183,7 +209,19 @@
       node.connect(g).connect(this.master);
       src.start(ctx.currentTime + when);
     },
+    // Son des touches : clic de clavier, machine à écrire, petit bip ou muet (réglages)
     click() {
+      const genre = settings.sonTouches;
+      if (genre === "muet") return;
+      if (genre === "machine") {
+        this.noise(0.04, { vol: 0.09, filter: 2200 });
+        this.tone(rand(170, 230), 0.03, { type: "triangle", vol: 0.03 });
+        return;
+      }
+      if (genre === "bip") {
+        this.tone(rand(880, 990), 0.025, { type: "sine", vol: 0.025 });
+        return;
+      }
       this.noise(0.018, { vol: 0.06, filter: 5000 });
       this.tone(rand(1400, 2200), 0.012, { vol: 0.012 });
     },
@@ -249,6 +287,51 @@
   };
   Voice.init();
 
+  // ===== Ambiance sonore : le ronronnement d'une salle des serveurs (facultatif) =====
+  const Ambiance = {
+    nodes: null,
+    bips: 0,
+    maj() {
+      const on = settings.sound && settings.ambiance && !document.hidden;
+      if (on && !this.nodes) {
+        const ctx = Sound.ensure();
+        if (!ctx) return;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.03, ctx.currentTime + 2);
+        const f = ctx.createBiquadFilter();
+        f.type = "lowpass";
+        f.frequency.value = 320;
+        const oscs = [55, 82.5, 110.3].map((hz, i) => {
+          const o = ctx.createOscillator();
+          o.type = i === 2 ? "triangle" : "sine";
+          o.frequency.value = hz;
+          o.connect(f);
+          return o;
+        });
+        // Le souffle monte et descend doucement
+        const lfo = ctx.createOscillator();
+        const lg = ctx.createGain();
+        lfo.frequency.value = 0.07;
+        lg.gain.value = 0.01;
+        lfo.connect(lg).connect(g.gain);
+        f.connect(g).connect(Sound.master);
+        [...oscs, lfo].forEach((o) => o.start());
+        this.nodes = { g, oscs: [...oscs, lfo] };
+        // De temps en temps, un petit bip de disque dur
+        this.bips = setInterval(() => {
+          if (Math.random() < 0.45) Sound.tone(rand(1200, 2600), 0.03, { type: "sine", vol: 0.006 });
+        }, 2300);
+      } else if (!on && this.nodes) {
+        const { g, oscs } = this.nodes;
+        g.gain.setTargetAtTime(0.0001, Sound.ctx.currentTime, 0.25);
+        setTimeout(() => oscs.forEach((o) => o.stop()), 1500);
+        clearInterval(this.bips);
+        this.nodes = null;
+      }
+    },
+  };
+
   // ===== Succès à débloquer =====
   const ACHIEVEMENTS = [
     { id: "first", icon: "terminal", name: "Premiers pas", desc: "Taper 100 caractères" },
@@ -291,14 +374,29 @@
     { id: "labyrinthe", icon: "crosshair", name: "Passe-muraille", desc: "Histoire : sortir Kane du labyrinthe" },
     { id: "survivor", icon: "shield", name: "Survivant", desc: "Jeu secret : survivre à l'explosion de l'ogive", secret: true },
     { id: "repaire", icon: "unlock", name: "Ami des pingouins", desc: "Endroit secret : visiter tout le repaire du Général Pingouin", secret: true },
+    // Version 2.0 : succès bonus (visibles, mais hors des 100 %) et nouveaux secrets
+    { id: "assidu", icon: "calendar", name: "Assidu", desc: "Réussir 7 défis du jour", bonus: true, max: 7, val: () => progress.defisFaits || 0 },
+    { id: "marathon", icon: "timer", name: "Marathonien", desc: "Jouer une heure d'affilée", bonus: true, max: 3600, val: () => sessionSec, duree: true },
+    { id: "arcenciel", icon: "sliders", name: "Arc-en-ciel", desc: "Essayer les 7 thèmes de base", bonus: true, max: 7, val: () => BASE_THEMES.filter((t) => progress.themes.includes(t)).length },
+    { id: "polyglotte2", icon: "code", name: "Polyglotte ultime", desc: "Essayer les 8 langages de faux code", bonus: true, max: 8, val: () => LANGS_FAUX().filter((l) => progress.langs.includes(l)).length },
+    { id: "noctambule", icon: "eye", name: "Noctambule", desc: "Jouer entre minuit et 5 h du matin", secret: true },
+    { id: "chasseur", icon: "key", name: "Chasseur de secrets", desc: "Trouver 3 mots secrets", secret: true },
   ];
-  // Les succès secrets ne comptent pas dans les 100 % (ils se débloquent après)
-  const MAIN_ACH = ACHIEVEMENTS.filter((a) => !a.secret);
+  // Progression des succès à compteur (affichée sous ceux qui ne sont pas encore débloqués)
+  const COMPTEURS = {
+    first: [100, () => totalChars], kiddie: [1000, () => totalChars],
+    hacker: [10000, () => progress.lifetime], legend: [50000, () => progress.lifetime],
+    polyglot: [4, () => progress.langs.length], chameleon: [4, () => progress.themes.length],
+    collector: [10, () => progress.effects.length], fragments: [12, () => story.memories().filter(Boolean).length],
+  };
+  for (const a of ACHIEVEMENTS) if (COMPTEURS[a.id]) [a.max, a.val] = COMPTEURS[a.id];
+  // Les succès secrets et bonus ne comptent pas dans les 100 % (ils se débloquent en plus)
+  const MAIN_ACH = ACHIEVEMENTS.filter((a) => !a.secret && !a.bonus);
   const mainDone = () => MAIN_ACH.filter((a) => progress.ach[a.id]).length;
   const allDone = () => mainDone() === MAIN_ACH.length;
   const PROGRESS_KEY = "ghostterminal-progress";
   const progress = (() => {
-    const base = { ach: {}, lifetime: 0, effects: [], langs: [], themes: [] };
+    const base = { ach: {}, lifetime: 0, effects: [], langs: [], themes: [], mots: [] };
     try {
       return { ...base, ...JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}") };
     } catch {
@@ -333,8 +431,9 @@
     vibrer([20, 40, 20]);
     const t = document.createElement("div");
     t.className = "toast toast-ach";
-    t.innerHTML = `${window.icon("trophy")}<div><small>SUCCÈS DÉBLOQUÉ</small><b></b></div>`;
+    t.innerHTML = `${window.icon(a.icon)}<div><small>${a.secret ? "SUCCÈS SECRET" : a.bonus ? "SUCCÈS BONUS" : "SUCCÈS DÉBLOQUÉ"}</small><b></b></div>`;
     t.querySelector("b").textContent = a.name;
+    t._action = () => openModal(achEl);
     toastsEl.appendChild(t);
     setTimeout(() => {
       t.classList.add("out");
@@ -343,7 +442,7 @@
     log(`Succès : ${a.name}`);
     [659, 784, 988, 1319].forEach((f, i) => Sound.tone(f, 0.14, { vol: 0.05, when: i * 0.07, type: "triangle" }));
     if (isOpen($("achievements"))) renderAchievements();
-    if (!a.secret && allDone()) scheduleFinale(3500);
+    if (!a.secret && !a.bonus && allDone()) scheduleFinale(3500);
   }
 
   // Statistiques du joueur, en haut du panneau Succès
@@ -351,9 +450,14 @@
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
     return h ? `${h} h ${pad(m)} min` : m ? `${m} min` : `${s} s`;
   }
+  // Le plus grand d'un objet { clé: nombre } (langage préféré, effet préféré)
+  const prefere = (o) => Object.entries(o || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
   function renderStats() {
     const chapitres = story.list();
     const memoires = story.memories();
+    const lang = prefere(progress.langChars);
+    const effet = effectById[prefere(progress.effectCount)];
+    const serie = progress.serie || { n: 0, best: 0 };
     const tuiles = [
       ["Temps de jeu", dureeJeu((progress.playTime || 0) + secondesJouees)],
       ["Caractères tapés", fr(progress.lifetime)],
@@ -363,22 +467,117 @@
       ["Chapitres vus", `${chapitres.filter((c) => c.seen).length} / ${chapitres.length}`],
       ["Fragments de mémoire", `${memoires.filter(Boolean).length} / ${memoires.length}`],
       ["Fins découvertes", `${["free", "erase", "truend"].filter((id) => progress.ach[id]).length} / 3`],
+      ["Langage préféré", lang && window.SNIPPETS[lang] ? window.SNIPPETS[lang].name : "—"],
+      ["Effet préféré", effet ? effet.short : "—"],
+      ["Sessions", fr(progress.sessions || 1)],
+      ["Plus longue session", dureeJeu(Math.max(progress.longestSession || 0, sessionSec))],
+      ["Record du jeu secret", progress.survieScore ? `${fr(progress.survieScore)} pts` : "—"],
+      ["Série de jours", `${fr(serie.n || 1)} (record ${fr(Math.max(serie.best || 1, serie.n || 1))})`],
+      ["Défis réussis", fr(progress.defisFaits || 0)],
     ];
     $("ach-stats").innerHTML = tuiles.map(([k, v]) => `<div class="stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
   }
 
+  let filtreAch = "tous"; // filtre du panneau : tous, faits (débloqués) ou reste (à débloquer)
   function renderAchievements() {
     renderStats();
+    renderDefi();
     const n = mainDone();
     $("ach-progress").style.width = (n / MAIN_ACH.length) * 100 + "%";
     $("ach-summary").textContent = `${n} / ${MAIN_ACH.length} succès débloqués · ${fr(progress.lifetime)} caractères tapés au total`;
-    $("ach-grid").innerHTML = ACHIEVEMENTS.filter((a) => !a.secret || progress.ach[a.id]).map((a) => {
+    document.querySelectorAll(".ach-filtre").forEach((b) => {
+      const on = b.dataset.filtre === filtreAch;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on);
+    });
+    const liste = ACHIEVEMENTS
+      .filter((a) => !a.secret || progress.ach[a.id])
+      .filter((a) => filtreAch === "tous" || (filtreAch === "faits") === !!progress.ach[a.id]);
+    $("ach-grid").innerHTML = liste.map((a) => {
       const got = progress.ach[a.id];
-      return `<div class="ach ${got ? "got" : ""} ${a.secret ? "secret" : ""}">
+      const quand = typeof got === "number" ? `Débloqué le ${new Date(got).toLocaleDateString("fr-FR")} à ${new Date(got).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : "";
+      let barre = "";
+      if (!got && a.max) {
+        const v = Math.min(a.max, a.val() || 0);
+        const txt = a.duree ? `${dureeJeu(v)} / ${dureeJeu(a.max)}` : `${fr(v)} / ${fr(a.max)}`;
+        barre = `<em class="ach-prog"><u data-w="${(v / a.max) * 100}"></u></em><small>${txt}</small>`;
+      }
+      return `<div class="ach ${got ? "got" : ""} ${a.secret ? "secret" : ""} ${a.bonus ? "bonus" : ""}"${quand ? ` title="${esc(quand)}"` : ""}>
         <span class="ach-ic">${window.icon(got ? a.icon : "lock")}</span>
-        <div><b>${esc(a.name)}${a.secret ? " · SECRET" : ""}</b><span>${esc(a.desc)}</span></div>
+        <div><b>${esc(a.name)}${a.secret ? " · SECRET" : a.bonus ? " · BONUS" : ""}</b><span>${esc(a.desc)}</span>${barre}</div>
       </div>`;
-    }).join("");
+    }).join("") || `<p class="muted small">Rien à afficher ici… pour l'instant.</p>`;
+    // Les barres de progression (pas de style="…" dans le HTML : la page l'interdit)
+    $("ach-grid").querySelectorAll("u[data-w]").forEach((u) => (u.style.width = u.dataset.w + "%"));
+  }
+  document.querySelectorAll(".ach-filtre").forEach((b) => b.addEventListener("click", () => {
+    filtreAch = b.dataset.filtre;
+    renderAchievements();
+  }));
+
+  // ===== Défi du jour : le même pour tout le monde, tiré d'après la date =====
+  const DEFIS = [
+    { id: "chars", texte: "Taper 3 000 caractères (sans le pilote auto)", but: 3000 },
+    { id: "effets", texte: "Lancer 6 effets dramatiques", but: 6 },
+    { id: "mission", texte: "Terminer une mission (F3)", but: 1 },
+    { id: "granted", texte: "Obtenir 3 fois l'accès autorisé", but: 3 },
+    { id: "ogive", texte: "Désamorcer l'ogive du Club des Méchants", but: 1 },
+    { id: "lua", texte: "Taper 1 000 caractères en Lua", but: 1000 },
+    { id: "vitesse", texte: "Atteindre 600 caractères par minute", but: 600 },
+    { id: "themes", texte: "Changer 3 fois de thème", but: 3 },
+    { id: "fenetres", texte: "Avoir 4 fenêtres ouvertes en même temps", but: 4 },
+  ];
+  const jourStr = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  function defiDuJour() {
+    const j = jourStr();
+    if (!progress.defi || progress.defi.date !== j || !DEFIS.some((d) => d.id === progress.defi.id)) {
+      let h = 7;
+      for (const c of j) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      progress.defi = { date: j, id: DEFIS[h % DEFIS.length].id, have: 0, done: false };
+      progressDirty = true;
+    }
+    return { ...DEFIS.find((d) => d.id === progress.defi.id), ...progress.defi };
+  }
+  // max = vrai : on garde la meilleure valeur (vitesse, fenêtres) au lieu d'additionner
+  function avancerDefi(id, n = 1, max = false) {
+    const D = defiDuJour();
+    if (D.id !== id || D.done) return;
+    const avant = progress.defi.have;
+    progress.defi.have = max ? Math.max(progress.defi.have, n) : progress.defi.have + n;
+    if (progress.defi.have === avant) return;
+    progressDirty = true;
+    if (progress.defi.have < D.but) return;
+    progress.defi.done = true;
+    progress.defisFaits = (progress.defisFaits || 0) + 1;
+    saveProgress();
+    toast(`Défi du jour réussi : ${D.texte} ✓`, "calendar", 5000);
+    log("Défi du jour réussi");
+    [523, 659, 784, 1047, 1319].forEach((f, i) => Sound.tone(f, 0.12, { type: "triangle", vol: 0.05, when: i * 0.07 }));
+    vibrer([20, 40, 20, 40, 60]);
+    if (progress.defisFaits >= 7) achieve("assidu");
+  }
+  function renderDefi() {
+    const D = defiDuJour();
+    const el = $("defi");
+    el.innerHTML = `${window.icon("calendar")}<div><small>DÉFI DU JOUR</small><b></b><em><u></u></em></div><span class="defi-etat"></span>`;
+    el.querySelector("b").textContent = D.texte;
+    el.querySelector("u").style.width = Math.min(100, (D.have / D.but) * 100) + "%";
+    el.querySelector(".defi-etat").textContent = D.done ? "✓ Réussi !" : D.but > 1 ? `${fr(Math.min(D.have, D.but))} / ${fr(D.but)}` : "à faire";
+    el.classList.toggle("fait", !!D.done);
+  }
+  // Série : nombre de jours joués d'affilée
+  function noterSerie() {
+    const j = jourStr();
+    const s = progress.serie || { last: "", n: 0, best: 0 };
+    if (s.last === j) return;
+    const hier = new Date();
+    hier.setDate(hier.getDate() - 1);
+    s.n = s.last === jourStr(hier) ? s.n + 1 : 1;
+    s.last = j;
+    s.best = Math.max(s.best || 0, s.n);
+    progress.serie = s;
+    progressDirty = true;
+    if (s.n >= 2) setTimeout(() => toast(`🔥 ${s.n} jours d'affilée sur Ghost Terminal !`, "calendar", 4500), 5200);
   }
 
   // ===== Moteur de frappe =====
@@ -396,7 +595,8 @@
   const countNL = (s) => s.split("\n").length - 1;
 
   // Petits mots d'ÉCHO, insérés entre deux plans avec le bon symbole de commentaire
-  const COMMENT = { c: "//", javascript: "//", rust: "//", go: "//", python: "#", bash: "#", asm: ";", custom: "//" };
+  const COMMENT = { c: "//", javascript: "//", rust: "//", go: "//", python: "#", bash: "#", asm: ";", lua: "--", custom: "//" };
+  let sessionSec = 0; // temps passé sur la page pendant cette session (onglet visible)
   let pendingWhisper = null;
 
   function appendRun(text, c) {
@@ -465,6 +665,12 @@
     progress.lifetime += n;
     progressDirty = true;
     typedEvents.push([now(), n]);
+    const parLangage = progress.langChars || (progress.langChars = {});
+    parLangage[settings.lang] = (parLangage[settings.lang] || 0) + n;
+    if (!auto) {
+      avancerDefi("chars", n);
+      if (settings.lang === "lua") avancerDefi("lua", n);
+    }
     scrollDown();
     updateStats();
     Sound.click();
@@ -556,18 +762,28 @@
   }
 
   // ===== Notifications & journal =====
-  function toast(msg, ic = "zap", duree = 2600) {
+  // action : ce qui se passe quand on clique dessus (sinon un clic la ferme simplement)
+  function toast(msg, ic = "zap", duree = 2600, action = null) {
     const t = document.createElement("div");
-    t.className = "toast";
+    t.className = `toast${action ? " toast-action" : ""}`;
     t.innerHTML = window.icon(ic) + "<span></span>";
     t.querySelector("span").textContent = msg;
+    t._action = action;
     toastsEl.appendChild(t);
     while (toastsEl.children.length > 4) toastsEl.firstElementChild.remove();
     setTimeout(() => {
       t.classList.add("out");
       setTimeout(() => t.remove(), 300);
     }, duree);
+    return t;
   }
+  toastsEl.addEventListener("click", (e) => {
+    const t = e.target.closest(".toast");
+    if (!t) return;
+    t._action?.();
+    t.classList.add("out");
+    setTimeout(() => t.remove(), 300);
+  });
 
   function log(msg) {
     const li = document.createElement("li");
@@ -653,9 +869,16 @@
     };
     openWins.push(win);
     if (openWins.length >= 5) achieve("multitask");
+    avancerDefi("fenetres", openWins.length, true);
     placeWindow(el);
     el.addEventListener("pointerdown", () => (el.style.zIndex = ++zTop));
     el.querySelector(".win-x").addEventListener("click", () => win.close());
+    // Double-clic sur le titre : la fenêtre s'agrandit (et revient au double-clic suivant)
+    el.querySelector(".win-bar").addEventListener("dblclick", (e) => {
+      if (e.target.closest("button")) return;
+      el.classList.toggle("max");
+      Sound.tone(el.classList.contains("max") ? 520 : 380, 0.06, { vol: 0.03 });
+    });
     makeDraggable(el, el.querySelector(".win-bar"));
     Sound.tone(420, 0.07, { vol: 0.03, slide: 500 });
     return win;
@@ -716,11 +939,18 @@
   }
 
   // ===== ACCÈS AUTORISÉ / REFUSÉ =====
-  const GRANTED_MSG = ["ÉCHO t'ouvre toutes les portes.", "Bienvenue dans le coffre du Club des Méchants.", "Pare-feu du Club des Méchants désactivé. Tu es dedans.", "Niveau d'accès : OMÉGA.", "La Division Zéro n'a rien vu passer."];
-  const DENIED_MSG = ["Division Zéro : identifiants invalides.", "L'agent Kane a verrouillé ce terminal.", "Le Club des Méchants a changé ses codes.", "Bien essayé.", "Empreinte rétinienne non reconnue."];
+  const GRANTED_MSG = [
+    "ÉCHO t'ouvre toutes les portes.", "Bienvenue dans le coffre du Club des Méchants.", "Pare-feu du Club des Méchants désactivé. Tu es dedans.", "Niveau d'accès : OMÉGA.", "La Division Zéro n'a rien vu passer.",
+    "Le Pingouin t'a laissé passer contre une sardine.", "Coffre-fort ouvert. Il contenait… un autre coffre-fort.", "Bienvenue, agent. ÉCHO a préparé le café.",
+  ];
+  const DENIED_MSG = [
+    "Division Zéro : identifiants invalides.", "L'agent Kane a verrouillé ce terminal.", "Le Club des Méchants a changé ses codes.", "Bien essayé.", "Empreinte rétinienne non reconnue.",
+    "Mot de passe trop court. Et beaucoup trop gentil.", "Le Professeur Chaos a renommé tous les fichiers.", "Badge expiré. Repassez lundi.",
+  ];
   let accessHandle = null;
 
-  function access(granted) {
+  // message : un texte précis sous le titre (sinon un message tiré au hasard)
+  function access(granted, message = null) {
     if (accessHandle) accessHandle.close();
     const title = granted ? "ACCÈS AUTORISÉ" : "ACCÈS REFUSÉ";
     accessHandle = fullscreen(`
@@ -730,7 +960,7 @@
           <div class="access-icon">${window.icon(granted ? "unlock" : "lock")}</div>
           <div class="glitch access-title" data-text="${title}">${title}</div>
           <div class="access-line"><i></i></div>
-          <div class="access-sub">${esc(pick(granted ? GRANTED_MSG : DENIED_MSG))}</div>
+          <div class="access-sub">${esc(message || pick(granted ? GRANTED_MSG : DENIED_MSG))}</div>
         </div>
       </div>`, { cls: "fx-access", duration: 3400 });
     if (granted) {
@@ -742,6 +972,7 @@
     }
     Voice.say(granted ? "Accès autorisé." : "Accès refusé.");
     achieve(granted ? "granted" : "denied");
+    if (granted) avancerDefi("granted");
     log(title);
   }
 
@@ -751,7 +982,10 @@
     sound: Sound,
     speak: (text) => Voice.say(text),
     colors: () => themeColors,
-    event: (name) => story.event(name),
+    event: (name) => {
+      if (name === "disarm") avancerDefi("ogive");
+      story.event(name);
+    },
   };
 
   function runEffect(id, opts = {}) {
@@ -762,7 +996,10 @@
     if (!opts.auto) {
       story.event("effect:" + id); // seuls les effets lancés par le joueur comptent pour les objectifs
       progress.effectsRun = (progress.effectsRun || 0) + 1;
+      const parEffet = progress.effectCount || (progress.effectCount = {});
+      parEffet[id] = (parEffet[id] || 0) + 1;
       progressDirty = true;
+      avancerDefi("effets");
     }
     const btn = dockEl.querySelector(`[data-id="${id}"]`);
     if (btn) {
@@ -770,7 +1007,14 @@
       void btn.offsetWidth;
       btn.classList.add("fired");
     }
-    return fx.run(api, opts);
+    // Un effet qui plante ne doit pas bloquer le reste du jeu
+    try {
+      return fx.run(api, opts);
+    } catch (err) {
+      console.error(err);
+      toast(`Oups : « ${fx.name} » a eu un petit souci`, "alert");
+      return null;
+    }
   }
 
   function maybeSurprise() {
@@ -805,7 +1049,9 @@
   function autoLoop() {
     if (!auto) return;
     if (!story.playing() && !survie.playing()) typeChars(randInt(1, Math.max(2, settings.speed)));
-    autoTimer = setTimeout(autoLoop, Math.random() < 0.06 ? rand(250, 600) : rand(30, 85));
+    // Vitesse du pilote automatique (réglages) : délai entre deux frappes, en millisecondes
+    const [a, b] = { lent: [80, 170], normal: [30, 85], rapide: [12, 35] }[settings.autoVitesse];
+    autoTimer = setTimeout(autoLoop, Math.random() < 0.06 ? rand(250, 600) : rand(a, b));
   }
 
   // ===== Mode mission : enchaîne plusieurs événements =====
@@ -825,6 +1071,16 @@
       name: "OPÉRATION ÉCHO",
       end: "ÉCHO est plus forte que jamais. Merci, partenaire.",
       steps: [["Connecter ÉCHO au réseau mondial", "network"], ["Interroger les archives du Club des Méchants", "database"], ["Montrer le monde à ÉCHO", "camera"], ["Libérer de la mémoire pour ÉCHO", "files"], ["Transférer le noyau d'ÉCHO", "download"]],
+    },
+    {
+      name: "OPÉRATION SARDINE",
+      end: "Le frigo du Général Pingouin est vide. Le Club des Méchants est démoralisé.",
+      steps: [["Repérer le repaire du Pingouin", "radar"], ["Suivre l'odeur de sardine", "gps"], ["Ouvrir le frigo blindé", "password"], ["Compter les boîtes de sardines", "database"], ["Remplacer les sardines par des brocolis", "files"], ["Repartir sans un bruit", "ghost"]],
+    },
+    {
+      name: "OPÉRATION PANNE DE COURANT",
+      end: "La base du Club des Méchants est dans le noir. Même le gros bouton rouge est éteint.",
+      steps: [["Trouver la centrale de la base", "network"], ["Pirater le compteur électrique", "breach"], ["Surveiller les gardiens", "camera"], ["Couper les lumières rouges", "database"], ["Télécharger les plans dans le noir", "download"]],
     },
   ];
   let mission = null;
@@ -873,6 +1129,7 @@
     log("Mission accomplie");
     achieve("mission");
     story.event("mission");
+    avancerDefi("mission");
     progress.missionsDone = (progress.missionsDone || 0) + 1;
     saveProgress();
     setTimeout(() => Voice.say(`Mission accomplie. ${M.end}`), 1200);
@@ -926,9 +1183,17 @@
   })();
 
   // Batterie (Chrome, Edge, Opera)
+  let batterieAlerte = false;
   navigator.getBattery?.()
     .then((b) => {
-      const read = () => (sys.battery = { level: b.level, charging: b.charging });
+      const read = () => {
+        sys.battery = { level: b.level, charging: b.charging };
+        // Ta vraie batterie est presque vide : on prévient (une fois par session)
+        if (b.level <= 0.15 && !b.charging && !batterieAlerte) {
+          batterieAlerte = true;
+          toast(`Ta vraie batterie est à ${Math.round(b.level * 100)} % : branche ton appareil avant que le Club des Méchants n'en profite 🔋`, "alert", 7000);
+        }
+      };
       read();
       b.addEventListener("levelchange", read);
       b.addEventListener("chargingchange", read);
@@ -1031,6 +1296,7 @@
   requestAnimationFrame(drawRadar);
 
   // Horloge, vitesse, temps : mis à jour régulièrement
+  let recordEnCours = false; // un record de vitesse est en train de tomber (annoncé quand l'élan retombe)
   setInterval(() => {
     // On oublie les frappes de plus de 10 s (sinon la liste grossit sans fin)
     const cutoff = now() - 10000;
@@ -1042,11 +1308,18 @@
       const s = Math.floor((Date.now() - startTime) / 1000);
       $("st-time").textContent = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
     } else $("st-time").textContent = "00:00";
-    updateHud();
+    if (!document.hidden) updateHud(); // onglet caché : on économise la batterie
     if (!auto && cpm >= 2000) achieve("speed");
+    if (!auto) avancerDefi("vitesse", Math.round(cpm), true);
     if (!auto && cpm > (progress.bestCpm || 0)) {
+      if ((progress.bestCpm || 0) >= 300) recordEnCours = true; // les tout premiers records ne comptent pas
       progress.bestCpm = Math.round(cpm);
       progressDirty = true;
+    } else if (recordEnCours && cpm < progress.bestCpm * 0.75) {
+      recordEnCours = false;
+      toast(`Nouveau record de vitesse : ${fr(progress.bestCpm)} caractères par minute !`, "zap", 4500);
+      Sound.tone(1047, 0.1, { type: "triangle", vol: 0.04 });
+      Sound.tone(1568, 0.16, { type: "triangle", vol: 0.04, when: 0.1 });
     }
     if (progressDirty) saveProgress();
   }, 500);
@@ -1069,7 +1342,21 @@
     $("top-clock").textContent = clockStr();
     sparkData.shift();
     sparkData.push(cpmOver(3000));
-    if (hudVisible()) drawSpark();
+    if (hudVisible() && !document.hidden) drawSpark();
+    if (!document.hidden) {
+      sessionSec++;
+      if (sessionSec > (progress.longestSession || 0) && sessionSec % 10 === 0) {
+        progress.longestSession = sessionSec;
+        progressDirty = true;
+      }
+      // Une heure d'affilée : petit rappel de pause (et un succès bonus)
+      if (sessionSec === 3600) {
+        toast("Ça fait une heure que tu joues : pense à faire une petite pause 🙂", "timer", 9000);
+        achieve("marathon");
+      }
+      if (sessionSec % 60 === 5) verifierHeure();
+    }
+    surveillerVeille();
   }, 1000);
 
   $("top-session").textContent = `SESSION #${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
@@ -1087,6 +1374,9 @@
       { id: "download", icon: "download", label: "Télécharg.", key: "F2", title: "Téléchargement (F2)", run: () => runEffect("download") },
       { id: "granted", icon: "unlock", label: "Autorisé", key: "Alt×3", title: "Accès autorisé (Alt ×3)", run: () => access(true), cls: "ok" },
       { id: "denied", icon: "lock", label: "Refusé", key: "⇪×3", title: "Accès refusé (Verr. Maj ×3)", run: () => access(false), cls: "bad" },
+      null,
+      { id: "hasard", icon: "dice", label: "Hasard", key: "?", title: "Un effet tiré au hasard", run: () => runEffect(pick(numbered).id) },
+      { id: "fermer", icon: "x", label: "Fermer", key: "Échap", title: "Tout fermer (Échap)", run: () => clearAll() },
     ];
     for (const it of items) {
       if (!it) {
@@ -1114,8 +1404,13 @@
   }
 
   // ===== Réglages : affichage =====
+  let themeAvant = null, relireCouleurs = 0;
   function applySettings() {
+    if (themeAvant && themeAvant !== settings.theme) avancerDefi("themes");
+    themeAvant = settings.theme;
     body.dataset.theme = settings.theme;
+    body.dataset.curseur = settings.curseur;
+    document.documentElement.style.setProperty("--term-font", POLICES[settings.police]);
     body.classList.toggle("crt", settings.crt);
     body.classList.toggle("no-hl", !settings.highlight);
     body.classList.toggle("hud-on", settings.hud);
@@ -1123,10 +1418,18 @@
     body.classList.toggle("calme", settings.calme);
     document.documentElement.style.setProperty("--font-size", settings.size + "px");
     themeColors = readColors();
+    // Le thème change en douceur : on relit les couleurs à la fin de la transition
+    clearTimeout(relireCouleurs);
+    relireCouleurs = setTimeout(() => {
+      themeColors = readColors();
+      if (hudVisible()) drawSpark();
+    }, 700);
     const SHORT = { asm: "ASM", custom: "PERSO", javascript: "JS" };
     $("st-lang").textContent = SHORT[settings.lang] || window.SNIPPETS[settings.lang].name.split(" ")[0].toUpperCase();
     if (remember("themes", settings.theme) >= 4) achieve("chameleon");
     if (remember("langs", settings.lang) >= 4) achieve("polyglot");
+    if (BASE_THEMES.every((t) => progress.themes.includes(t))) achieve("arcenciel");
+    if (LANGS_FAUX().every((l) => progress.langs.includes(l))) achieve("polyglotte2");
 
     $("opt-lang").value = settings.lang;
     $("opt-speed").value = settings.speed;
@@ -1135,14 +1438,16 @@
     $("opt-size-val").textContent = settings.size;
     $("opt-volume").value = settings.volume;
     $("opt-volume-val").textContent = settings.volume;
-    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story", "calme", "vibrations"]) $("opt-" + k).checked = settings[k];
-    $("opt-dialogue").value = settings.dialogue;
+    for (const k of ["highlight", "crt", "hud", "dock", "boot", "sound", "voice", "popups", "story", "calme", "vibrations", "veille", "saison", "ambiance"]) $("opt-" + k).checked = settings[k];
+    for (const k of Object.keys(CHOIX)) if ($("opt-" + k)) $("opt-" + k).value = settings[k];
     document.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.theme === settings.theme));
     $("btn-hud").classList.toggle("active", settings.hud);
     $("btn-dock").classList.toggle("active", settings.dock);
     $("btn-clavier").classList.toggle("active", settings.clavierMobile);
     saveSettings();
     if (hudVisible()) drawSpark();
+    majSaison();
+    Ambiance.maj();
   }
 
   function setLang(key) {
@@ -1191,27 +1496,51 @@
   // ===== Fenêtres aide / réglages / succès =====
   const achEl = $("achievements");
   const wipeEl = $("wipe");
-  const MODALS = [helpEl, settingsEl, achEl, wipeEl];
+  const newsEl = $("news");
+  const MODALS = [helpEl, settingsEl, achEl, wipeEl, newsEl];
   const isOpen = (el) => !el.hidden;
   const modalOpen = () => MODALS.some(isOpen);
 
+  // Au clavier, on revient sur le bouton qui a ouvert la fenêtre quand on la ferme
+  let focusAvant = null;
   function openModal(el) {
+    if (!modalOpen()) {
+      const a = document.activeElement;
+      focusAvant = a?.matches?.(":focus-visible") && a !== terminal ? a : null;
+    }
     MODALS.forEach((m) => { if (m !== el) m.hidden = true; });
     if (el === achEl) {
       renderAchievements();
       renderStoryPanel();
     }
+    if (el === newsEl) renderNews();
     el.hidden = false;
     el.querySelector("[data-close].btn-primary, select, button")?.focus();
   }
   function closeModal(el) {
     el.hidden = true;
-    terminal.focus({ preventScroll: true });
+    const f = focusAvant;
+    focusAvant = null;
+    if (f && document.contains(f) && !f.closest(".overlay") && f.offsetParent !== null) f.focus({ preventScroll: true });
+    else terminal.focus({ preventScroll: true });
   }
   MODALS.forEach((el) => {
     el.addEventListener("click", (e) => {
       if (e.target === el || e.target.closest("[data-close]")) closeModal(el);
     });
+  });
+  // Au clavier, Tab reste dans la fenêtre ouverte (il ne part pas dans le jeu derrière)
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const m = MODALS.find(isOpen);
+    if (!m) return;
+    const f = [...m.querySelectorAll("button, select, input, textarea, summary, [tabindex]:not([tabindex='-1'])")]
+      .filter((x) => !x.disabled && x.offsetParent !== null);
+    if (!f.length) return;
+    const premier = f[0], dernier = f[f.length - 1];
+    if (!m.contains(document.activeElement)) { e.preventDefault(); premier.focus(); }
+    else if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus(); }
+    else if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus(); }
   });
 
   // ===== Démarrage =====
@@ -1238,19 +1567,23 @@
     return [...top.map((l) => indent + l), "", ...bottom].join("\n");
   })();
 
-  const BOOT_LINES = [
-    ["NEXUS BIOS v4.2.0 · (c) 2026 Ghost Systems", false],
-    ["Processeur : Quantum Core X9 @ 7,77 GHz", true],
-    ["Mémoire : 65 536 Mo", true],
-    ["Détection des périphériques", true],
-    ["Montage du système de fichiers chiffré", true],
-    ["Chargement du noyau NEXUS-9", true],
-    ["Initialisation des proxys (7 rebonds)", true],
-    ["Activation du camouflage réseau", true],
-    ["Connexion au mainframe", true],
-    ["Contournement du pare-feu", true],
-    ["Démarrage de l'interface GHOST TERMINAL", true],
-  ];
+  // La séquence de démarrage change un peu à chaque lancement
+  function lignesDeBoot() {
+    return [
+      [pick(["NEXUS BIOS v4.2.0 · (c) 2026 Ghost Systems", "ÉCHO-BIOS v2.0 · (c) 2026 Ghost Systems", "PINGU-BIOS v0.9 bêta · coin coin"]), false],
+      [pick(["Processeur : Quantum Core X9 @ 7,77 GHz", "Processeur : Hyper Chip 3000 @ 9,99 GHz", "Processeur : grille-pain quantique @ 4,20 GHz"]), true],
+      [pick(["Mémoire : 65 536 Mo", "Mémoire : 131 072 Mo", "Mémoire : 640 Ko (ça devrait suffire)"]), true],
+      ["Détection des périphériques", true],
+      ["Montage du système de fichiers chiffré", true],
+      ["Chargement du noyau NEXUS-9", true],
+      [`Initialisation des proxys (${randInt(4, 13)} rebonds)`, true],
+      ["Activation du camouflage réseau", true],
+      [pick(["Chargement des sardines du Pingouin", "Calibrage du rire maléfique", "Vérification : aucun agent Kane dans les parages", "Dépoussiérage du gros bouton rouge", "Réveil d'ÉCHO (chut…)", "Mise à jour 2.0 : 100 améliorations installées"]), true],
+      ["Connexion au mainframe", true],
+      ["Contournement du pare-feu", true],
+      ["Démarrage de l'interface GHOST TERMINAL", true],
+    ];
+  }
 
   let booting = false;
 
@@ -1260,7 +1593,7 @@
     const logEl = $("boot-log");
     bootEl.hidden = false;
     $("boot-logo").querySelector(".logo-art").textContent = LOGO;
-    for (const [text, ok] of BOOT_LINES) {
+    for (const [text, ok] of lignesDeBoot()) {
       if (!booting) return;
       const line = document.createElement("div");
       line.className = "boot-line";
@@ -1288,12 +1621,22 @@
 
   function afterBoot() {
     terminal.focus({ preventScroll: true });
-    if (!storeFlag("ghostterminal-seen")) {
+    const ancienJoueur = !!storeFlag("ghostterminal-seen");
+    if (!ancienJoueur) {
       storeFlag("ghostterminal-seen", "1");
-      setTimeout(() => openModal(helpEl), 350);
+      if (!PARAMS.has("demo") && !PARAMS.has("immersion")) setTimeout(() => openModal(helpEl), 350);
     } else {
       toast(TACTILE ? "Touche l'écran pour écrire · effets dans la barre du bas" : "Maj+1…0 : effets · F1 : aide", "zap");
     }
+    verifierVersion(ancienJoueur);
+    noterSerie();
+    const D = defiDuJour();
+    if (ancienJoueur && !D.done) setTimeout(() => toast(`Défi du jour : ${D.texte}`, "calendar", 6000, () => openModal(achEl)), 3400);
+    setTimeout(verifierHeure, 7000);
+    // Liens directs (?auto=1, ?immersion=1, ?demo=1)
+    if (PARAMS.get("auto") === "1" && !auto) setAuto(true);
+    if (PARAMS.get("immersion") === "1") setImmersive(true);
+    if (PARAMS.get("demo") === "1") setDemo(true);
     log("Session ouverte");
     renderQuest(true);
     // Précédemment dans PROTOCOLE ÉCHO : un rappel quand on revient en pleine histoire
@@ -1334,7 +1677,15 @@
   // une autre page, comme sur itch.io ou Game Jolt)
   const embedded = window.top !== window.self;
   if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !embedded) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    const avaitUnControleur = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register("sw.js")
+      .then((reg) => setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000))
+      .catch(() => {});
+    // Une nouvelle version a pris le relais pendant la partie : on propose de recharger
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!avaitUnControleur) return; // première installation : rien à recharger
+      toast("Nouvelle version de Ghost Terminal disponible · clique ici pour recharger", "download", 60000, () => location.reload());
+    });
   }
 
   // ===== Code Konami =====
@@ -1372,6 +1723,13 @@
   }
 
   document.addEventListener("keydown", (e) => {
+    noterActivite();
+    if (!$("veille").hidden) {
+      // Économiseur d'écran : la première touche réveille seulement le terminal
+      e.preventDefault();
+      cacherVeille();
+      return;
+    }
     if (booting) {
       if (!IGNORED.has(e.key)) {
         e.preventDefault();
@@ -1386,14 +1744,17 @@
     if (e.key === "Escape") {
       const open = MODALS.find(isOpen);
       if (open) closeModal(open);
-      else clearAll();
+      else {
+        if (demo) setDemo(false);
+        clearAll();
+      }
       return;
     }
     if (e.key === "F1") { e.preventDefault(); isOpen(helpEl) ? closeModal(helpEl) : openModal(helpEl); return; }
     if (e.key === "F9") { e.preventDefault(); isOpen(settingsEl) ? closeModal(settingsEl) : openModal(settingsEl); return; }
     if (e.key === "F10") { e.preventDefault(); setImmersive(!body.classList.contains("immersive")); return; }
 
-    if (isOpen(settingsEl) || isOpen(achEl) || isOpen(wipeEl)) return; // le clavier sert aux menus
+    if (isOpen(settingsEl) || isOpen(achEl) || isOpen(wipeEl) || isOpen(newsEl)) return; // le clavier sert aux menus
     if (isOpen(helpEl)) {
       if (!IGNORED.has(e.key) && e.key !== "Tab") {
         e.preventDefault();
@@ -1412,6 +1773,7 @@
     switch (e.key) {
       case "F2": e.preventDefault(); runEffect("download"); return;
       case "F3": e.preventDefault(); toggleMission(); return;
+      case "F4": e.preventDefault(); clearScreen(); toast("Écran effacé", "terminal"); return;
       case "F6": e.preventDefault(); setAuto(!auto); return;
       case "F7": e.preventDefault(); settings.hud = !settings.hud; applySettings(); return;
       case "F8": e.preventDefault(); nextTheme(); return;
@@ -1448,14 +1810,17 @@
 
   // Le mot de passe du repaire secret : pour une fois, ce qu'on tape vraiment compte.
   // L'indice est caché dans le journal de bord des plans du Club des Méchants.
+  // D'autres mots secrets font des surprises (et comptent pour le succès « Chasseur de secrets »)
+  const MOTS_SECRETS = ["sardine", "echo", "coin", "kane", "chaos", "matrix"];
   let secretBuf = "";
   function secretWord(key) {
     if (key.length !== 1) return;
-    secretBuf = (secretBuf + key.toLowerCase()).slice(-7);
-    if (secretBuf === "sardine") {
-      secretBuf = "";
-      setTimeout(openLair, 400);
-    }
+    secretBuf = (secretBuf + key.toLowerCase()).slice(-8);
+    const mot = MOTS_SECRETS.find((m) => secretBuf.endsWith(m));
+    if (!mot) return;
+    secretBuf = "";
+    if (remember("mots", mot) >= 3) achieve("chasseur");
+    setTimeout(() => motSecret(mot), mot === "sardine" ? 400 : 250);
   }
   function openLair() {
     if (story.playing() || survie.playing() || booting || modalOpen()) return;
@@ -1564,10 +1929,11 @@
     closeModal(settingsEl);
   });
   // ===== Sauvegarde : exporter dans un fichier, importer depuis un fichier =====
+  const donneesSauvegarde = () => ({ jeu: "Ghost Terminal", format: 1, date: new Date().toISOString(), settings, progress });
   $("btn-export").addEventListener("click", () => {
     noterTempsDeJeu();
     saveProgress();
-    const data = { jeu: "Ghost Terminal", format: 1, date: new Date().toISOString(), settings, progress };
+    const data = donneesSauvegarde();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
     a.download = `ghost-terminal-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
@@ -1617,36 +1983,101 @@
       effects: [], langs: [], themes: [],
     };
     for (const id of Object.keys(out.ach)) if (!ACHIEVEMENTS.some((a) => a.id === id)) delete out.ach[id];
-    for (const k of ["effects", "langs", "themes", "lair"]) {
+    for (const k of ["effects", "langs", "themes", "lair", "mots"]) {
       if (Array.isArray(p[k])) out[k] = p[k].filter((x) => typeof x === "string").slice(0, 50);
     }
-    for (const k of ["survieBest", "survieScore", "playTime", "bestCpm", "effectsRun", "missionsDone"]) if (k in p) out[k] = nombre(p[k]);
+    for (const k of ["survieBest", "survieScore", "playTime", "bestCpm", "effectsRun", "missionsDone", "sessions", "longestSession", "defisFaits"]) if (k in p) out[k] = nombre(p[k]);
+    for (const k of ["langChars", "effectCount"]) if (p[k]) out[k] = filtrerObjet(p[k], (v) => typeof v === "number" && Number.isFinite(v) && v >= 0);
+    if (p.serie && typeof p.serie.last === "string") out.serie = { last: p.serie.last.slice(0, 10), n: nombre(p.serie.n), best: nombre(p.serie.best) };
+    if (p.defi && typeof p.defi.date === "string" && typeof p.defi.id === "string") {
+      out.defi = { date: p.defi.date.slice(0, 10), id: p.defi.id.slice(0, 20), have: nombre(p.defi.have), done: p.defi.done === true };
+    }
     for (const k of ["gold", "ice", "secretSeen"]) if (p[k] === true) out[k] = true;
     if (p.story && typeof p.story === "object") out.story = lireHistoire(p.story);
     return { settings: s, progress: out, date: data.date };
   }
 
   let importEnAttente = null;
-  $("btn-import").addEventListener("click", () => $("file-import").click());
-  $("file-import").addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      if (file.size > 2000000) throw new Error("trop gros");
-      importEnAttente = lireSauvegarde(JSON.parse(await file.text()));
-    } catch {
-      importEnAttente = null;
-      $("import-box").hidden = true;
-      toast("Ce fichier n'est pas une sauvegarde de Ghost Terminal", "x");
-      return;
-    }
+  // Montre ce que contient la sauvegarde avant de remplacer quoi que ce soit (lève une erreur si ce n'en est pas une)
+  function preparerImport(data) {
+    importEnAttente = lireSauvegarde(data);
     const p = importEnAttente.progress;
     const nAch = MAIN_ACH.filter((a) => p.ach[a.id]).length;
     const nCh = p.story?.seen?.length || 0;
     const jour = Date.parse(importEnAttente.date) ? ` du ${new Date(importEnAttente.date).toLocaleDateString("fr-FR")}` : "";
     $("import-info").textContent = `Sauvegarde${jour} : ${nAch} succès sur ${MAIN_ACH.length}, ${fr(p.lifetime)} caractères tapés, ${nCh} chapitre${nCh > 1 ? "s" : ""} vu${nCh > 1 ? "s" : ""}. Elle va remplacer ta progression actuelle.`;
     $("import-box").hidden = false;
+    $("import-box").scrollIntoView?.({ block: "nearest" });
+  }
+  function importRate(msg) {
+    importEnAttente = null;
+    $("import-box").hidden = true;
+    toast(msg, "x");
+  }
+  async function importerFichier(file) {
+    try {
+      if (file.size > 2000000) throw new Error("trop gros");
+      preparerImport(JSON.parse(await file.text()));
+    } catch {
+      importRate("Ce fichier n'est pas une sauvegarde de Ghost Terminal");
+    }
+  }
+  $("btn-import").addEventListener("click", () => $("file-import").click());
+  $("file-import").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (file) importerFichier(file);
+  });
+  // Glisser-déposer un fichier de sauvegarde sur la fenêtre des réglages
+  const avecFichier = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
+  settingsEl.addEventListener("dragover", (e) => {
+    if (!avecFichier(e)) return;
+    e.preventDefault();
+    settingsEl.classList.add("depot");
+  });
+  settingsEl.addEventListener("dragleave", (e) => {
+    if (!e.relatedTarget || !settingsEl.contains(e.relatedTarget)) settingsEl.classList.remove("depot");
+  });
+  settingsEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    settingsEl.classList.remove("depot");
+    const file = e.dataTransfer?.files?.[0];
+    if (file) importerFichier(file);
+  });
+  // Ailleurs, un fichier lâché par erreur ne doit pas faire quitter le jeu
+  document.addEventListener("dragover", (e) => { if (avecFichier(e)) e.preventDefault(); });
+  document.addEventListener("drop", (e) => { if (avecFichier(e)) e.preventDefault(); });
+
+  // Sauvegarde en code à copier-coller (quand les fichiers sont bloqués, comme sur itch.io)
+  const enCode = (txt) => {
+    let s = "";
+    for (const b of new TextEncoder().encode(txt)) s += String.fromCharCode(b);
+    return "GT2:" + btoa(s);
+  };
+  const deCode = (code) => {
+    const s = atob(code.trim().replace(/^GT\d*:/, "").replace(/\s+/g, ""));
+    return new TextDecoder().decode(Uint8Array.from(s, (c) => c.charCodeAt(0)));
+  };
+  $("btn-code-copy").addEventListener("click", async () => {
+    noterTempsDeJeu();
+    saveProgress();
+    const zone = $("save-code");
+    zone.value = enCode(JSON.stringify(donneesSauvegarde()));
+    zone.focus();
+    zone.select();
+    try {
+      await navigator.clipboard.writeText(zone.value);
+      toast("Code de sauvegarde copié : garde-le bien au chaud !", "copy", 4000);
+    } catch {
+      toast("Code prêt : copie-le avec Ctrl+C (ou appui long)", "copy", 4000);
+    }
+  });
+  $("btn-code-use").addEventListener("click", () => {
+    try {
+      preparerImport(JSON.parse(deCode($("save-code").value)));
+    } catch {
+      importRate("Ce code n'est pas une sauvegarde de Ghost Terminal");
+    }
   });
   $("btn-import-cancel").addEventListener("click", () => {
     importEnAttente = null;
@@ -1667,16 +2098,18 @@
     location.reload();
   });
 
-  // Tout réinitialiser (après confirmation)
-  $("btn-wipe").addEventListener("click", () => {
+  // Tout réinitialiser (après confirmation) : depuis les réglages ou depuis le panneau Succès
+  function askWipe() {
     $("wipe-ach").textContent = Object.keys(progress.ach).length;
     $("wipe-chars").textContent = fr(progress.lifetime);
     openModal(wipeEl);
-  });
+  }
+  $("btn-wipe").addEventListener("click", askWipe);
+  $("btn-ach-wipe").addEventListener("click", askWipe);
   $("btn-wipe-confirm").addEventListener("click", () => {
     wiping = true;
     try {
-      [STORE, PROGRESS_KEY, "ghostterminal-seen"].forEach((k) => localStorage.removeItem(k));
+      [STORE, PROGRESS_KEY, "ghostterminal-seen", "ghostterminal-version"].forEach((k) => localStorage.removeItem(k));
     } catch { /* navigation privée */ }
     location.reload();
   });
@@ -1704,17 +2137,20 @@
   $("opt-speed").addEventListener("input", (e) => { settings.speed = +e.target.value; applySettings(); });
   $("opt-size").addEventListener("input", (e) => { settings.size = +e.target.value; applySettings(); });
   $("opt-volume").addEventListener("input", (e) => { settings.volume = +e.target.value; applySettings(); });
-  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story", "calme", "vibrations"]) {
+  for (const k of ["highlight", "crt", "hud", "dock", "boot", "popups", "story", "calme", "vibrations", "veille", "saison", "ambiance"]) {
     $("opt-" + k).addEventListener("change", (e) => {
       settings[k] = e.target.checked;
       applySettings();
       if (k === "story") renderQuest(true);
     });
   }
-  $("opt-dialogue").addEventListener("change", (e) => {
-    settings.dialogue = e.target.value;
-    applySettings();
-  });
+  for (const k of Object.keys(CHOIX)) {
+    $("opt-" + k)?.addEventListener("change", (e) => {
+      settings[k] = e.target.value;
+      applySettings();
+      if (k === "sonTouches") Sound.click(); // pour entendre le nouveau son
+    });
+  }
   $("opt-voice").addEventListener("change", (e) => {
     settings.voice = e.target.checked;
     applySettings();
@@ -1767,6 +2203,12 @@
     calme: () => settings.calme,
     vibrer,
     tactile: TACTILE,
+    record: () => progress.survieScore || 0,
+    difficulte: () => settings.survieDiff,
+    setDifficulte: (d) => {
+      settings.survieDiff = d;
+      saveSettings();
+    },
   });
 
   async function startSecretGame() {
@@ -1857,7 +2299,10 @@
     vibrer([20, 40, 20]);
     Voice.say(text, { pitch: 1.35, rate: 1 });
     log(`Fragment de mémoire ${count}/${total}`);
-    if (count >= total) achieve("fragments");
+    if (count >= total) {
+      achieve("fragments");
+      setTimeout(() => toast("Tous les souvenirs d'ÉCHO sont retrouvés ! La vraie fin t'attend au chapitre 11 ✨", "star", 8000), 2600);
+    }
   }
 
   fragEl.addEventListener("pointerdown", (e) => {
@@ -1917,8 +2362,10 @@
       questVu = { n: Q.n, faits };
     }
     const list = $("quest-list");
+    // Les objectifs « lancer un effet », « mission » et « ogive » se lancent d'un clic
+    const clic = (g) => g.have < g.need && (g.key === "mission" || g.key === "disarm" || (g.key.startsWith("effect:") && !!effectById[g.key.slice(7)]));
     list.innerHTML = goals.map((g) => `
-      <li class="${g.have >= g.need ? "done" : ""} ${g.bonus ? "bonus" : ""}">
+      <li class="${g.have >= g.need ? "done" : ""} ${g.bonus ? "bonus" : ""} ${clic(g) ? "clic" : ""}" data-goal="${esc(g.key)}"${clic(g) ? ' title="Clique pour le lancer"' : ""}>
         <i></i><span>${esc(goalLabel(g.key))}${g.bonus ? " · bonus : débloque une autre fin" : ""}</span><b>${g.need > 1 ? `${fr(g.have)} / ${fr(g.need)}` : g.have >= g.need ? "✓" : ""}</b>
         ${g.need > 1 ? "<em><u></u></em>" : ""}
       </li>`).join("") + (Q.after && Q.frags >= Q.total
@@ -1931,6 +2378,15 @@
     // Le terminal commence sous le panneau, pour qu'il ne cache pas le code
     body.style.setProperty("--quest-h", questEl.offsetHeight + "px");
   }
+
+  $("quest-list").addEventListener("click", (e) => {
+    const li = e.target.closest("li.clic");
+    if (!li || story.playing() || survie.playing()) return;
+    const key = li.dataset.goal;
+    if (key === "mission") { if (!mission) toggleMission(); }
+    else if (key === "disarm") runEffect("countdown");
+    else if (key.startsWith("effect:")) runEffect(key.slice(7));
+  });
 
   $("quest-toggle").addEventListener("click", () => {
     settings.questMin = !settings.questMin;
@@ -1955,13 +2411,15 @@
     const memories = story.memories();
     const got = memories.filter(Boolean).length;
     const recap = story.recap();
+    const dernier = chapters.filter((c) => c.seen).pop();
+    const resume = (n) => recap.find((r) => r.n === n)?.text || "";
     $("story-panel").innerHTML = `
       <h3>${window.icon("eye")} PROTOCOLE ÉCHO <small>mode histoire · 3 actes · 3 fins</small></h3>
       <p class="muted small">${esc(status)}</p>
       ${story.acts.map((a, ai) => `
         <div class="story-act">ACTE ${a.roman} · ${esc(a.name)}</div>
         <div class="story-btns">
-          ${chapters.filter((c) => c.act === ai).map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
+          ${chapters.filter((c) => c.act === ai).map((c) => `<button type="button" class="btn story-play" data-ch="${c.n}" ${c.seen ? "" : "disabled"}${c.seen && resume(c.n) ? ` title="${esc(resume(c.n))}"` : ""}>${c.seen ? `▶ ${c.n}. ${esc(c.name)}` : `🔒 Chapitre ${c.n}`}</button>`).join("")}
         </div>`).join("")}
       ${recap.length ? `<details class="memories recap">
         <summary>${window.icon("eye")} Ce qui s'est passé · ${recap.length} chapitre${recap.length > 1 ? "s" : ""}</summary>
@@ -1976,6 +2434,7 @@
         <button type="button" class="btn story-finale" ${finaleOpen ? "" : "disabled"}>${finaleOpen ? "▶ Épilogue secret" : "🔒 Épilogue (100 % des succès)"}</button>
         <button type="button" class="btn story-secret" ${jeuSurvieOuvert ? "" : "disabled"}>${jeuSurvieOuvert ? `▶ Jeu secret : survie${esc(best)}` : "🔒 Jeu secret (après l'épilogue)"}</button>
         ${progress.lair ? `<button type="button" class="btn story-lair">▶ Repaire du Pingouin</button>` : ""}
+        ${dernier ? `<button type="button" class="btn story-play" data-ch="${dernier.n}">↺ Revoir le dernier chapitre</button>` : ""}
         <button type="button" class="btn story-reset" ${seen ? "" : "disabled"}>Recommencer l'histoire</button>
       </div>`;
     $("story-panel").querySelector(".story-secret").addEventListener("click", () => {
@@ -2007,12 +2466,298 @@
     Sound.tone(220, 0.12, { type: "sawtooth", vol: 0.04 });
   });
 
+  // ===== Version 2.0 : nouveautés, partage, mots secrets, veille, saisons, mode démo… =====
+  const NEWS = window.HT_NOUVEAUTES;
+  function renderNews() {
+    $("news-sub").textContent = `Version ${NEWS.version} · ${NEWS.date} · ${NEWS.titre}`;
+    let n = 0;
+    $("news-list").innerHTML = NEWS.groupes.map(([titre, items]) =>
+      `<h4 class="group">${esc(titre)}</h4><ol class="news-ol" start="${n + 1}">${items.map((t) => { n++; return `<li>${esc(t)}</li>`; }).join("")}</ol>`).join("");
+  }
+  // Petit message à la première ouverture après une mise à jour
+  function verifierVersion(ancienJoueur) {
+    const vue = storeFlag("ghostterminal-version");
+    storeFlag("ghostterminal-version", NEWS.version);
+    if (vue === NEWS.version || (!vue && !ancienJoueur)) return;
+    setTimeout(() => toast(`Ghost Terminal ${NEWS.version} : 100 améliorations ! Clique ici pour les découvrir`, "star", 10000, () => openModal(newsEl)), 1600);
+  }
+  $("btn-version").addEventListener("click", () => openModal(newsEl));
+  $("btn-news-help").addEventListener("click", () => openModal(newsEl));
+
+  // Partager le jeu (ou ses succès) : menu de partage du téléphone, sinon copie du lien
+  const URL_JEU = "https://natxmans.github.io/ghost-terminal/";
+  async function partager(texte) {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Ghost Terminal", text: texte, url: URL_JEU });
+        return;
+      }
+    } catch (err) {
+      if (err?.name === "AbortError") return; // partage annulé
+    }
+    try {
+      await navigator.clipboard.writeText(`${texte} ${URL_JEU}`);
+      toast("Copié ! Colle-le où tu veux pour le partager", "copy", 4000);
+    } catch {
+      toast(`Le lien du jeu : ${URL_JEU}`, "share", 9000);
+    }
+  }
+  const partagerJeu = () => partager("Tape n'importe quoi et deviens un hacker de film 👻");
+  $("btn-share").addEventListener("click", partagerJeu);
+  $("btn-share-settings").addEventListener("click", partagerJeu);
+  $("btn-ach-share").addEventListener("click", () => partager(`J'ai débloqué ${mainDone()} succès sur ${MAIN_ACH.length} et tapé ${fr(progress.lifetime)} caractères dans Ghost Terminal 👻 Qui fait mieux ?`));
+
+  // Barre du bas : LANG change de langage, et des astuces défilent
+  $("st-lang-btn").addEventListener("click", () => {
+    const l = [...LANGS_FAUX(), ...(settings.customCode.trim() ? ["custom"] : [])];
+    setLang(l[(l.indexOf(settings.lang) + 1) % l.length]);
+    applySettings();
+  });
+  const ASTUCES_BAS = [
+    "<kbd>Maj</kbd>+<kbd>1</kbd>…<kbd>0</kbd> effets · <kbd>F1</kbd> aide",
+    "<kbd>F3</kbd> mission · <kbd>F6</kbd> pilote automatique",
+    "<kbd>F4</kbd> efface l'écran · <kbd>F8</kbd> thème suivant",
+    "<kbd>F10</kbd> mode immersion · <kbd>Échap</kbd> tout fermer",
+    "<kbd>Alt</kbd> ×3 accès autorisé · <kbd>Verr. Maj</kbd> ×3 accès refusé",
+    "Clique sur LANG pour changer de langage",
+    "Un défi t'attend chaque jour dans le panneau Succès",
+    "Certains mots, tapés au clavier, cachent des secrets…",
+  ];
+  let astuceBas = 0;
+  setInterval(() => {
+    if (document.hidden) return;
+    astuceBas = (astuceBas + 1) % ASTUCES_BAS.length;
+    const el = $("st-hint");
+    el.classList.remove("change");
+    void el.offsetWidth;
+    el.classList.add("change");
+    el.innerHTML = ASTUCES_BAS[astuceBas];
+  }, 20000);
+
+  // « Mon code » : compteur de caractères et import d'un fichier de code
+  function majCompteur() {
+    const n = $("opt-custom").value.length;
+    $("custom-count").textContent = `${fr(n)} / 30 000 caractères`;
+    $("custom-count").classList.toggle("trop", n > 30000);
+  }
+  $("opt-custom").addEventListener("input", majCompteur);
+  $("btn-custom-file").addEventListener("click", () => $("file-custom").click());
+  $("file-custom").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      if (file.size > 1000000) throw new Error("trop gros");
+      const texte = await file.text();
+      if (texte.includes("\u0000")) throw new Error("pas du texte");
+      $("opt-custom").value = texte.slice(0, 30000);
+      majCompteur();
+      toast(`« ${file.name.slice(0, 40)} » chargé : clique sur « Utiliser mon code »`, "code", 4500);
+    } catch {
+      toast("Impossible de lire ce fichier : choisis un fichier de code ou de texte", "x");
+    }
+  });
+
+  // Mots secrets (en plus de celui du Pingouin)
+  const MOTS_ECHO = ["tu m'as appelée ? Je suis là 👋", "je t'écoute, partenaire.", "chut… le Club des Méchants nous surveille.", "on fait une sacrée équipe, toi et moi."];
+  function motSecret(mot) {
+    if (story.playing() || survie.playing() || booting || modalOpen()) return;
+    if (mot === "sardine") return openLair();
+    log(`Mot secret : ${mot.toUpperCase()}`);
+    if (mot === "echo") {
+      // ÉCHO finit d'abord la ligne en cours (pour ne pas couper un mot en deux), puis répond
+      const L = langData(settings.lang);
+      const fin = L.code.indexOf("\n", pos);
+      const reste = fin >= pos && fin - pos < 160 ? fin - pos + 1 : -1;
+      if (reste > 0) typeChars(reste);
+      appendRun(`${reste > 0 ? "" : "\n"}${COMMENT[settings.lang] || "//"} ÉCHO : ${pick(MOTS_ECHO)}\n`, 4);
+      scrollDown();
+      toast("ÉCHO t'a entendu…", "eye");
+      Voice.say("Tu m'as appelée ?", { pitch: 1.35, rate: 1 });
+    } else if (mot === "coin") {
+      toast("Coin coin ! 🐧 Le Général Pingouin te salue.", "zap", 3500);
+      [1180, 880, 1180, 880].forEach((f, i) => Sound.tone(f, 0.07, { type: "square", vol: 0.035, when: i * 0.11 }));
+    } else if (mot === "kane") {
+      access(false, "L'agent Kane t'a repéré. Fais-toi discret 🕶");
+    } else if (mot === "chaos") {
+      shake(700);
+      crash(600);
+      Sound.noise(0.5, { vol: 0.08, filter: 1200 });
+      toast("Le Professeur Chaos adore ce désordre. MOUAHAHA !", "alert", 3500);
+    } else if (mot === "matrix") {
+      pluieDeCode();
+      toast("Réveille-toi… le code est partout.", "terminal", 4000);
+    }
+  }
+  // Une pluie de caractères verts, façon film de hackers
+  function pluieDeCode() {
+    const h = fullscreen('<canvas class="pluie-canvas"></canvas>', { cls: "fx-pluie", duration: 5200 });
+    const W = window.innerWidth, H = window.innerHeight, T = 16;
+    const c = setupCanvas(h.el.querySelector("canvas"), W, H);
+    const cols = Math.ceil(W / T);
+    const y = Array.from({ length: cols }, () => rand(-H, 0));
+    const signes = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ0123456789ÉCHO<>{}#$";
+    let last = 0;
+    (function frame(ts) {
+      if (!h.alive) return;
+      requestAnimationFrame(frame);
+      if (ts - last < 50) return;
+      last = ts;
+      c.fillStyle = "rgba(0, 0, 0, 0.14)";
+      c.fillRect(0, 0, W, H);
+      c.font = `${T}px "JetBrains Mono", monospace`;
+      for (let i = 0; i < cols; i++) {
+        c.fillStyle = Math.random() < 0.08 ? "#eafff0" : themeColors.fg;
+        c.fillText(signes[randInt(0, signes.length - 1)], i * T, y[i]);
+        y[i] = y[i] > H + rand(0, 300) ? 0 : y[i] + T;
+      }
+    })(0);
+  }
+
+  // Il est tard : petit rappel (une fois par session) et succès secret entre minuit et 5 h
+  let nuitDite = false;
+  function verifierHeure() {
+    if (booting) return;
+    const h = new Date().getHours();
+    if (h < 5) achieve("noctambule");
+    if (!nuitDite && (h >= 22 || h < 5)) {
+      nuitDite = true;
+      toast("Il est tard… même les hackers dorment de temps en temps 🌙", "eye", 7000);
+    }
+  }
+
+  // Économiseur d'écran d'ÉCHO : après 90 s sans rien faire
+  const veilleEl = $("veille");
+  const TEXTES_VEILLE = ["ÉCHO veille sur ton terminal…", "Le Club des Méchants dort. Pour l'instant.", "L'agent Kane ne t'a pas trouvé. Bien joué.", "Je compte les octets en t'attendant.", "Les serveurs ronronnent…"];
+  let derniereActivite = now(), texteVeille = 0;
+  function noterActivite() {
+    derniereActivite = now();
+  }
+  for (const t of ["pointerdown", "pointermove", "touchstart", "wheel"]) document.addEventListener(t, noterActivite, { passive: true, capture: true });
+  function surveillerVeille() {
+    if (!veilleEl.hidden) {
+      $("veille-heure").textContent = clockStr().slice(0, 5);
+      if (Math.floor(now() / 1000) % 8 === 0) $("veille-txt").textContent = TEXTES_VEILLE[++texteVeille % TEXTES_VEILLE.length];
+      return;
+    }
+    const occupe = auto || mission || demo || booting || modalOpen() || story.playing() || survie.playing() || fxHandles.size > 0 || document.hidden || body.classList.contains("immersive");
+    if (occupe) return noterActivite();
+    if (settings.veille && now() - derniereActivite > 90000) montrerVeille();
+  }
+  function montrerVeille() {
+    veilleEl.hidden = false;
+    $("veille-heure").textContent = clockStr().slice(0, 5);
+    $("veille-txt").textContent = TEXTES_VEILLE[texteVeille % TEXTES_VEILLE.length];
+    $("veille-aide").textContent = TACTILE ? "Touche l'écran pour revenir" : "Appuie sur une touche pour revenir";
+    log("Économiseur d'écran");
+  }
+  function cacherVeille() {
+    if (veilleEl.hidden) return;
+    veilleEl.hidden = true;
+    noterActivite();
+    terminal.focus({ preventScroll: true });
+  }
+  veilleEl.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    cacherVeille();
+  });
+
+  // Décorations de saison : neige en décembre, citrouilles et chauves-souris pour Halloween
+  function saisonDuJour() {
+    const p = PARAMS.get("saison");
+    if (p === "neige" || p === "halloween") return p;
+    const d = new Date(), m = d.getMonth() + 1, j = d.getDate();
+    if (m === 12 || (m === 1 && j <= 6)) return "neige";
+    if ((m === 10 && j >= 24) || (m === 11 && j <= 1)) return "halloween";
+    return null;
+  }
+  function majSaison() {
+    const s = settings.saison ? saisonDuJour() : null;
+    const el = $("saison");
+    if ((el.dataset.s || "") === (s || "")) return;
+    el.dataset.s = s || "";
+    el.hidden = !s;
+    el.textContent = "";
+    if (!s) return;
+    const neige = s === "neige";
+    const signes = neige ? ["❄", "❅", "❆", "•"] : ["🎃", "🦇", "👻", "🕸"];
+    for (let i = 0; i < (neige ? 36 : 14); i++) {
+      const f = document.createElement("i");
+      f.textContent = pick(signes);
+      f.style.left = rand(0, 100) + "%";
+      f.style.animationDuration = rand(neige ? 9 : 16, neige ? 20 : 30) + "s";
+      f.style.animationDelay = -rand(0, 25) + "s";
+      f.style.fontSize = rand(neige ? 8 : 14, neige ? 18 : 24) + "px";
+      f.style.opacity = rand(0.25, 0.65);
+      el.appendChild(f);
+    }
+  }
+
+  // Mode démo : le pilote auto tape, et des effets ou des missions se lancent tout seuls
+  let demo = null;
+  function setDemo(on) {
+    if (on === !!demo) return;
+    if (on) {
+      demo = { wasAuto: auto, timer: 0 };
+      if (!auto) setAuto(true, true);
+      toast(TACTILE ? "Mode démo : tout se lance tout seul" : "Mode démo : tout se lance tout seul · Échap pour arrêter", "play", 5000);
+      log("Mode démo : ON");
+      const tick = () => {
+        if (!demo) return;
+        if (!mission && !story.playing() && !survie.playing() && !modalOpen() && !booting) {
+          if (Math.random() < 0.25) toggleMission();
+          else runEffect(pick(numbered.filter((f) => f.id !== "countdown")).id, { auto: true });
+        }
+        demo.timer = setTimeout(tick, mission ? 20000 : rand(8000, 14000));
+      };
+      demo.timer = setTimeout(tick, 2500);
+    } else {
+      clearTimeout(demo.timer);
+      const garderAuto = demo.wasAuto;
+      demo = null;
+      stopMission(true);
+      if (!garderAuto) setAuto(false, true);
+      toast("Mode démo arrêté", "pause");
+      log("Mode démo : OFF");
+    }
+    $("btn-demo").classList.toggle("active", !!demo);
+  }
+  $("btn-demo").addEventListener("click", () => {
+    closeModal(settingsEl);
+    setDemo(!demo);
+  });
+
+  // Onglet caché : la voix se tait, la progression est enregistrée (les téléphones ferment parfois l'onglet sans prévenir)
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      Voice.hush();
+      noterTempsDeJeu();
+      saveProgress();
+    }
+    Ambiance.maj();
+  });
+
+  // Les fenêtres restent dans l'écran quand il change de taille (ou quand on tourne le téléphone)
+  window.addEventListener("resize", () => {
+    for (const w of openWins) {
+      const el = w.el;
+      el.style.left = clamp(el.offsetLeft, 0, Math.max(0, window.innerWidth - Math.min(el.offsetWidth, window.innerWidth))) + "px";
+      el.style.top = clamp(el.offsetTop, 44, Math.max(44, window.innerHeight - 60)) + "px";
+    }
+  });
+
   // ===== Lancement =====
+  if (PARAMS.get("theme") && availableThemes().some((t) => t.id === PARAMS.get("theme"))) settings.theme = PARAMS.get("theme");
+  if (LANGS_FAUX().includes(PARAMS.get("lang"))) settings.lang = PARAMS.get("lang");
+  progress.sessions = (progress.sessions || 0) + 1;
+  progressDirty = true;
   buildDock();
   buildHelp();
   $("opt-custom").value = settings.customCode;
+  majCompteur();
   updateAchCount();
   applySettings();
+  setTimeout(() => body.classList.add("theme-anim"), 1500); // les thèmes changent en douceur (pas au chargement)
   updateStats();
   updateHud();
   if (settings.boot) boot();

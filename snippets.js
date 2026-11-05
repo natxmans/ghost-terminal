@@ -12,16 +12,18 @@
   const camel = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
   // ===== Mots tirés au hasard =====
-  const PROJETS = ["RAGNAROK", "ARMAGEDDON", "APOCALYPSE", "OMEGA", "CREPUSCULE", "NEMESIS", "GRAND_FINAL", "DERNIER_JOUR", "BIG_BADABOUM"];
+  const PROJETS = ["RAGNAROK", "ARMAGEDDON", "APOCALYPSE", "OMEGA", "CREPUSCULE", "NEMESIS", "GRAND_FINAL", "DERNIER_JOUR", "BIG_BADABOUM", "TSUNAMI_DE_CONFETTIS", "ECLIPSE_TOTALE", "GROS_ORAGE", "LUNDI_ETERNEL"];
   const MECHANTS = [
     ["Dr_Mechant", "Dr Méchant"], ["Baron_Noir", "Baron Noir"], ["Professeur_Chaos", "Professeur Chaos"],
     ["Comtesse_Ombre", "Comtesse Ombre"], ["General_Pingouin", "Général Pingouin"], ["Lord_Grincheux", "Lord Grincheux"],
+    ["Madame_Migraine", "Madame Migraine"], ["Capitaine_Chaussette", "Capitaine Chaussette"], ["Docteur_Moustache", "Docteur Moustache"],
   ];
-  const BASES = ["volcan_secret", "base_lunaire", "ile_du_crane", "sous_marin_jaune", "station_orbitale", "bunker_sous_la_mer"];
-  const CODES = ["FROMAGE-42", "CROISSANT-666", "BAGUETTE-007", "RACLETTE-9000", "PATATE-1337", "LICORNE-404", "CAMEMBERT-13"];
+  const BASES = ["volcan_secret", "base_lunaire", "ile_du_crane", "sous_marin_jaune", "station_orbitale", "bunker_sous_la_mer", "chateau_hante", "dirigeable_geant"];
+  const CODES = ["FROMAGE-42", "CROISSANT-666", "BAGUETTE-007", "RACLETTE-9000", "PATATE-1337", "LICORNE-404", "CAMEMBERT-13", "SARDINE-2000", "CHOUCROUTE-77", "MADELEINE-1984", "TARTIFLETTE-500"];
   const BOMBES = [
     ["ogive_omega", "Ogive Oméga"], ["machine_fin_du_monde", "Machine de fin du monde"],
     ["bombe_ragnarok", "Bombe Ragnarök"], ["reacteur_nemesis", "Réacteur Némésis"],
+    ["canon_a_chatouilles", "Canon à chatouilles géant"], ["rayon_rapetisseur", "Rayon rapetisseur"], ["aimant_planetaire", "Aimant planétaire"],
   ];
   const FINS = [
     "FIN DU MONDE. GAME OVER.",
@@ -29,6 +31,9 @@
     "BOUM. Plus jamais de lundis.",
     "Le monde a été effacé. Le Club des Méchants vous remercie.",
     "Fin du monde terminée à 100 %.",
+    "La Terre a été déplacée dans la corbeille.",
+    "Monde éteint. Pensez à le rallumer demain.",
+    "Mission accomplie. Les sbires ont droit à un goûter.",
   ];
 
   // Étapes écrites à la main : [fonction, titre, message de fin, sous-étapes, phase]
@@ -66,6 +71,12 @@
     [68, "le sous-marin de fuite a une fuite. Ironique."],
     [77, "réunion du Club des Méchants. Personne n'a apporté les croissants."],
     [90, "tout est prêt. MOUAHAHA."],
+    [3, "Igor a confondu le bouton rouge avec la sonnette. Le facteur est très surpris."],
+    [17, "Madame Migraine exige le silence total dans la base. Les sbires chuchotent."],
+    [28, "commandé 400 capes. Livrées en taille enfant."],
+    [39, "le Capitaine Chaussette a perdu une chaussette. Panique générale."],
+    [58, "ÉCHO répond quand on lui parle. Personne ne lui a appris à parler."],
+    [83, "répétition générale du rire maléfique. Trois sbires ont le hoquet."],
   ];
 
   const SBIRES = ["Bob", "Gérard", "Josiane", "Kevin", "Brigitte", "Igor", "Ginette", "Tony la Clé", "Sacha", "Marcel", "Nadia", "Jojo"];
@@ -1041,11 +1052,128 @@ ${appels(m, "  ", "#", (fn) => fn)}
 main "$@"
 
 `,
+
+    lua: (m) => `-- operation_${m.low}.lua — Protocole de fin du monde v${m.version}
+-- Auteur : ${m.mechantNom} · Base : ${m.base} · Arme : ${m.bombeNom}
+-- Document du CLUB DES MÉCHANTS, intercepté par ÉCHO.
+-- (100 % fictif : aucune vraie bombe ici, juste des blagues.)
+
+${journal("--", m)}
+
+local CODE_LANCEMENT = "${m.code}"
+local NB_OGIVES = ${m.ogives}
+local DELAI = ${m.delai}
+local CIBLE = "PLANETE_TERRE"
+
+local sbires = {
+${m.sbires.map(([n, r]) => `  { nom = "${n}", role = "${r}" },`).join("\n")}
+}
+
+local inventaire = {
+${m.inventaire.map(([o, q]) => `  { objet = "${o}", quantite = ${q} },`).join("\n")}
+}
+
+local function log(texte)
+  print(string.format("[%s] %s", os.date("%H:%M:%S"), texte))
+end
+
+local function attendre(secondes)
+  local fin = os.clock() + secondes
+  while os.clock() < fin do end
+end
+
+local function verifier_identite(nom, code)
+  if nom ~= "${m.mechant}" then
+    log("ACCES REFUSE : pas assez méchant")
+    return false
+  end
+  return code == CODE_LANCEMENT
+end
+
+local function tourner_les_cles(gauche, droite)
+  -- Les deux clés doivent tourner exactement en même temps
+  return gauche == 1 and droite == 1
+end
+
+local function appeler_les_sbires()
+  log("Appel des sbires du Club des Méchants...")
+  for _, sbire in ipairs(sbires) do
+    log(string.format("  - %-12s : %s", sbire.nom, sbire.role))
+  end
+end
+
+local function faire_inventaire()
+  log("Inventaire de la base...")
+  for _, article in ipairs(inventaire) do
+    log(string.format("  %-30s x%d", article.objet, article.quantite))
+  end
+end
+${m.steps.map(([fn, title, msg, subs]) => `
+local function ${fn}()
+  log("${title}...")
+  local etapes = {
+${subs.map((s) => `    "${s}",`).join("\n")}
+  }
+  for i, etape in ipairs(etapes) do
+    log(string.format("  %d. %s", i, etape))
+    attendre(0.15)
+  end
+  log("[+] ${msg}")
+end
+`).join("")}
+local Ogive = {}
+Ogive.__index = Ogive
+
+function Ogive.new(id, puissance)
+  return setmetatable({ id = id, puissance = puissance, armee = false }, Ogive)
+end
+
+function Ogive:armer()
+  self.armee = true
+  log(string.format("${m.bombeNom} %d/%d armée (puissance %d)", self.id, NB_OGIVES, self.puissance))
+end
+
+local function compte_a_rebours(secondes)
+  for t = secondes, 1, -1 do
+    log("Lancement dans " .. t .. "...")
+    attendre(1)
+  end
+end
+
+--[[ [ÉCHO] Je surveille ce plan.
+     Continue de taper : je vais le saboter. ]]
+local function fin_du_monde(arsenal)
+  log("Cible " .. CIBLE .. " : détruite par " .. #arsenal .. " ogives.")
+  log("${m.fin}")
+end
+
+local function main()
+  if not verifier_identite("${m.mechant}", CODE_LANCEMENT) then return 1 end
+  if not tourner_les_cles(1, 1) then return 2 end
+  appeler_les_sbires()
+  faire_inventaire()
+
+${appels(m, "  ", "--", (fn) => `${fn}()`)}
+  local arsenal = {}
+  for i = 1, NB_OGIVES do
+    arsenal[i] = Ogive.new(i, ${m.puissance})
+    arsenal[i]:armer()
+  end
+  io.write("Êtes-vous VRAIMENT sûr ? (o/n) ")
+  if io.read() ~= "o" then return 0 end
+  compte_a_rebours(DELAI)
+  fin_du_monde(arsenal)
+  return 0
+end
+
+os.exit(main())
+
+`,
   };
 
   const NAMES = {
     c: "C", python: "Python", javascript: "JavaScript", rust: "Rust",
-    go: "Go", asm: "Assembleur x86", bash: "Bash",
+    go: "Go", asm: "Assembleur x86", bash: "Bash", lua: "Lua",
   };
 
   const generate = (lang) => RENDER[lang](model());

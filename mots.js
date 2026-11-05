@@ -84,6 +84,15 @@ window.HT_MOTS = (() => {
     ["déployer", "déployé", "Déploiement", "robot sbire espace arme", 4],
     ["propulser", "propulsé", "Propulsion", "espace fuite", 4],
     ["sonner", "sonné", "Sonnerie", "horloge bouton comm", 4],
+    // Ajouts de la version 2.0
+    ["dépoussiérer", "dépoussiéré", "Dépoussiérage", "deco bouton machine tresor", 1],
+    ["emballer", "emballé", "Emballage", "deco tresor cuisine", 1],
+    ["assembler", "assemblé", "Assemblage", "machine robot arme", 2],
+    ["repeindre", "repeint", "Peinture", "deco volcan robot", 2],
+    ["accorder", "accordé", "Accordage", "musique", 3],
+    ["tester", "testé", "Test", "tout", 3],
+    ["télécharger", "téléchargé", "Téléchargement", "info comm secret", 3],
+    ["parachuter", "parachuté", "Parachutage", "espace fuite sbire", 4],
   ];
 
   // Objets : [texte avec son article, thèmes, « f » si féminin quand l'article ne le dit pas (l', les)]
@@ -228,6 +237,19 @@ window.HT_MOTS = (() => {
     ["le trésor du Club des Méchants", "tresor secret"],
     ["la carte au trésor", "tresor secret"],
     ["les lingots en chocolat", "tresor cuisine"],
+    // Ajouts de la version 2.0
+    ["le grille-pain atomique", "machine cuisine energie"],
+    ["la soucoupe volante", "espace machine fuite"],
+    ["le piano à vapeur", "musique machine"],
+    ["les chaussettes porte-bonheur", "sbire deco", "f"],
+    ["le parapluie blindé", "meteo arme"],
+    ["la boule à facettes", "deco musique"],
+    ["le hamster sur roue", "animal energie"],
+    ["la clé USB secrète", "info secret"],
+    ["le radeau gonflable", "mer fuite"],
+    ["les sardines à l'huile", "pingouin cuisine", "f"],
+    ["la montre à coucou", "horloge deco"],
+    ["le bonnet du Pingouin", "pingouin deco"],
   ];
 
   // Compléments : comment, où, quand… [texte, thèmes]
@@ -317,6 +339,19 @@ window.HT_MOTS = (() => {
     ["à la main", "tout"],
     ["à l'envers", "tout"],
     ["avec le plus grand sérieux", "tout"],
+    // Ajouts de la version 2.0
+    ["sans faire de bruit", "secret fuite"],
+    ["en chantant faux", "musique sbire"],
+    ["sous la pluie", "meteo"],
+    ["en apesanteur", "espace"],
+    ["au fond de l'océan", "mer requin"],
+    ["à la lueur d'une bougie", "deco energie"],
+    ["avec des gants de cuisine", "cuisine volcan"],
+    ["en mode turbo", "machine energie robot"],
+    ["en cachette du chef", "sbire secret"],
+    ["pendant que le chat dort", "chat secret"],
+    ["en marchant sur la banquise", "pingouin"],
+    ["juste avant minuit", "horloge"],
   ];
 
   // Petites remarques en fin de message : [texte, thèmes]
@@ -345,6 +380,15 @@ window.HT_MOTS = (() => {
     ["(vue depuis l'espace)", "espace"],
     ["(il pleut des confettis)", "meteo deco"],
     ["(les héros n'ont qu'à bien se tenir)", "heros arme"],
+    // Ajouts de la version 2.0
+    ["(ÉCHO a tout vu)", "info secret"],
+    ["(avec style)", "tout"],
+    ["(comme prévu… ou presque)", "tout"],
+    ["(le Pingouin applaudit)", "pingouin"],
+    ["(tremblement de terre léger)", "volcan bombe"],
+    ["(quelqu'un a dit miaou ?)", "chat animal"],
+    ["(bruit de sirène au loin)", "heros comm"],
+    ["(standing ovation des sbires)", "sbire musique"],
   ];
 
   return { VERBES, OBJETS, COMPLEMENTS, QUEUES };

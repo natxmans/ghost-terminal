@@ -32,7 +32,7 @@
     <div class="brand">
       <span class="brand-logo" aria-hidden="true">&gt;_</span>
       <span class="brand-name">GHOST<span class="brand-inv">TERMINAL</span></span>
-      <span class="brand-version">v1.0</span>
+      <button type="button" class="brand-version" id="btn-version" title="Quoi de neuf ?">v2.0</button>
     </div>
 
     <div class="top-center">
@@ -118,7 +118,7 @@
   <!-- Barre d'état -->
   <footer id="statusbar">
     <span class="st-online"><i></i>EN LIGNE</span>
-    <span>LANG <b id="st-lang">C</b></span>
+    <button type="button" class="st-btn" id="st-lang-btn" title="Passer au langage suivant">LANG <b id="st-lang">C</b></button>
     <span>CAR. <b id="st-chars">0</b></span>
     <span class="hide-mobile">LIGNES <b id="st-lines">0</b></span>
     <span>VITESSE <b id="st-cpm">0</b></span>
@@ -126,7 +126,7 @@
     <span>NIVEAU <b id="st-level">INVITÉ</b></span>
     <span class="badge" id="st-auto" hidden>AUTO</span>
     <span class="badge badge-mission" id="st-mission" hidden>MISSION</span>
-    <span class="st-hint hide-mobile"><kbd>Maj</kbd>+<kbd>1</kbd>…<kbd>0</kbd> effets · <kbd>F1</kbd> aide</span>
+    <span class="st-hint hide-mobile" id="st-hint"><kbd>Maj</kbd>+<kbd>1</kbd>…<kbd>0</kbd> effets · <kbd>F1</kbd> aide</span>
   </footer>
 
   <!-- Notifications -->
@@ -137,6 +137,19 @@
 
   <!-- Effets plein écran -->
   <div id="fx"></div>
+
+  <!-- Économiseur d'écran d'ÉCHO (après 90 s sans rien faire) -->
+  <div id="veille" hidden>
+    <div class="veille-boite">
+      <div class="veille-logo">&gt;_ ÉCHO</div>
+      <div class="veille-heure" id="veille-heure">00:00</div>
+      <div class="veille-txt" id="veille-txt">ÉCHO veille sur ton terminal…</div>
+    </div>
+    <p class="veille-aide" id="veille-aide">Appuie sur une touche pour revenir</p>
+  </div>
+
+  <!-- Décorations de saison (neige, citrouilles…) -->
+  <div id="saison" aria-hidden="true" hidden></div>
 
   <!-- Sortie du mode immersion (discrète) -->
   <button id="btn-exit-immersive" type="button" data-icon="x" title="Quitter le mode immersion (F10)" aria-label="Quitter le mode immersion"></button>
@@ -186,6 +199,7 @@
           <dl class="keys">
             <dt><kbd>F2</kbd></dt><dd>Téléchargement</dd>
             <dt><kbd>F3</kbd></dt><dd>Mode mission (enchaîne les effets)</dd>
+            <dt><kbd>F4</kbd></dt><dd>Effacer l'écran</dd>
             <dt><kbd>F6</kbd></dt><dd>Pilote automatique</dd>
             <dt><kbd>F7</kbd></dt><dd>Panneau HUD</dd>
             <dt><kbd>F8</kbd></dt><dd>Thème suivant</dd>
@@ -210,11 +224,26 @@
             <li>Lis bien les plans que tu tapes : ils cachent parfois des secrets. Pour une fois, ce que tu tapes vraiment pourrait compter…</li>
             <li>Sensible aux flashs ? Active le mode calme dans les réglages (F9). Tu peux aussi ralentir les dialogues de l'histoire.</li>
             <li>Exporte ta sauvegarde (F9 › Sauvegarde) pour garder ta progression ou la retrouver sur un autre appareil.</li>
+            <li>Un nouveau défi t'attend chaque jour dans le panneau Succès 🏆.</li>
+            <li>Clique sur LANG, en bas, pour changer de langage. Et il existe d'autres mots secrets que celui du Pingouin… 🤫</li>
           </ul>
+        </section>
+
+        <section class="card card-faq">
+          <h3>QUESTIONS FRÉQUENTES</h3>
+          <details><summary>Est-ce que je pirate vraiment quelque chose ?</summary><p>Non, jamais. Tout est faux : la caméra, le GPS, les fichiers et les plans des méchants sont inventés. Le jeu ne touche à rien sur ton appareil et n'envoie aucune donnée.</p></details>
+          <details><summary>Où est enregistrée ma progression ?</summary><p>Dans ton navigateur, sur cet appareil. Pour la garder ou la changer d'appareil, utilise Réglages › Sauvegarde (fichier ou code à copier).</p></details>
+          <details><summary>L'histoire ne commence pas…</summary><p>Continue de taper : ÉCHO se réveille après quelques milliers de caractères. Vérifie aussi que le mode histoire est coché dans les réglages.</p></details>
+          <details><summary>Je suis bloqué dans un chapitre.</summary><p>Regarde les objectifs en haut à gauche : tu peux cliquer sur « Lancer … » pour lancer l'effet demandé. Il faut parfois aussi attraper des fragments de mémoire (Tab).</p></details>
+          <details><summary>Les flashs me gênent.</summary><p>Active le mode calme dans les réglages (F9) : moins de flashs, de tremblements et de clignotements.</p></details>
+          <details><summary>Comment débloquer le jeu secret ?</summary><p>Débloque 100 % des succès principaux : l'épilogue secret se lance, puis le jeu secret. Il se rejoue ensuite depuis le panneau Succès.</p></details>
+          <details><summary>Le jeu existe ailleurs ?</summary><p>Oui : sur le site officiel (natxmans.github.io/ghost-terminal) et sur itch.io (natxmans.itch.io/ghost-terminal). Il s'installe aussi comme une application et marche hors ligne.</p></details>
         </section>
       </div>
 
       <div class="panel-actions">
+        <button class="btn" type="button" id="btn-news-help" data-icon="star">Quoi de neuf ?</button>
+        <button class="btn" type="button" id="btn-share" data-icon="share">Partager le jeu</button>
         <button class="btn btn-primary" data-close>C'est parti</button>
       </div>
     </div>
@@ -230,25 +259,63 @@
       <label class="row"><span>Langage</span><select id="opt-lang"></select></label>
       <label class="row"><span>Vitesse <b id="opt-speed-val">3</b> car/touche</span><input type="range" id="opt-speed" min="1" max="12"></label>
       <label class="row check"><input type="checkbox" id="opt-highlight"><span>Coloration du code</span></label>
+      <label class="row"><span>Son des touches</span>
+        <select id="opt-sonTouches">
+          <option value="clic">Clic de clavier</option>
+          <option value="machine">Machine à écrire</option>
+          <option value="bip">Petit bip</option>
+          <option value="muet">Muet</option>
+        </select>
+      </label>
+      <label class="row"><span>Vitesse du pilote automatique</span>
+        <select id="opt-autoVitesse">
+          <option value="lent">Lente</option>
+          <option value="normal">Normale</option>
+          <option value="rapide">Rapide</option>
+        </select>
+      </label>
+      <div class="row"><span class="muted small">Mode démo : effets et missions se lancent tout seuls (Échap pour arrêter).</span><button class="btn" id="btn-demo" type="button" data-icon="play">Mode démo</button></div>
 
       <h4 class="group">Mon code</h4>
       <p class="muted small">Colle ici n'importe quel code (ou texte) : c'est lui qui s'écrira quand tu tapes.</p>
       <textarea id="opt-custom" class="code-input" rows="6" spellcheck="false" placeholder="// Colle ton code ici…"></textarea>
-      <div class="row buttons-row"><button class="btn" id="btn-custom-save" type="button">Utiliser mon code</button></div>
+      <div class="row buttons-row">
+        <span class="muted small compteur" id="custom-count">0 / 30 000 caractères</span>
+        <button class="btn" id="btn-custom-file" type="button">Importer un fichier</button>
+        <input type="file" id="file-custom" accept=".txt,.js,.ts,.py,.c,.h,.cpp,.cs,.java,.lua,.rs,.go,.rb,.php,.sh,.html,.css,.json,.md,.asm,text/*" hidden>
+        <button class="btn" id="btn-custom-save" type="button">Utiliser mon code</button>
+      </div>
 
       <h4 class="group">Affichage</h4>
       <div class="row"><span>Thème</span><div class="swatches" id="opt-theme"></div></div>
       <label class="row"><span>Taille du texte <b id="opt-size-val">15</b> px</span><input type="range" id="opt-size" min="11" max="28"></label>
+      <label class="row"><span>Police du terminal</span>
+        <select id="opt-police">
+          <option value="jetbrains">JetBrains Mono</option>
+          <option value="systeme">Police du système</option>
+          <option value="machine">Machine à écrire</option>
+        </select>
+      </label>
+      <label class="row"><span>Curseur</span>
+        <select id="opt-curseur">
+          <option value="bloc">Bloc █</option>
+          <option value="barre">Barre ▏</option>
+          <option value="souligne">Souligné _</option>
+        </select>
+      </label>
       <label class="row check"><input type="checkbox" id="opt-crt"><span>Effet écran CRT</span></label>
       <label class="row check"><input type="checkbox" id="opt-hud"><span>Panneau HUD (grand écran)</span></label>
       <label class="row check"><input type="checkbox" id="opt-dock"><span>Barre d'effets</span></label>
       <label class="row check"><input type="checkbox" id="opt-boot"><span>Séquence de démarrage</span></label>
       <label class="row check"><input type="checkbox" id="opt-calme"><span>Mode calme : moins de flashs et de tremblements</span></label>
+      <label class="row check"><input type="checkbox" id="opt-veille"><span>Économiseur d'écran d'ÉCHO (après 90 s sans rien faire)</span></label>
+      <label class="row check"><input type="checkbox" id="opt-saison"><span>Décorations de saison (neige, Halloween…)</span></label>
 
       <h4 class="group">Son &amp; événements</h4>
       <label class="row check"><input type="checkbox" id="opt-sound"><span>Sons</span></label>
       <label class="row check"><input type="checkbox" id="opt-voice"><span>Voix de l'ordinateur (synthèse vocale)</span></label>
       <label class="row"><span>Volume <b id="opt-volume-val">60</b>%</span><input type="range" id="opt-volume" min="0" max="100"></label>
+      <label class="row check"><input type="checkbox" id="opt-ambiance"><span>Ambiance sonore de salle des serveurs (avec les sons)</span></label>
       <label class="row check tactile-only"><input type="checkbox" id="opt-vibrations"><span>Vibrations (téléphone)</span></label>
       <label class="row check"><input type="checkbox" id="opt-popups"><span>Événements surprises pendant la frappe</span></label>
       <label class="row check"><input type="checkbox" id="opt-story"><span>Mode histoire (cinématiques)</span></label>
@@ -261,12 +328,21 @@
       </label>
 
       <h4 class="group">Sauvegarde</h4>
-      <p class="muted small">Garde une copie de tes succès, de ton histoire et de tes réglages dans un fichier. Tu pourras la réimporter sur un autre appareil ou une autre version du jeu (site, itch.io).</p>
+      <p class="muted small">Garde une copie de tes succès, de ton histoire et de tes réglages dans un fichier. Tu pourras la réimporter sur un autre appareil ou une autre version du jeu (site, itch.io). Tu peux aussi glisser le fichier directement sur cette fenêtre.</p>
       <div class="row buttons-row">
         <button class="btn" id="btn-export" type="button">Exporter ma sauvegarde</button>
         <button class="btn" id="btn-import" type="button">Importer une sauvegarde</button>
         <input type="file" id="file-import" accept=".json,application/json" hidden>
       </div>
+      <details class="code-sauvegarde">
+        <summary>Sauvegarde en code (à copier-coller)</summary>
+        <p class="muted small">Pratique quand les fichiers sont bloqués (sur itch.io par exemple) : copie ce code et garde-le, ou colle un code ici puis clique sur « Utiliser ce code ».</p>
+        <textarea id="save-code" class="code-input" rows="3" spellcheck="false" placeholder="Colle ici un code de sauvegarde…"></textarea>
+        <div class="row buttons-row">
+          <button class="btn" id="btn-code-copy" type="button" data-icon="copy">Copier mon code</button>
+          <button class="btn" id="btn-code-use" type="button">Utiliser ce code</button>
+        </div>
+      </details>
       <div class="import-box" id="import-box" hidden>
         <p id="import-info"></p>
         <div class="row buttons-row">
@@ -282,6 +358,7 @@
       </div>
 
       <div class="panel-actions">
+        <button class="btn" id="btn-share-settings" type="button" data-icon="share">Partager le jeu</button>
         <button class="btn" id="btn-install" data-icon="install" hidden>Installer l'appli</button>
         <button class="btn" id="btn-reset">Réinitialiser</button>
         <button class="btn" id="btn-clear">Effacer l'écran</button>
@@ -297,10 +374,18 @@
       <h2 id="ach-title" class="panel-title">&gt; SUCCÈS</h2>
       <p class="muted" id="ach-summary"></p>
       <div class="ach-bar"><i id="ach-progress"></i></div>
+      <section class="defi" id="defi"></section>
       <div class="stats-grid" id="ach-stats"></div>
+      <div class="ach-filtres" role="group" aria-label="Filtrer les succès">
+        <button type="button" class="btn ach-filtre" data-filtre="tous">Tous</button>
+        <button type="button" class="btn ach-filtre" data-filtre="faits">Débloqués</button>
+        <button type="button" class="btn ach-filtre" data-filtre="reste">À débloquer</button>
+      </div>
       <div class="ach-grid" id="ach-grid"></div>
       <section class="story-panel" id="story-panel"></section>
       <div class="panel-actions">
+        <button class="btn btn-danger" id="btn-ach-wipe" type="button">Tout réinitialiser</button>
+        <button class="btn" id="btn-ach-share" type="button" data-icon="share">Partager mes succès</button>
         <button class="btn btn-primary" data-close>Fermer</button>
       </div>
     </div>
@@ -324,6 +409,19 @@
     </div>
   </div>
 
+  <!-- Quoi de neuf ? -->
+  <div class="overlay" id="news" role="dialog" aria-modal="true" aria-labelledby="news-title" hidden>
+    <div class="panel panel-wide">
+      <button class="panel-x" data-close aria-label="Fermer" data-icon="x"></button>
+      <h2 id="news-title" class="panel-title">&gt; QUOI DE NEUF ?</h2>
+      <p class="muted" id="news-sub"></p>
+      <div id="news-list"></div>
+      <div class="panel-actions">
+        <button class="btn btn-primary" data-close>Super !</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Démarrage -->
   <div id="boot" hidden>
     <pre id="boot-log"></pre>
@@ -342,6 +440,7 @@
   <script src="effects.js"></script>
   <script src="story.js"></script>
   <script src="survie.js"></script>
+  <script src="nouveautes.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

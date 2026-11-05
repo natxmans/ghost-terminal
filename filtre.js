@@ -32,9 +32,12 @@ window.HT_FILTRE = (() => {
     .replace(/[013457@$]/g, (c) => LEET[c])
     .replace(/(.)\1{2,}/g, "$1");
 
-  function estVulgaire(mot) {
+  // « entier » = faux pour un morceau de nom en camelCase (« bite » dans « biteSize ») : on ne
+  // cherche alors que les mots de PARTOUT, pour ne pas bloquer du vrai code anglais
+  function estVulgaire(mot, entier = true) {
     const n = normaliser(mot);
     if (PARTOUT.some((w) => n.includes(w))) return true;
+    if (!entier) return false;
     return [n, n.replace(/s$/, ""), n.replace(/e?s$/, ""), n.replace(/e$/, "")].some((b) => ENTIERS.has(b));
   }
 
@@ -47,8 +50,8 @@ window.HT_FILTRE = (() => {
     let nb = 0;
     const propre = String(texte).replace(/[A-Za-zÀ-ÖØ-öø-ÿ0-9@$]+/g, (bloc) =>
       // « monGrosMot » et « mon_gros_mot » sont coupés en mots séparés
-      bloc.split(/(?<=[a-zà-ÿ0-9])(?=[A-ZÀ-Þ])/).map((mot) => {
-        if (!estVulgaire(mot)) return mot;
+      bloc.split(/(?<=[a-zà-ÿ0-9])(?=[A-ZÀ-Þ])/).map((mot, _, morceaux) => {
+        if (!estVulgaire(mot, morceaux.length === 1)) return mot;
         nb++;
         return juron(mot.length);
       }).join(""));
