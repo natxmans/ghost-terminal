@@ -1176,7 +1176,9 @@ os.exit(main())
     go: "Go", asm: "Assembleur x86", bash: "Bash", lua: "Lua",
   };
 
-  const generate = (lang) => RENDER[lang](model());
+  // Seuls les vrais langages sont acceptés : le nom peut venir d'un lien (?lang=…) ou d'une sauvegarde
+  const LANGAGES = new Map(Object.entries(RENDER));
+  const generate = (lang) => LANGAGES.get(lang)(model());
 
   window.SNIPPETS = Object.fromEntries(Object.keys(RENDER).map((k) => [k, { name: NAMES[k], code: generate(k) }]));
 
@@ -1190,8 +1192,10 @@ os.exit(main())
 
   // Invente un nouveau plan pour ce langage (appelé quand tout le code a été tapé)
   window.regenerateSnippet = (lang) => {
-    if (!RENDER[lang]) return false;
-    window.SNIPPETS[lang].code = generate(lang);
+    if (typeof lang !== "string" || lang === "__proto__" || lang === "constructor" || !LANGAGES.has(lang)) return false;
+    if (!Object.prototype.hasOwnProperty.call(window.SNIPPETS, lang)) return false;
+    const snippet = window.SNIPPETS[lang];
+    snippet.code = generate(lang);
     return true;
   };
 })();

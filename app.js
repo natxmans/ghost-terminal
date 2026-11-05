@@ -1811,14 +1811,14 @@
   // Le mot de passe du repaire secret : pour une fois, ce qu'on tape vraiment compte.
   // L'indice est caché dans le journal de bord des plans du Club des Méchants.
   // D'autres mots secrets font des surprises (et comptent pour le succès « Chasseur de secrets »)
-  const MOTS_SECRETS = ["sardine", "echo", "coin", "kane", "chaos", "matrix"];
-  let secretBuf = "";
+  const MOTS_SURPRISES = ["sardine", "echo", "coin", "kane", "chaos", "matrix"];
+  let tamponMots = "";
   function secretWord(key) {
     if (key.length !== 1) return;
-    secretBuf = (secretBuf + key.toLowerCase()).slice(-8);
-    const mot = MOTS_SECRETS.find((m) => secretBuf.endsWith(m));
+    tamponMots = (tamponMots + key.toLowerCase()).slice(-8);
+    const mot = MOTS_SURPRISES.find((m) => tamponMots.endsWith(m));
     if (!mot) return;
-    secretBuf = "";
+    tamponMots = "";
     if (remember("mots", mot) >= 3) achieve("chasseur");
     setTimeout(() => motSecret(mot), mot === "sardine" ? 400 : 250);
   }
