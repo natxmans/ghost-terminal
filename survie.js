@@ -29,7 +29,7 @@ window.HT_SURVIE = (() => {
     },
     {
       nom: "LE PORT", but: "Dernières pièces · puis le Méga-Requin !", parts: 2,
-      ennemis: ["rat", "requin", "requin", "drone"], spawn: 1.25, max: 12, debris: 1.8, nuages: 2,
+      ennemis: ["rat", "requin", "requin", "drone", "calamar"], spawn: 1.25, max: 12, debris: 1.8, nuages: 2,
       sol: ["#172230", "#0a1018"], tache: "rgba(90, 170, 255, 0.07)", lueur: "rgba(80, 160, 255, 0.16)",
       eau: true, boss: true,
     },
@@ -39,6 +39,15 @@ window.HT_SURVIE = (() => {
     rat: { emoji: "🐀", nom: "un rat mutant", pv: 1, vitesse: 150, r: 12, degats: 8, points: 50, taille: 24 },
     requin: { emoji: "🦈", nom: "un requin mutant", pv: 3, vitesse: 95, r: 17, degats: 16, points: 100, taille: 32 },
     drone: { emoji: "🤖", nom: "un robot-sbire", pv: 4, vitesse: 75, r: 16, degats: 12, points: 150, taille: 28, tireur: true },
+    // Le calamar du port crache de l'encre : elle ne blesse pas, mais elle ralentit
+    calamar: { emoji: "🦑", nom: "un calamar mutant", pv: 2, vitesse: 85, r: 15, degats: 10, points: 120, taille: 30, encre: true },
+  };
+
+  // Difficulté : choisie sur l'écran d'explications, gardée pour les parties suivantes
+  const NIVEAUX = {
+    facile: { nom: "Facile", degats: 0.6, spawn: 1.3, points: 0.75, info: "Moins de dégâts et moins d'ennemis · score ×0,75" },
+    normal: { nom: "Normal", degats: 1, spawn: 1, points: 1, info: "L'aventure comme prévue" },
+    difficile: { nom: "Difficile", degats: 1.4, spawn: 0.8, points: 1.5, info: "Plus de dégâts et plus d'ennemis · score ×1,5" },
   };
 
   const BONUS = {
@@ -48,6 +57,7 @@ window.HT_SURVIE = (() => {
     triple: { emoji: "🔱", texte: "Tir triple !", poids: 2 },
     bouclier: { emoji: "🛡️", texte: "Bouclier !", poids: 2 },
     bombe: { emoji: "💣", texte: "BOUM !", poids: 1 },
+    aimant: { emoji: "🧲", texte: "Aimant : tout vient à toi !", poids: 2 },
   };
   function bonusAuHasard(zone) {
     const liste = Object.entries(BONUS).filter(([k]) => k !== "iode" || zone.nuages > 0);
@@ -66,11 +76,14 @@ window.HT_SURVIE = (() => {
     let finish = null;     // résout la promesse de start()
     let meilleur = 0;      // meilleur score de la session (le record permanent est gardé par app.js)
     const calme = () => !!api.calme?.();
+    let niveau = NIVEAUX[api.difficulte?.()] ? api.difficulte() : "normal";
+    const N = () => NIVEAUX[niveau];
+    let manette = null, manettePrec = [];   // manette de jeu (si elle est branchée)
     const q = (s) => el.querySelector(s);
 
     // ===== Partie, zones =====
     function newGame() {
-      G = { phase: "tuto", score: 0, t: 0, kills: 0, morts: 0, msg: "", msgT: 0, player: null };
+      G = { phase: "tuto", score: 0, t: 0, kills: 0, morts: 0, msg: "", msgT: 0, player: null, parType: {} };
       startZone(0);
       G.phase = "tuto";
       showTuto();
@@ -87,13 +100,13 @@ window.HT_SURVIE = (() => {
         scoreZone: G.score,
         player: {
           x: W / 2, y: (H + TOP) / 2, hp, rad: 0, inv: 2, face: 0, vise: -Math.PI / 2, marche: 0,
-          dash: 0, dashCd: 0, dvx: 0, dvy: 0, tir: 0.5, rapide: 0, triple: 0, bouclier: 0,
+          dash: 0, dashCd: 0, dvx: 0, dvy: 0, tir: 0.5, rapide: 0, triple: 0, bouclier: 0, aimant: 0, encre: 0,
         },
         ennemis: [], balles: [], ballesEnnemies: [], bonus: [], debris: [], particules: [], textes: [],
         nuages: [], parts: 0, part: null, partDelai: 1.5,
         boss: null, bossBattu: false, heli: null, transition: 0,
         prochainEnnemi: 2.8, prochainDebris: Z.debris + 1, prochaineCaisse: 10,
-        combo: 0, comboT: 0, shake: 0, flashBlanc: 0, flashRouge: 0, titre: 3.2,
+        combo: 0, comboT: 0, shake: 0, flashBlanc: 0, flashRouge: 0, titre: 3.2, coeur: 0, pouls: 0,
         cendres: Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * H, v: rand(15, 45), s: rand(1, 2.5) })),
       });
       for (let k = 0; k < Z.nuages; k++) addNuage();
@@ -151,6 +164,7 @@ window.HT_SURVIE = (() => {
         say(P.bouclier ? "Le bouclier encaisse !" : "Bouclier détruit !", 1.4);
         return;
       }
+      n = Math.max(1, Math.round(n * N().degats));
       P.hp -= n;
       P.inv = 1;
       G.combo = 0;
@@ -175,9 +189,10 @@ window.HT_SURVIE = (() => {
       e.mort = true;
       explosion(e.x, e.y);
       G.kills++;
+      G.parType[e.nom] = (G.parType[e.nom] || 0) + 1;
       G.combo++;
       G.comboT = 2.6;
-      const pts = e.type.points * multiplicateur();
+      const pts = Math.round(e.type.points * multiplicateur() * N().points);
       G.score += pts;
       texte(e.x, e.y - 18, `+${pts}`, multiplicateur() > 1 ? "#ffd34d" : "#fff", multiplicateur() > 1 ? 16 : 13);
       if (Math.random() < 0.13) G.bonus.push({ x: e.x, y: e.y, k: bonusAuHasard(ZONES[G.zone]), t: 0 });
@@ -212,6 +227,7 @@ window.HT_SURVIE = (() => {
       if (keys.has("right")) mx += 1;
       if (keys.has("up")) my -= 1;
       if (keys.has("down")) my += 1;
+      if (manette && (manette.mx || manette.my)) { mx = manette.mx; my = manette.my; }
       if (stick) {
         const dx = stick.x - stick.sx, dy = stick.y - stick.sy, l = Math.hypot(dx, dy);
         if (l > 8) { mx = dx / Math.max(l, 50); my = dy / Math.max(l, 50); }
@@ -361,7 +377,7 @@ window.HT_SURVIE = (() => {
       const type = ENNEMIS[nom];
       if (x === undefined) {
         const Z = ZONES[G.zone];
-        const cote = Z.eau && nom === "requin" ? 3 : Math.floor(Math.random() * 4);
+        const cote = Z.eau && (nom === "requin" || nom === "calamar") ? 3 : Math.floor(Math.random() * 4);
         x = cote === 0 ? -30 : cote === 1 ? W + 30 : rand(30, W - 30);
         y = cote === 2 ? TOP - 30 : cote === 3 ? H + 30 : rand(TOP + 30, H - 30);
       }
@@ -375,7 +391,7 @@ window.HT_SURVIE = (() => {
         G.prochainEnnemi -= dt;
         const max = Z.max + Math.floor(G.zoneT / 25);
         if (G.prochainEnnemi <= 0 && G.ennemis.length < max) {
-          G.prochainEnnemi = Z.spawn * (1 - Math.min(0.35, G.zoneT / 200));
+          G.prochainEnnemi = Z.spawn * N().spawn * (1 - Math.min(0.35, G.zoneT / 200));
           const nom = pick(Z.ennemis);
           const groupe = nom === "rat" ? 3 : 1;
           for (let i = 0; i < groupe; i++) ajouterEnnemi(nom);
@@ -398,6 +414,15 @@ window.HT_SURVIE = (() => {
             e.charge = false;
             G.ballesEnnemies.push({ x: e.x, y: e.y, vx: (dx / l) * 240, vy: (dy / l) * 240, vie: 3 });
             api.sound.tone(700, 0.06, { type: "square", vol: 0.02 });
+          }
+        } else if (e.type.encre) {
+          // Le calamar garde un peu ses distances et crache de l'encre
+          if (l < 150) { vx = -vx; vy = -vy; }
+          e.tir -= dt;
+          if (e.tir <= 0 && l < 320) {
+            e.tir = rand(2.6, 3.6);
+            G.ballesEnnemies.push({ x: e.x, y: e.y, vx: (dx / l) * 200, vy: (dy / l) * 200, vie: 3, encre: true });
+            api.sound.noise(0.12, { vol: 0.04, filter: 600 });
           }
         } else if (e.nom === "rat") {
           // Les rats zigzaguent
@@ -447,6 +472,19 @@ window.HT_SURVIE = (() => {
       P.dashCd = Math.max(0, P.dashCd - dt);
       P.rapide = Math.max(0, P.rapide - dt);
       P.triple = Math.max(0, P.triple - dt);
+      P.aimant = Math.max(0, P.aimant - dt);
+      P.encre = Math.max(0, P.encre - dt);
+      // Cœur qui bat quand il reste peu de vie
+      G.pouls = Math.max(0, G.pouls - dt * 2);
+      if (P.hp < 30) {
+        G.coeur -= dt;
+        if (G.coeur <= 0) {
+          G.coeur = 0.85;
+          G.pouls = 1;
+          api.sound.tone(58, 0.12, { type: "sine", vol: 0.12 });
+          api.sound.tone(50, 0.12, { type: "sine", vol: 0.09, when: 0.18 });
+        }
+      }
       q(".game-dash")?.classList.toggle("pret", P.dashCd <= 0);
 
       // Déplacement (et esquive)
@@ -457,8 +495,9 @@ window.HT_SURVIE = (() => {
         P.y += P.dvy * dt;
         G.particules.push({ x: P.x, y: P.y, vx: 0, vy: 0, vie: 0.25, vieMax: 0.25, couleur: "#7dffb0", taille: 9 });
       } else {
-        P.x += mx * VITESSE * dt;
-        P.y += my * VITESSE * dt;
+        const v = VITESSE * (P.encre > 0 ? 0.55 : 1); // l'encre du calamar ralentit
+        P.x += mx * v * dt;
+        P.y += my * v * dt;
       }
       P.x = clamp(P.x, 14, W - 14);
       P.y = clamp(P.y, TOP + 14, (Z.eau ? H * 0.86 : H) - 14);
@@ -497,7 +536,11 @@ window.HT_SURVIE = (() => {
         b.y += b.vy * dt;
         b.vie -= dt;
         if (b.vie > 0 && dist(b, P) < 13) {
-          blesser(10, G.boss ? "un missile du Méga-Requin" : "un tir de robot");
+          if (!b.encre) blesser(10, G.boss ? "un missile du Méga-Requin" : "un tir de robot");
+          else if (P.dash <= 0) {
+            P.encre = 2.5;
+            say("De l'encre ! Tu es ralenti 🦑", 1.4);
+          }
           b.vie = 0;
         }
       }
@@ -538,7 +581,7 @@ window.HT_SURVIE = (() => {
       P.rad = clamp(P.rad + (dansNuage ? 26 : -7) * dt, 0, 100);
       if (dansNuage && Math.random() < dt * 14) api.sound.noise(0.01, { vol: 0.07, filter: 6000 });
       if (P.rad >= 100 && G.phase === "play") {
-        P.hp -= 8 * dt;
+        P.hp -= 8 * N().degats * dt;
         if (P.hp <= 0) return perdu("la radiation");
       }
 
@@ -550,6 +593,7 @@ window.HT_SURVIE = (() => {
       }
       G.bonus = G.bonus.filter((b) => {
         b.t += dt;
+        if (P.aimant > 0) attirer(b, dt);
         if (b.t > 14) return false; // disparaît s'il traîne trop
         if (dist(b, P) > 26) return true;
         ramasser(b);
@@ -584,11 +628,20 @@ window.HT_SURVIE = (() => {
       else if (b.k === "triple") P.triple = 8;
       else if (b.k === "bouclier") P.bouclier = 2;
       else if (b.k === "bombe") bombe();
+      else if (b.k === "aimant") P.aimant = 10;
       texte(b.x, b.y - 20, `${B.emoji} ${B.texte}`, "#c6ff4d", 14);
       G.score += 25;
       eclats(b.x, b.y, "#c6ff4d", 10, 160, 0.4);
       api.sound.tone(880, 0.08, { type: "triangle", vol: 0.05 });
       api.sound.tone(1320, 0.1, { type: "triangle", vol: 0.05, when: 0.08 });
+    }
+
+    // L'aimant attire les bonus et les pièces de radio vers le joueur
+    function attirer(o, dt) {
+      const P = G.player, d = dist(o, P);
+      if (d < 1 || d > 320) return;
+      o.x += ((P.x - o.x) / d) * 330 * dt;
+      o.y += ((P.y - o.y) / d) * 330 * dt;
     }
 
     // Pièces de radio, zone suivante, boss, hélicoptère
@@ -604,6 +657,7 @@ window.HT_SURVIE = (() => {
         return;
       }
       if (G.parts < Z.parts) {
+        if (G.part && P.aimant > 0) attirer(G.part, dt);
         if (!G.part) {
           G.partDelai -= dt;
           if (G.partDelai <= 0 && G.titre < 1.5) G.part = pointLoin(230);
@@ -841,6 +895,13 @@ window.HT_SURVIE = (() => {
       ctx.shadowBlur = 0;
       ctx.lineWidth = 1;
       for (const b of G.ballesEnnemies) {
+        if (b.encre) {
+          ctx.fillStyle = "rgba(40, 10, 70, 0.92)";
+          ctx.beginPath(); ctx.arc(b.x, b.y, 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(170, 120, 255, 0.5)";
+          ctx.beginPath(); ctx.arc(b.x - 3, b.y - 3, 3, 0, Math.PI * 2); ctx.fill();
+          continue;
+        }
         const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, 9);
         g.addColorStop(0, "#fff3b0");
         g.addColorStop(0.5, "#ff8a3c");
@@ -903,6 +964,19 @@ window.HT_SURVIE = (() => {
       // Voiles : radiation, dégâts, bombe
       if (P.rad > 60) {
         ctx.fillStyle = `rgba(120, 255, 60, ${((P.rad - 60) / 40) * 0.18})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+      if (P.encre > 0) {
+        ctx.fillStyle = `rgba(25, 5, 45, ${Math.min(0.4, P.encre * 0.2)})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+      // Peu de vie : les bords de l'écran battent en rouge
+      if (P.hp < 30 && G.phase === "play") {
+        const k = calme() ? 0.15 : 0.12 + 0.2 * G.pouls;
+        const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+        v.addColorStop(0, "rgba(255, 30, 60, 0)");
+        v.addColorStop(1, `rgba(255, 30, 60, ${k})`);
+        ctx.fillStyle = v;
         ctx.fillRect(0, 0, W, H);
       }
       if (G.flashRouge > 0) {
@@ -1036,6 +1110,8 @@ window.HT_SURVIE = (() => {
       if (P.rapide > 0) actifs.push(`⚡${Math.ceil(P.rapide)}`);
       if (P.triple > 0) actifs.push(`🔱${Math.ceil(P.triple)}`);
       if (P.bouclier > 0) actifs.push(`🛡️×${P.bouclier}`);
+      if (P.aimant > 0) actifs.push(`🧲${Math.ceil(P.aimant)}`);
+      if (P.encre > 0) actifs.push("🦑 ralenti");
       ctx.font = "700 12px 'JetBrains Mono', monospace";
       ctx.fillStyle = "#fff";
       ctx.fillText(actifs.join("  "), 12, 62);
@@ -1053,6 +1129,11 @@ window.HT_SURVIE = (() => {
         ctx.fillRect(cx - bw / 2, 22, bw, 12);
         ctx.fillStyle = G.boss.rage ? "#ff3355" : "#ff8a3c";
         ctx.fillRect(cx - bw / 2 + 2, 24, ((bw - 4) * Math.max(0, G.boss.pv)) / G.boss.pvMax, 8);
+        // Repère : à la moitié de sa vie, le Méga-Requin entre en rage
+        if (!G.boss.rage) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+          ctx.fillRect(cx - 1, 20, 2, 16);
+        }
       } else {
         ctx.font = "700 10px 'JetBrains Mono', monospace";
         ctx.fillStyle = "rgba(255,255,255,0.6)";
@@ -1077,6 +1158,11 @@ window.HT_SURVIE = (() => {
         ctx.font = `700 ${14 + 2 * Math.sin(G.t * 10)}px 'Chakra Petch', sans-serif`;
         ctx.fillStyle = "#ffd34d";
         ctx.fillText(`COMBO ×${multiplicateur()}`, W - 58, 56);
+        // Le temps qui reste pour garder le combo
+        ctx.fillStyle = "rgba(255, 211, 77, 0.25)";
+        ctx.fillRect(W - 138, 61, 80, 3);
+        ctx.fillStyle = "#ffd34d";
+        ctx.fillRect(W - 138, 61, 80 * clamp(G.comboT / 2.6, 0, 1), 3);
       }
 
       // Message d'ÉCHO
@@ -1120,8 +1206,44 @@ window.HT_SURVIE = (() => {
       rafId = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (ts - (lastTs || ts)) / 1000);
       lastTs = ts;
+      lireManette();
+      if (!playing) return;
       if (G.phase === "play") update(dt);
       draw();
+    }
+
+    // Manette : stick gauche ou croix pour bouger, A pour esquiver / valider, Start pour la pause
+    function lireManette() {
+      const pads = navigator.getGamepads ? [...navigator.getGamepads()] : [];
+      const gp = pads.find((x) => x && x.connected);
+      manette = null;
+      if (!gp) return;
+      const b = (i) => !!gp.buttons[i]?.pressed;
+      const appui = (i) => b(i) && !manettePrec[i];
+      let mx = Math.abs(gp.axes[0] || 0) > 0.2 ? gp.axes[0] : 0;
+      let my = Math.abs(gp.axes[1] || 0) > 0.2 ? gp.axes[1] : 0;
+      if (b(14)) mx = -1;
+      if (b(15)) mx = 1;
+      if (b(12)) my = -1;
+      if (b(13)) my = 1;
+      manette = { mx, my };
+      const ph = G.phase;
+      if (appui(0)) {
+        if (ph === "play") esquive();
+        else if (ph === "tuto") act("go");
+        else if (ph === "pause") act("resume");
+        else if (ph === "over") act("zone");
+        else if (ph === "win") act("quit");
+      } else if (appui(1) && ph === "play") esquive();
+      else if (appui(9) && (ph === "play" || ph === "pause")) togglePause();
+      manettePrec = gp.buttons.map((x) => x.pressed);
+    }
+
+    // Pause automatique quand on change d'onglet ou de fenêtre
+    function pauseAuto() {
+      keys.clear();
+      stick = null;
+      if (playing && G?.phase === "play" && (document.hidden || !document.hasFocus())) togglePause();
     }
 
     // ===== Panneaux : explications, pause, défaite, victoire =====
@@ -1130,11 +1252,21 @@ window.HT_SURVIE = (() => {
       p.hidden = !html;
       p.innerHTML = html || "";
       p.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => act(b.dataset.act)));
+      p.querySelectorAll("[data-niveau]").forEach((b) => b.addEventListener("click", () => choisirNiveau(b.dataset.niveau)));
       p.querySelector(".btn-primary")?.focus();
+    }
+
+    function choisirNiveau(k) {
+      if (!NIVEAUX[k] || G.phase !== "tuto") return;
+      niveau = k;
+      api.setDifficulte?.(k);
+      api.sound.tone(k === "difficile" ? 440 : k === "facile" ? 660 : 550, 0.08, { type: "triangle", vol: 0.04 });
+      showTuto();
     }
 
     function showTuto() {
       const t = !!api.tactile;
+      const record = Math.max(meilleur, api.record?.() || 0);
       showPanel(`
         <h2 class="game-title">APRÈS L'OGIVE</h2>
         <p>ÉCHO t'a protégé de l'explosion. Traverse <b>3 zones en ruines</b>, ramasse les pièces de sa radio… et sors de là en hélicoptère.</p>
@@ -1143,9 +1275,15 @@ window.HT_SURVIE = (() => {
           <li>🔫 <b>Tirer</b> : automatique, sur l'ennemi le plus proche</li>
           <li>💨 <b>Esquiver</b> : ${t ? "bouton ESQUIVE" : "Espace"}, tu es invincible pendant l'esquive</li>
           <li>🎯 Un <b>cercle rouge</b> au sol ? Un débris va tomber : écarte-toi !</li>
-          <li>🎁 <b>Bonus</b> : 🥫 vie · 💊 anti-radiation · ⚡ tir rapide · 🔱 tir triple · 🛡️ bouclier · 💣 bombe</li>
+          <li>🎁 <b>Bonus</b> : 🥫 vie · 💊 anti-radiation · ⚡ tir rapide · 🔱 tir triple · 🛡️ bouclier · 💣 bombe · 🧲 aimant</li>
           <li>🔥 Enchaîne les ennemis pour monter le <b>combo</b> (jusqu'à ×5)</li>
+          <li>🦑 Dans le port, le calamar crache de l'encre : elle ne fait pas mal, mais elle ralentit</li>
+          ${t ? "" : "<li>🎮 <b>Manette</b> : stick ou croix pour bouger, A pour esquiver, Start pour la pause</li>"}
         </ul>
+        <div class="game-niveaux" role="group" aria-label="Difficulté">
+          ${Object.entries(NIVEAUX).map(([k, n], i) => `<button type="button" class="btn game-niveau${k === niveau ? " on" : ""}" data-niveau="${k}" aria-pressed="${k === niveau}">${n.nom}${t ? "" : ` <kbd>${i + 1}</kbd>`}</button>`).join("")}
+        </div>
+        <p class="muted small">${N().info}${record ? ` · 🏆 ton record : ${fr(record)} pts` : ""}</p>
         <div class="game-btns"><button class="btn btn-primary" data-act="go" type="button">C'est parti !${t ? "" : " (Entrée)"}</button></div>`);
     }
 
@@ -1188,6 +1326,7 @@ window.HT_SURVIE = (() => {
         <div class="game-rang rang-${rang}">${rang}</div>
         <p><b>Score : ${fr(G.score)}</b> (dont ${fr(bonusTemps)} de bonus de vitesse)</p>
         <p>Temps : ${fmtTime(G.t)} · Ennemis vaincus : ${G.kills} · Tentatives ratées : ${G.morts}</p>
+        <p class="muted small">${Object.entries(G.parType).map(([k, n]) => `${ENNEMIS[k].emoji} ×${n}`).join(" · ")} · difficulté : ${N().nom.toLowerCase()}</p>
         <p class="muted small">ÉCHO : « Bienvenue à bord, partenaire. La prochaine fois… on ne touche pas au bouton. »</p>
         <div class="game-btns"><button class="btn btn-primary" data-act="quit" type="button">Retour au terminal (Entrée)</button><button class="btn" data-act="retry" type="button">Rejouer</button></div>`);
     }
@@ -1225,6 +1364,7 @@ window.HT_SURVIE = (() => {
         if (G.phase === "play") esquive();
         else if (G.phase === "tuto") act("go");
       } else if ((e.key === "r" || e.key === "R") && G.phase === "over") act("zone");
+      else if (G.phase === "tuto" && ["1", "2", "3"].includes(e.key)) choisirNiveau(Object.keys(NIVEAUX)[+e.key - 1]);
     }
     function onKeyUp(e) {
       const dir = DIRS[e.code] || DIRS[e.key];
@@ -1267,6 +1407,8 @@ window.HT_SURVIE = (() => {
       window.addEventListener("resize", resize);
       document.addEventListener("keydown", onKeyDown, true);
       document.addEventListener("keyup", onKeyUp, true);
+      document.addEventListener("visibilitychange", pauseAuto);
+      window.addEventListener("blur", pauseAuto);
       canvas.addEventListener("pointerdown", (e) => {
         canvas.setPointerCapture(e.pointerId);
         stick = { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY };
@@ -1295,6 +1437,8 @@ window.HT_SURVIE = (() => {
       window.removeEventListener("resize", resize);
       document.removeEventListener("keydown", onKeyDown, true);
       document.removeEventListener("keyup", onKeyUp, true);
+      document.removeEventListener("visibilitychange", pauseAuto);
+      window.removeEventListener("blur", pauseAuto);
       keys.clear();
       stick = null;
       el.classList.remove("on");

@@ -1,7 +1,8 @@
 {
+  "id": "./",
   "name": "Ghost Terminal",
   "short_name": "Ghost Terminal",
-  "description": "Tape n'importe quoi sur ton clavier et deviens un hacker de film.",
+  "description": "Tape n'importe quoi sur ton clavier et deviens un hacker de film : faux code, effets dramatiques, une histoire en 11 chapitres et des secrets.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
@@ -14,5 +15,10 @@
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Pilote automatique", "short_name": "Pilote auto", "description": "Le code s'écrit tout seul", "url": "./?auto=1", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mode démo", "short_name": "Démo", "description": "Effets et missions se lancent tout seuls", "url": "./?demo=1", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mode immersion", "short_name": "Immersion", "description": "Juste le terminal, sans aucune interface", "url": "./?immersion=1", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

@@ -12,6 +12,7 @@ window.Highlighter = (() => {
     bash: "if then else elif fi for in do done while until case esac function return local set exit echo printf read export shift",
     go: "package import func return if else for range go defer var const type struct map chan select switch case default break continue nil true false make append len close",
     asm: "mov xor or and not cli sti call ret jmp jc jz jnz jne je int in out lodsb stosw rep cmp hlt lgdt push pop inc dec add sub db dw dd dq equ dword byte word test loop nop syscall section global resb",
+    lua: "and break do else elseif end false for function goto if in local nil not or repeat return then true until while",
     custom: "if else elif for while do return function func def fn let const var class struct new this self import from package public private static void int char long bool true false null None nil try catch except finally throw raise async await switch case break continue default end then",
   };
 
@@ -23,6 +24,7 @@ window.Highlighter = (() => {
     bash: "",
     go: "int string bool error byte float64 time Duration",
     asm: "ax bx cx dx si di sp bp ah al bh bl ch cl dh dl eax ebx ecx edx esi edi esp ebp rax rbx rcx rdx rsi rdi rsp rbp cr0 ds es ss cs fs gs",
+    lua: "string table math os io coroutine",
     custom: "",
   };
 
@@ -39,6 +41,7 @@ window.Highlighter = (() => {
       python: "#[^\\n]*",
       bash: "#[^\\n]*",
       asm: ";[^\\n]*",
+      lua: "--\\[\\[[\\s\\S]*?\\]\\]|--[^\\n]*",
       custom: "\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/|#[^\\n]*",
     };
     alts.push(`(?<com>${COMMENTS[lang] || "\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/"})`);
